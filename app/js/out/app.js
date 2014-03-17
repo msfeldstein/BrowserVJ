@@ -1,5 +1,5 @@
 (function() {
-  var SPEED, animate, buffer, camera, controls, geometry, init, loopF, material, mesh, options, plexus, renderer, scene, update,
+  var ParticleWanderer, SPEED, animate, buffer, camera, controls, geometry, init, material, mesh, options, plexus, renderer, scene, update,
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   camera = scene = renderer = buffer = controls = 0;
@@ -29,7 +29,7 @@
     controls.keys = [65, 83, 68];
     controls.addEventListener('change', animate);
     scene = new THREE.Scene();
-    cubesize = 10;
+    cubesize = 7;
     geometry = new THREE.SphereGeometry(cubesize, cubesize, cubesize);
     cubeMaterial = new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
@@ -38,7 +38,9 @@
       opacity: .1,
       visible: true
     });
-    plexus = new Plexus(scene);
+    plexus = new Plexus(scene, {
+      thresh: 200
+    });
     addMesh = function() {
       var wanderer;
       mesh = new THREE.Mesh(geometry, cubeMaterial);
@@ -87,7 +89,7 @@
     }
   };
 
-  loopF = function(fn) {
+  window.loopF = function(fn) {
     var f;
     f = function() {
       fn();
@@ -102,13 +104,55 @@
     return loopF(animate);
   });
 
-  this.Plexus = (function() {
-    Plexus.THRESH = 200;
+  this.Particle = (function() {
+    function Particle(pr, vr) {
+      this.update = __bind(this.update, this);
+      var cubeMaterial, cubesize;
+      this.velocity = new THREE.Vector3(this.rand(vr), this.rand(vr), this.rand(vr));
+      this.position = new THREE.Vector3(this.rand(pr), this.rand(pr), this.rand(pr));
+      cubesize = 7;
+      geometry = new THREE.SphereGeometry(cubesize, cubesize, cubesize);
+      cubeMaterial = new THREE.MeshBasicMaterial({
+        color: 0xFFFFFF,
+        wireframe: true,
+        transparent: true,
+        opacity: 1,
+        visible: true
+      });
+      this.mesh = new THREE.Mesh(geometry, cubeMaterial);
+      this.mesh.position = this.position;
+      loopF(this.update);
+    }
 
-    function Plexus(scene) {
+    Particle.prototype.update = function() {
+      this.position.add(this.velocity);
+      return this.velocity.add(this.position.clone().multiplyScalar(-.0001));
+    };
+
+    Particle.prototype.rand = function(size) {
+      return Math.random() * size * 2 - size;
+    };
+
+    return Particle;
+
+  })();
+
+  ParticleWanderer = (function() {
+    function ParticleWanderer(scene) {}
+
+    return ParticleWanderer;
+
+  })();
+
+  this.Plexus = (function() {
+    function Plexus(scene, opts) {
       this.scene = scene;
+      this.opts = opts != null ? opts : {
+        thresh: 200
+      };
       this.elements = [];
       this.tris = [];
+      this.trianglePool = [];
     }
 
     Plexus.prototype.addElement = function(e) {
@@ -130,22 +174,23 @@
     };
 
     Plexus.prototype.newTriangle = function(el1, el2, el3) {
-      var d1, d2, d3, minDist, opacity, triMaterial;
-      geometry = new THREE.Geometry;
-      geometry.vertices.push(el1.position);
-      geometry.vertices.push(el2.position);
-      geometry.vertices.push(el3.position);
+      var d1, d2, d3, minDist, triMaterial;
+      mesh = this.trianglePool.pop();
+      if (!mesh) {
+        geometry = new THREE.Geometry;
+        triMaterial = new THREE.MeshNormalMaterial({
+          opacity: 1,
+          color: 0xFFFFFF
+        });
+        geometry.faces.push(new THREE.Face3(0, 1, 2));
+        mesh = new THREE.Mesh(geometry, triMaterial);
+      }
+      mesh.geometry.vertices = [el1.position, el2.position, el3.position];
       d1 = Math.abs(el1.position.distanceTo(el2.position));
       d2 = Math.abs(el1.position.distanceTo(el3.position));
       d3 = Math.abs(el2.position.distanceTo(el3.position));
-      minDist = Math.min(d1, Math.min(d2, d3));
-      opacity = (Plexus.THRESH - minDist) / Plexus.THRESH;
-      triMaterial = new THREE.MeshNormalMaterial({
-        opacity: opacity,
-        color: 0xFFFFFF
-      });
-      geometry.faces.push(new THREE.Face3(0, 1, 2));
-      mesh = new THREE.Mesh(geometry, triMaterial);
+      minDist = Math.max(d1, Math.max(d2, d3));
+      mesh.material.opacity = (this.opts.thresh - minDist) / this.opts.thresh;
       return mesh;
     };
 
@@ -160,7 +205,7 @@
           el2 = this.elements[j];
           distance = Math.abs(el.position.distanceTo(el2.position));
           existing = el.neighbors[el2.uuid];
-          if (distance < Plexus.THRESH && distance > 1) {
+          if (distance < this.opts.thresh && distance > 1) {
             if (!existing) {
               line = this.newLine();
               line.geometry.vertices = [el.position, el2.position];
@@ -171,7 +216,7 @@
               };
             }
             el.neighborArray.push(existing);
-            existing.line.material.opacity = (Plexus.THRESH - distance) / Plexus.THRESH;
+            existing.line.material.opacity = (this.opts.thresh - distance) / this.opts.thresh;
           } else {
             if (existing) {
               this.scene.remove(existing.line);
@@ -185,6 +230,7 @@
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         tri = _ref1[_j];
         this.scene.remove(tri);
+        this.trianglePool.push(tri);
       }
       this.tris = [];
       _ref2 = this.elements;
@@ -203,7 +249,7 @@
               _results2 = [];
               for (_m = 0, _len4 = _ref4.length; _m < _len4; _m++) {
                 third = _ref4[_m];
-                if (second.el.neighborArray.indexOf(third) !== -1) {
+                if (second.el.neighbors[third.el.uuid]) {
                   tri = this.newTriangle(first, second.el, third.el);
                   this.scene.add(tri);
                   _results2.push(this.tris.push(tri));

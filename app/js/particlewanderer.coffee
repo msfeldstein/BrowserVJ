@@ -1,0 +1,3 @@
+class ParticleWanderer
+  constructor: (scene) ->
+    

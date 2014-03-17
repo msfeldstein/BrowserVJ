@@ -27,7 +27,7 @@ init = () ->
 
     scene = new THREE.Scene();
 
-    cubesize = 10
+    cubesize = 7
     geometry = new THREE.SphereGeometry(cubesize, cubesize, cubesize);
     cubeMaterial = new THREE.MeshBasicMaterial({
         color: 0xFFFFFF,
@@ -37,13 +37,18 @@ init = () ->
         visible: true
     });
 
-    plexus = new Plexus(scene)
+    plexus = new Plexus(scene, {thresh:200})
 
     addMesh = () ->
         mesh = new THREE.Mesh(geometry, cubeMaterial);
         scene.add(mesh);
         wanderer = new Wanderer(mesh)
         plexus.addElement mesh
+
+    # addMesh = () ->
+    #     particle = new Particle(300, 5)
+    #     scene.add(particle.mesh)
+    #     plexus.addElement(particle)
 
     for i in [1..24]
         addMesh()
@@ -84,7 +89,7 @@ animate = () ->
         ctx.scale(-1, 1)
         ctx.drawImage(buffer.domElement, 0, 0)
 
-loopF = (fn) ->
+window.loopF = (fn) ->
     f = () ->
         fn()
         requestAnimationFrame(f)
