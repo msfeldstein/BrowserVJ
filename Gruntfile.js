@@ -52,13 +52,6 @@ module.exports = function(grunt) {
             bower: [ '{bower,bowercopy}.json' ]
         },
         watch: {
-            // Watch javascript files for linting
-            js: {
-                files: [
-                    '<%= jshint.all %>'
-                ],
-                tasks: ['jshint']
-            },
             coffee: {
                 files: [
                     '**/*.coffee'

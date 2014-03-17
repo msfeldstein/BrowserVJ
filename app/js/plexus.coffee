@@ -37,5 +37,4 @@ class @Plexus
           if existing
             @scene.remove existing.line
             delete el.neighbors[el2.uuid]
-
         j++
