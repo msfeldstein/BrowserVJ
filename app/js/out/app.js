@@ -1,7 +1,8 @@
 (function() {
-  var animate, buffer, camera, geometry, init, loopF, material, mesh, options, plexus, renderer, scene, update;
+  var SPEED, animate, buffer, camera, controls, geometry, init, loopF, material, mesh, options, plexus, renderer, scene, update,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  camera = scene = renderer = buffer = 0;
+  camera = scene = renderer = buffer = controls = 0;
 
   geometry = material = mesh = 0;
 
@@ -9,7 +10,7 @@
 
   options = {
     mirror: false,
-    feedback: false
+    feedback: 0
   };
 
   init = function() {
@@ -17,15 +18,25 @@
     noise.seed(Math.random());
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     camera.position.z = 1000;
+    controls = new THREE.TrackballControls(camera);
+    controls.rotateSpeed = 2.0;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
+    controls.keys = [65, 83, 68];
+    controls.addEventListener('change', animate);
     scene = new THREE.Scene();
     cubesize = 10;
-    geometry = new THREE.CubeGeometry(cubesize, cubesize, cubesize);
+    geometry = new THREE.SphereGeometry(cubesize, cubesize, cubesize);
     cubeMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff0000,
+      color: 0xFFFFFF,
       wireframe: true,
       transparent: true,
-      opacity: 1,
-      visible: false
+      opacity: .1,
+      visible: true
     });
     plexus = new Plexus(scene);
     addMesh = function() {
@@ -47,7 +58,7 @@
     return require(['js/dat.gui.min.js'], function(GUI) {
       var fieldset, gui;
       gui = new dat.gui.GUI;
-      gui.add(options, "feedback");
+      gui.add(options, "feedback", 0, 1);
       gui.add(options, "mirror");
       fieldset = gui.addFolder('Dots');
       fieldset.add(cubeMaterial, 'visible');
@@ -57,18 +68,15 @@
   };
 
   update = function() {
-    return plexus.update();
+    plexus.update();
+    return controls.update();
   };
 
   animate = function() {
     var canvas, ctx;
     canvas = renderer.domElement;
     ctx = canvas.getContext("2d");
-    if (options.feedback) {
-      ctx.fillStyle = "rgba(0,0,0,0.1)";
-    } else {
-      ctx.fillStyle = "rgb(0,0,0)";
-    }
+    ctx.fillStyle = "rgba(0,0,0," + (1 - options.feedback) + ")";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     buffer.render(scene, camera);
     ctx.drawImage(buffer.domElement, 0, 0);
@@ -94,21 +102,13 @@
     return loopF(animate);
   });
 
-}).call(this);
-
-(function() {
-
-
-}).call(this);
-
-(function() {
   this.Plexus = (function() {
     Plexus.THRESH = 200;
 
     function Plexus(scene) {
       this.scene = scene;
       this.elements = [];
-      this.lines = [];
+      this.tris = [];
     }
 
     Plexus.prototype.addElement = function(e) {
@@ -117,7 +117,7 @@
     };
 
     Plexus.prototype.newLine = function() {
-      var geometry, line, lineMaterial;
+      var line, lineMaterial;
       geometry = new THREE.Geometry;
       geometry.vertices.push(new THREE.Vector3(0, 0, 0));
       geometry.vertices.push(new THREE.Vector3(0, 0, 0));
@@ -129,43 +129,90 @@
       return line;
     };
 
+    Plexus.prototype.newTriangle = function(el1, el2, el3) {
+      var d1, d2, d3, minDist, opacity, triMaterial;
+      geometry = new THREE.Geometry;
+      geometry.vertices.push(el1.position);
+      geometry.vertices.push(el2.position);
+      geometry.vertices.push(el3.position);
+      d1 = Math.abs(el1.position.distanceTo(el2.position));
+      d2 = Math.abs(el1.position.distanceTo(el3.position));
+      d3 = Math.abs(el2.position.distanceTo(el3.position));
+      minDist = Math.min(d1, Math.min(d2, d3));
+      opacity = (Plexus.THRESH - minDist) / Plexus.THRESH;
+      triMaterial = new THREE.MeshNormalMaterial({
+        opacity: opacity,
+        color: 0xFFFFFF
+      });
+      geometry.faces.push(new THREE.Face3(0, 1, 2));
+      mesh = new THREE.Mesh(geometry, triMaterial);
+      return mesh;
+    };
+
     Plexus.prototype.update = function() {
-      var distance, el, el2, existing, i, j, line, _i, _j, _len, _len1, _ref, _ref1, _results;
-      _ref = this.lines;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        line = _ref[_i];
-        this.scene.remove(line);
-      }
-      this.lines = [];
-      _ref1 = this.elements;
-      _results = [];
-      for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
-        el = _ref1[i];
+      var distance, el, el2, existing, first, i, j, line, second, third, tri, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
+      _ref = this.elements;
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        el = _ref[i];
+        el.neighborArray = [];
         j = i + 1;
-        _results.push((function() {
-          var _results1;
-          _results1 = [];
-          while (j < this.elements.length) {
-            el2 = this.elements[j];
-            distance = Math.abs(el.position.distanceTo(el2.position));
-            existing = el.neighbors[el2.uuid];
-            if (distance < Plexus.THRESH && distance > 1) {
-              if (!existing) {
-                line = this.newLine();
-                line.geometry.vertices = [el.position, el2.position];
-                this.scene.add(line);
-                existing = el.neighbors[el2.uuid] = {
-                  line: line
-                };
-              }
-              existing.line.material.opacity = (Plexus.THRESH - distance) / Plexus.THRESH;
-            } else {
-              if (existing) {
-                this.scene.remove(existing.line);
-                delete el.neighbors[el2.uuid];
-              }
+        while (j < this.elements.length) {
+          el2 = this.elements[j];
+          distance = Math.abs(el.position.distanceTo(el2.position));
+          existing = el.neighbors[el2.uuid];
+          if (distance < Plexus.THRESH && distance > 1) {
+            if (!existing) {
+              line = this.newLine();
+              line.geometry.vertices = [el.position, el2.position];
+              this.scene.add(line);
+              existing = el.neighbors[el2.uuid] = {
+                el: el2,
+                line: line
+              };
             }
-            _results1.push(j++);
+            el.neighborArray.push(existing);
+            existing.line.material.opacity = (Plexus.THRESH - distance) / Plexus.THRESH;
+          } else {
+            if (existing) {
+              this.scene.remove(existing.line);
+              delete el.neighbors[el2.uuid];
+            }
+          }
+          j++;
+        }
+      }
+      _ref1 = this.tris;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        tri = _ref1[_j];
+        this.scene.remove(tri);
+      }
+      this.tris = [];
+      _ref2 = this.elements;
+      _results = [];
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        first = _ref2[_k];
+        _results.push((function() {
+          var _l, _len3, _ref3, _results1;
+          _ref3 = first.neighborArray;
+          _results1 = [];
+          for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+            second = _ref3[_l];
+            _results1.push((function() {
+              var _len4, _m, _ref4, _results2;
+              _ref4 = first.neighborArray;
+              _results2 = [];
+              for (_m = 0, _len4 = _ref4.length; _m < _len4; _m++) {
+                third = _ref4[_m];
+                if (second.el.neighborArray.indexOf(third) !== -1) {
+                  tri = this.newTriangle(first, second.el, third.el);
+                  this.scene.add(tri);
+                  _results2.push(this.tris.push(tri));
+                } else {
+                  _results2.push(void 0);
+                }
+              }
+              return _results2;
+            }).call(this));
           }
           return _results1;
         }).call(this));
@@ -176,12 +223,6 @@
     return Plexus;
 
   })();
-
-}).call(this);
-
-(function() {
-  var SPEED,
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   SPEED = 1 / 20000;
 
@@ -206,3 +247,5 @@
   })();
 
 }).call(this);
+
+//# sourceMappingURL=app.js.map

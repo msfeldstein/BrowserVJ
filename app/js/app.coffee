@@ -1,10 +1,10 @@
-camera = scene = renderer = buffer = 0
+camera = scene = renderer = buffer = controls = 0
 geometry = material =  mesh = 0;
 plexus = 0
 
 options = {
     mirror: false
-    feedback: false
+    feedback: 0
 }
 
 init = () ->
@@ -12,17 +12,29 @@ init = () ->
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
     camera.position.z = 1000;
+    controls = new THREE.TrackballControls( camera );
+    controls.rotateSpeed = 2.0;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;
+    controls.noZoom = false;
+    controls.noPan = false;
+    controls.staticMoving = true;
+    controls.dynamicDampingFactor = 0.3;
+
+    controls.keys = [ 65, 83, 68 ];
+    controls.addEventListener( 'change', animate );
+
 
     scene = new THREE.Scene();
 
     cubesize = 10
-    geometry = new THREE.CubeGeometry(cubesize, cubesize, cubesize);
+    geometry = new THREE.SphereGeometry(cubesize, cubesize, cubesize);
     cubeMaterial = new THREE.MeshBasicMaterial({
-        color: 0xff0000,
+        color: 0xFFFFFF,
         wireframe: true
         transparent: true
-        opacity: 1
-        visible: false
+        opacity: .1
+        visible: true
     });
 
     plexus = new Plexus(scene)
@@ -47,7 +59,7 @@ init = () ->
 
     require ['js/dat.gui.min.js'], (GUI) ->
         gui = new dat.gui.GUI
-        gui.add(options, "feedback")
+        gui.add(options, "feedback", 0, 1)
         gui.add(options, "mirror")
         fieldset = gui.addFolder('Dots')
         fieldset.add(cubeMaterial, 'visible')
@@ -57,14 +69,12 @@ init = () ->
 
 update = () ->
     plexus.update()
+    controls.update();
 
 animate = () ->
     canvas = renderer.domElement
     ctx = canvas.getContext("2d")
-    if options.feedback
-        ctx.fillStyle = "rgba(0,0,0,0.1)"
-    else
-        ctx.fillStyle = "rgb(0,0,0)"
+    ctx.fillStyle = "rgba(0,0,0,#{1-options.feedback})"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     buffer.render(scene, camera);

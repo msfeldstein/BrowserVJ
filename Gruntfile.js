@@ -22,6 +22,9 @@ module.exports = function(grunt) {
         // The actual grunt server settings
         coffee: {
             compile: {
+                options: {
+                    sourceMap: true
+                },
                 files: {
                     "app/js/out/app.js": base + '/js/*.coffee'
                 }
