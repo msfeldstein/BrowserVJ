@@ -9,25 +9,41 @@ module.exports = function(grunt) {
     // Load dev dependencies
     require('load-grunt-tasks')(grunt);
     grunt.loadNpmTasks('grunt-contrib-coffee');
+    grunt.loadNpmTasks('grunt-contrib-concat');
 
     // Time how long tasks take for build time optimizations
     require('time-grunt')(grunt);
 
     // Configure the app path
     var base = 'app';
+    var out = 'dist';
 
     grunt.initConfig({
+
+        paths: {
+            base: 'app',
+            out: 'dist'
+        },
         pkg: grunt.file.readJSON('package.json'),
         bowercopy: grunt.file.readJSON('bowercopy.json'),
-        // The actual grunt server settings
         coffee: {
             compile: {
                 options: {
+                    join: true,
                     sourceMap: true
                 },
                 files: {
-                    "app/js/out/app.js": base + '/js/*.coffee'
+                    "dist/js/app.js": [base + "/js/effects/_shaderpass.coffee", base + '/js/**/*.coffee']
                 }
+            }
+        },
+        concat: {
+            options: {
+                separator: ';',
+            },
+            out: {
+                src: ['app/js/lib/**/*.js'],
+                dest: 'dist/js/libs.js'
             }
         },
         connect: {
@@ -40,7 +56,7 @@ module.exports = function(grunt) {
             livereload: {
                 options: {
                     open: true,
-                    base: [ base ]
+                    base: [ out ]
                 }
             }
         },
@@ -61,6 +77,10 @@ module.exports = function(grunt) {
                 ],
                 tasks: ['coffee']
             },
+            concat: {
+                files: ['app/js/lib/**/*.js'],
+                tasks: ['concat']
+            },
             json: {
                 files: [
                     '{package,bower}.json'
@@ -80,13 +100,46 @@ module.exports = function(grunt) {
                     '**/*.html'
                 ]
             }
+        },
+        copy: {
+            dist: {
+                files: [{
+                    expand: true,
+                    dot: true,
+                    cwd: base,
+                    dest: out,
+                    src: [
+                        '*.{ico,png,txt}',
+                        '{,*/}*.html',
+                        'bower_components/' + (this.includeCompass ? 'sass-' : '') + 'bootstrap/' + (this.includeCompass ? 'fonts/' : 'dist/fonts/') +'*.*',
+                        '**/*.js',
+                        '**/*.css'
+                    ]
+                }]
+            },
+        },
+
+        // Empties folders to start fresh
+        clean: {
+            dist: {
+                files: [{
+                    dot: true,
+                    src: [
+                        '.tmp',
+                        '<%= paths.out %>/*',
+                        '!<%= paths.out %>/.git*'
+                    ]
+                }]
+            }
         }
     });
 
     grunt.registerTask('serve', function () {
         grunt.task.run([
+            'copy',
             'connect:livereload',
             'coffee',
+            'concat',         
             'watch'
         ]);
     });

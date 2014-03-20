@@ -1,101 +1,75 @@
-camera = scene = renderer = buffer = controls = 0
-geometry = material =  mesh = 0;
-plexus = 0
+scene = group = null
+geometry = new THREE.CubeGeometry(20, 20, 2)
+geometry = new THREE.SphereGeometry(10, 32, 32)
+origin = new THREE.Vector3 0, 0, 0
+addCube = (group, position) ->
+  material = new THREE.MeshPhongMaterial({
+    transparent: false
+    opacity: 1
+    color: 0xDA8258
+    specular: 0xD67484
+    shininess: 10
+    ambient: 0xAAAAAA
+    shading: THREE.FlatShading
+  })
+  mesh = new THREE.Mesh geometry, material
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  mesh.position = position
+  mesh.lookAt origin
+  group.add mesh
 
-options = {
-    mirror: false
-    feedback: 0
-}
+addFace = (group, face, skeleton) ->
+  material = new THREE.MeshBasicMaterial({
+    transparent: true, opacity: 0.3, color: 0xFFFFFF, side: THREE.DoubleSide
+  })
+  v1 = skeleton.vertices[face.a].clone()
+  v2 = skeleton.vertices[face.b].clone()
+  v3 = skeleton.vertices[face.c].clone()
+  d1 = v1.distanceTo(v2)
+  d2 = v1.distanceTo(v3)
+  d3 = v2.distanceTo(v3)
+  p1 = p2 = null
+  if d1 > d2 && d1 > d3
+    p1 = v1
+    p2 = v2
+  else if d2 > d1 && d2 > d3
+    p1 = v1
+    p2 = v3
+  else
+    p1 = v2
+    p2 = v3
+  geometry = new THREE.Geometry
+  geometry.vertices.push p1
+  geometry.vertices.push p2
+  geometry = new THREE.SphereGeometry 20, 8, 8
+  lineMaterial = new THREE.LineBasicMaterial {transparent: true, linewidth: 5, opacity: 0.5,color:0xFFFFFF, linecap: "butt"}
+  line = new THREE.Line geometry, lineMaterial
+  group.add line
 
-init = () ->
-    noise.seed(Math.random())
+@setup = (s) ->
+  scene = s
+  group = new THREE.Object3D
+  scene.add group
+  for size in [400]#[200, 300, 400]
+    res = 50
+    skeleton = new THREE.SphereGeometry(size, res, res)
+    for vertex in skeleton.vertices
+      addCube group, vertex
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-    camera.position.z = 1000;
-    controls = new THREE.TrackballControls( camera );
-    controls.rotateSpeed = 2.0;
-    controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;
-    controls.noZoom = false;
-    controls.noPan = false;
-    controls.staticMoving = true;
-    controls.dynamicDampingFactor = 0.3;
+  light = new THREE.SpotLight 0xFFFFFF
+  light.position.set 1000, 1000, 300
+  scene.add light
 
-    controls.keys = [ 65, 83, 68 ];
-    controls.addEventListener( 'change', animate );
+  light = new THREE.AmbientLight 0x222222
+  scene.add light
 
+  ambient = new THREE.PointLight( 0x444444, 1, 10000 );
+  ambient.position.set 500, 500, 500
+  scene.add ambient
 
-    scene = new THREE.Scene();
-
-    cubesize = 7
-    geometry = new THREE.SphereGeometry(cubesize, cubesize, cubesize);
-    cubeMaterial = new THREE.MeshBasicMaterial({
-        color: 0xFFFFFF,
-        wireframe: true
-        transparent: true
-        opacity: .1
-        visible: true
-    });
-
-    plexus = new Plexus(scene, {thresh:200})
-
-    addMesh = () ->
-        mesh = new THREE.Mesh(geometry, cubeMaterial);
-        scene.add(mesh);
-        wanderer = new Wanderer(mesh)
-        plexus.addElement mesh
-
-    # addMesh = () ->
-    #     particle = new Particle(300, 5)
-    #     scene.add(particle.mesh)
-    #     plexus.addElement(particle)
-
-    for i in [1..24]
-        addMesh()
-
-    buffer = new THREE.CanvasRenderer();
-    buffer.setSize(window.innerWidth, window.innerHeight);
-
-    renderer = new THREE.CanvasRenderer();
-    renderer.autoClear = false
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    document.body.appendChild(renderer.domElement);
-
-    require ['js/dat.gui.min.js'], (GUI) ->
-        gui = new dat.gui.GUI
-        gui.add(options, "feedback", 0, 1)
-        gui.add(options, "mirror")
-        fieldset = gui.addFolder('Dots')
-        fieldset.add(cubeMaterial, 'visible')
-        fieldset.add(cubeMaterial, 'opacity', 0, 1)
-        fieldset = gui.addFolder('Lines')
-
-
-update = () ->
-    plexus.update()
-    controls.update();
-
-animate = () ->
-    canvas = renderer.domElement
-    ctx = canvas.getContext("2d")
-    ctx.fillStyle = "rgba(0,0,0,#{1-options.feedback})"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    buffer.render(scene, camera);
-    ctx.drawImage(buffer.domElement, 0, 0)
-    if options.mirror
-        ctx.translate(canvas.width, 0)
-        ctx.scale(-1, 1)
-        ctx.drawImage(buffer.domElement, 0, 0)
-
-window.loopF = (fn) ->
-    f = () ->
-        fn()
-        requestAnimationFrame(f)
-    f()
-
-$ ->
-    init()
-    loopF update
-    loopF animate
+  ambient = new THREE.PointLight( 0x444444, 1, 10000 );
+  ambient.position.set -500, 500, 500
+  scene.add ambient
+@update = (scene) ->
+  group.rotation.y += 0.001
