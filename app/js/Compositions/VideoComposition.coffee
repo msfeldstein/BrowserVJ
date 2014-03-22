@@ -3,7 +3,6 @@ class VideoComposition extends Backbone.Model
     super()
     if @videoFile
       videoTag = document.createElement('video')
-      document.body.appendChild videoTag
       videoTag.src = URL.createObjectURL(@videoFile)
       videoTag.addEventListener 'loadeddata', (e) =>
         videoTag.currentTime = videoTag.duration / 2
@@ -42,7 +41,6 @@ class VideoComposition extends Backbone.Model
     @video.volume = 0
     window.video = @video
     @video.addEventListener 'loadeddata', () =>
-      console.log @video.videoWidth
       @videoImage = document.createElement 'canvas'
       @videoImage.width = @video.videoWidth
       @videoImage.height = @video.videoHeight

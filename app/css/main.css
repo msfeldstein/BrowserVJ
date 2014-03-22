@@ -17,16 +17,19 @@ canvas {
     );
 }
 
-
-
 .composition-picker {
     width: 300px;
     height: 310px;
-    background: white;
+    background: #333333;
     position: absolute;
     bottom: 0px;
     right: 0px;
     opacity: 0.2;
+    overflow:scroll;
+}
+
+.composition-picker:hover {
+    opacity: 1;
 }
 
 .composition-picker .slot {

@@ -207,7 +207,6 @@ class VideoComposition extends Backbone.Model
     super()
     if @videoFile
       videoTag = document.createElement('video')
-      document.body.appendChild videoTag
       videoTag.src = URL.createObjectURL(@videoFile)
       videoTag.addEventListener 'loadeddata', (e) =>
         videoTag.currentTime = videoTag.duration / 2
@@ -246,7 +245,6 @@ class VideoComposition extends Backbone.Model
     @video.volume = 0
     window.video = @video
     @video.addEventListener 'loadeddata', () =>
-      console.log @video.videoWidth
       @videoImage = document.createElement 'canvas'
       @videoImage.width = @video.videoWidth
       @videoImage.height = @video.videoHeight
@@ -488,82 +486,70 @@ class @ShaderPassBase
       when "sampler2D" then {type: "t", value: null}
 
 
-renderer = null
-
-composition = renderModel = composer = gui = stats = null
-
-_init = () ->
-  noise.seed(Math.random())
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
-  renderer.setSize(window.innerWidth, window.innerHeight)
-
-  document.body.appendChild(renderer.domElement);
-
-  gui = new dat.gui.GUI
-
-  initPostProcessing()
-  initCompositions()
-
-  stats = new Stats
-  stats.domElement.style.position = 'absolute'
-  stats.domElement.style.left = '0px'
-  stats.domElement.style.top = '0px'
-
-  document.body.appendChild stats.domElement
-
-initCompositions = () ->
-  compositionPicker = new CompositionPicker
-  document.body.appendChild compositionPicker.domElement
-  compositionPicker.addComposition new CircleGrower
-  compositionPicker.addComposition new SphereSphereComposition
-
-window.setComposition = (comp) ->
-  composition = comp
-  composition.setup(renderer)
-  renderModel.scene = composition.scene
-  renderModel.camera = composition.camera
-  
-
-initPostProcessing = () ->
-  composer = new THREE.EffectComposer(renderer)
-  renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera)
-  renderModel.renderToScreen = true
-  composer.addPass renderModel
-
-  
-  addEffect new MirrorPass
-  addEffect new InvertPass
-  addEffect p = new ShroomPass
-  p.enabled = true
-  p.renderToScreen = true
-
-addEffect = (effect) ->
-  effect.enabled = false
-  composer.addPass effect
-  f = gui.addFolder effect.name
-  f.add(effect, "enabled")
-  if effect.uniformValues
-    for values in effect.uniformValues
-      f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
-
-_update = (t) ->
-  composition?.update()
-
-_animate = () ->
-  composer.render()
-  stats.update()
-  # renderer.render(scene, camera)
-
-window.loopF = (fn) ->
-  f = () ->
-    fn()
-    requestAnimationFrame(f)
-  f()
+noise.seed(Math.random())
 
 $ ->
-  _init()
-  loopF _update
-  loopF _animate
+  window.application = new App
+
+class App extends Backbone.Model
+  constructor: () ->
+    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
+    @renderer.setSize(window.innerWidth, window.innerHeight)
+
+    document.body.appendChild(@renderer.domElement);
+
+    @gui = new dat.gui.GUI
+
+    @initCompositions()
+    @initPostProcessing()
+    @initStats()
+
+  animate: () =>
+    @composition?.update()
+    @composer.render()
+    @stats.update()
+    requestAnimationFrame @animate
+
+  initCompositions: () ->
+    @compositionPicker = new CompositionPicker
+    document.body.appendChild @compositionPicker.render()
+    @compositionPicker.addComposition new CircleGrower
+    @compositionPicker.addComposition new SphereSphereComposition
+  
+  initPostProcessing: () ->
+    @composer = new THREE.EffectComposer(@renderer)
+    @renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera)
+    @renderModel.renderToScreen = true
+    @composer.addPass @renderModel
+    @addEffect new MirrorPass
+    @addEffect new InvertPass
+    @addEffect p = new ShroomPass
+    p.enabled = true
+    p.renderToScreen = true
+
+  initStats: () ->
+    @stats = new Stats
+    @stats.domElement.style.position = 'absolute'
+    @stats.domElement.style.left = '0px'
+    @stats.domElement.style.top = '0px'
+    document.body.appendChild @stats.domElement
+
+  setComposition: (comp) ->
+    @composition = comp
+    @composition.setup(@renderer)
+    @renderModel.scene = @composition.scene
+    @renderModel.camera = @composition.camera
+    requestAnimationFrame @animate
+    
+  addEffect: (effect) ->
+    effect.enabled = false
+    @composer.addPass effect
+    f = @gui.addFolder effect.name
+    f.add(effect, "enabled")
+    if effect.uniformValues
+      for values in effect.uniformValues
+        f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
+
 class Gamepad
   @FACE_1: 0
   @FACE_2: 1
@@ -689,37 +675,38 @@ class RGBShiftShader
       gl_FragColor = vec4(r,g,b,1.0);
     }
   """
-class CompositionPicker
-  constructor: () ->
-    @compositions = []
+class CompositionPicker extends Backbone.View
+  className: 'composition-picker'
 
-    @domElement = document.createElement 'div'
-    @domElement.className = 'composition-picker'
-    @domElement.draggable = true
-    for i in [0..1]
-      slot = document.createElement 'div'
-      slot.className = 'slot'
-      @domElement.appendChild slot
-    @domElement.addEventListener 'dragover', (e) =>
-      e.preventDefault()
-      e.target.classList.add 'dragover'
-    @domElement.addEventListener 'dragleave', (e) =>
-      e.preventDefault()
-      e.target.classList.remove 'dragover'
-    @domElement.addEventListener 'drop', (e) =>
-      e.preventDefault()
-      e.target.classList.remove 'dragover'
-      @drop(e)
+  events:
+    "dragover": "dragover"
+    "dragleave": "dragleave"
+    "drop": "drop"
+  
+  constructor: () ->
+    super()
+    @compositions = []
+  dragover: (e) =>
+    e.preventDefault()
+    @el.classList.add 'dragover'
+
+  dragleave: (e) =>
+    e.preventDefault()
+    @el.classList.remove 'dragover'
+  
+  drop:  (e) =>
+    e.preventDefault()
+    @el.classList.remove 'dragover'
+    file = e.originalEvent.dataTransfer.files[0]
+    composition = new VideoComposition file
+    @addComposition composition
 
   addComposition: (comp) ->
     slot = new CompositionSlot(model: comp)
-    @domElement.appendChild slot.render()
+    @el.appendChild slot.render()
 
-  drop: (e) ->
-    file = e.dataTransfer.files[0]
-    console.log file
-    composition = new VideoComposition file
-    @addComposition composition
+  render: () =>
+    @el
 
 class CompositionSlot extends Backbone.View
   className: 'slot'
@@ -735,5 +722,5 @@ class CompositionSlot extends Backbone.View
     @el
 
   launch: () =>
-    setComposition @model
+    application.setComposition @model
 

@@ -1,5 +1,5 @@
 (function() {
-  var BlurPass, CircleGrower, Composition, CompositionPicker, CompositionSlot, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, ShroomPass, SphereSphereComposition, VideoComposition, WashoutPass, addEffect, composer, composition, gui, initCompositions, initPostProcessing, renderModel, renderer, stats, _animate, _init, _update,
+  var App, BlurPass, CircleGrower, Composition, CompositionPicker, CompositionSlot, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, ShroomPass, SphereSphereComposition, VideoComposition, WashoutPass,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -320,7 +320,6 @@
       VideoComposition.__super__.constructor.call(this);
       if (this.videoFile) {
         videoTag = document.createElement('video');
-        document.body.appendChild(videoTag);
         videoTag.src = URL.createObjectURL(this.videoFile);
         videoTag.addEventListener('loadeddata', (function(_this) {
           return function(e) {
@@ -367,7 +366,6 @@
       window.video = this.video;
       return this.video.addEventListener('loadeddata', (function(_this) {
         return function() {
-          console.log(_this.video.videoWidth);
           _this.videoImage = document.createElement('canvas');
           _this.videoImage.width = _this.video.videoWidth;
           _this.videoImage.height = _this.video.videoHeight;
@@ -600,98 +598,97 @@
 
   })();
 
-  renderer = null;
-
-  composition = renderModel = composer = gui = stats = null;
-
-  _init = function() {
-    noise.seed(Math.random());
-    renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      clearAlpha: 0,
-      transparent: true
-    });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
-    gui = new dat.gui.GUI;
-    initPostProcessing();
-    initCompositions();
-    stats = new Stats;
-    stats.domElement.style.position = 'absolute';
-    stats.domElement.style.left = '0px';
-    stats.domElement.style.top = '0px';
-    return document.body.appendChild(stats.domElement);
-  };
-
-  initCompositions = function() {
-    var compositionPicker;
-    compositionPicker = new CompositionPicker;
-    document.body.appendChild(compositionPicker.domElement);
-    compositionPicker.addComposition(new CircleGrower);
-    return compositionPicker.addComposition(new SphereSphereComposition);
-  };
-
-  window.setComposition = function(comp) {
-    composition = comp;
-    composition.setup(renderer);
-    renderModel.scene = composition.scene;
-    return renderModel.camera = composition.camera;
-  };
-
-  initPostProcessing = function() {
-    var p;
-    composer = new THREE.EffectComposer(renderer);
-    renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera);
-    renderModel.renderToScreen = true;
-    composer.addPass(renderModel);
-    addEffect(new MirrorPass);
-    addEffect(new InvertPass);
-    addEffect(p = new ShroomPass);
-    p.enabled = true;
-    return p.renderToScreen = true;
-  };
-
-  addEffect = function(effect) {
-    var f, values, _i, _len, _ref, _results;
-    effect.enabled = false;
-    composer.addPass(effect);
-    f = gui.addFolder(effect.name);
-    f.add(effect, "enabled");
-    if (effect.uniformValues) {
-      _ref = effect.uniformValues;
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        values = _ref[_i];
-        _results.push(f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name));
-      }
-      return _results;
-    }
-  };
-
-  _update = function(t) {
-    return composition != null ? composition.update() : void 0;
-  };
-
-  _animate = function() {
-    composer.render();
-    return stats.update();
-  };
-
-  window.loopF = function(fn) {
-    var f;
-    f = function() {
-      fn();
-      return requestAnimationFrame(f);
-    };
-    return f();
-  };
+  noise.seed(Math.random());
 
   $(function() {
-    _init();
-    loopF(_update);
-    return loopF(_animate);
+    return window.application = new App;
   });
+
+  App = (function(_super) {
+    __extends(App, _super);
+
+    function App() {
+      this.animate = __bind(this.animate, this);
+      this.renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        clearAlpha: 0,
+        transparent: true
+      });
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(this.renderer.domElement);
+      this.gui = new dat.gui.GUI;
+      this.initCompositions();
+      this.initPostProcessing();
+      this.initStats();
+    }
+
+    App.prototype.animate = function() {
+      var _ref;
+      if ((_ref = this.composition) != null) {
+        _ref.update();
+      }
+      this.composer.render();
+      this.stats.update();
+      return requestAnimationFrame(this.animate);
+    };
+
+    App.prototype.initCompositions = function() {
+      this.compositionPicker = new CompositionPicker;
+      document.body.appendChild(this.compositionPicker.render());
+      this.compositionPicker.addComposition(new CircleGrower);
+      return this.compositionPicker.addComposition(new SphereSphereComposition);
+    };
+
+    App.prototype.initPostProcessing = function() {
+      var p;
+      this.composer = new THREE.EffectComposer(this.renderer);
+      this.renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera);
+      this.renderModel.renderToScreen = true;
+      this.composer.addPass(this.renderModel);
+      this.addEffect(new MirrorPass);
+      this.addEffect(new InvertPass);
+      this.addEffect(p = new ShroomPass);
+      p.enabled = true;
+      return p.renderToScreen = true;
+    };
+
+    App.prototype.initStats = function() {
+      this.stats = new Stats;
+      this.stats.domElement.style.position = 'absolute';
+      this.stats.domElement.style.left = '0px';
+      this.stats.domElement.style.top = '0px';
+      return document.body.appendChild(this.stats.domElement);
+    };
+
+    App.prototype.setComposition = function(comp) {
+      this.composition = comp;
+      this.composition.setup(this.renderer);
+      this.renderModel.scene = this.composition.scene;
+      this.renderModel.camera = this.composition.camera;
+      return requestAnimationFrame(this.animate);
+    };
+
+    App.prototype.addEffect = function(effect) {
+      var f, values, _i, _len, _ref, _results;
+      effect.enabled = false;
+      this.composer.addPass(effect);
+      f = this.gui.addFolder(effect.name);
+      f.add(effect, "enabled");
+      if (effect.uniformValues) {
+        _ref = effect.uniformValues;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          values = _ref[_i];
+          _results.push(f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name));
+        }
+        return _results;
+      }
+    };
+
+    return App;
+
+  })(Backbone.Model);
 
   Gamepad = (function() {
     Gamepad.FACE_1 = 0;
@@ -876,58 +873,60 @@
 
   })();
 
-  CompositionPicker = (function() {
+  CompositionPicker = (function(_super) {
+    __extends(CompositionPicker, _super);
+
+    CompositionPicker.prototype.className = 'composition-picker';
+
+    CompositionPicker.prototype.events = {
+      "dragover": "dragover",
+      "dragleave": "dragleave",
+      "drop": "drop"
+    };
+
     function CompositionPicker() {
-      var i, slot, _i;
+      this.render = __bind(this.render, this);
+      this.drop = __bind(this.drop, this);
+      this.dragleave = __bind(this.dragleave, this);
+      this.dragover = __bind(this.dragover, this);
+      CompositionPicker.__super__.constructor.call(this);
       this.compositions = [];
-      this.domElement = document.createElement('div');
-      this.domElement.className = 'composition-picker';
-      this.domElement.draggable = true;
-      for (i = _i = 0; _i <= 1; i = ++_i) {
-        slot = document.createElement('div');
-        slot.className = 'slot';
-        this.domElement.appendChild(slot);
-      }
-      this.domElement.addEventListener('dragover', (function(_this) {
-        return function(e) {
-          e.preventDefault();
-          return e.target.classList.add('dragover');
-        };
-      })(this));
-      this.domElement.addEventListener('dragleave', (function(_this) {
-        return function(e) {
-          e.preventDefault();
-          return e.target.classList.remove('dragover');
-        };
-      })(this));
-      this.domElement.addEventListener('drop', (function(_this) {
-        return function(e) {
-          e.preventDefault();
-          e.target.classList.remove('dragover');
-          return _this.drop(e);
-        };
-      })(this));
     }
+
+    CompositionPicker.prototype.dragover = function(e) {
+      e.preventDefault();
+      return this.el.classList.add('dragover');
+    };
+
+    CompositionPicker.prototype.dragleave = function(e) {
+      e.preventDefault();
+      return this.el.classList.remove('dragover');
+    };
+
+    CompositionPicker.prototype.drop = function(e) {
+      var composition, file;
+      e.preventDefault();
+      this.el.classList.remove('dragover');
+      file = e.originalEvent.dataTransfer.files[0];
+      composition = new VideoComposition(file);
+      return this.addComposition(composition);
+    };
 
     CompositionPicker.prototype.addComposition = function(comp) {
       var slot;
       slot = new CompositionSlot({
         model: comp
       });
-      return this.domElement.appendChild(slot.render());
+      return this.el.appendChild(slot.render());
     };
 
-    CompositionPicker.prototype.drop = function(e) {
-      var file;
-      file = e.dataTransfer.files[0];
-      console.log(file);
-      composition = new VideoComposition(file);
-      return this.addComposition(composition);
+    CompositionPicker.prototype.render = function() {
+      return this.el;
     };
 
     return CompositionPicker;
 
-  })();
+  })(Backbone.View);
 
   CompositionSlot = (function(_super) {
     __extends(CompositionSlot, _super);
@@ -956,7 +955,7 @@
     };
 
     CompositionSlot.prototype.launch = function() {
-      return setComposition(this.model);
+      return application.setComposition(this.model);
     };
 
     return CompositionSlot;
