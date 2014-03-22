@@ -27,7 +27,7 @@ class @ShaderPassBase
       writeBuffer = readBuffer
       return
     @uniforms['uTex'].value = readBuffer
-    @uniforms['uSize'].value.set(readBuffer.width, readBuffer.height)
+    if @uniforms['uSize'] then @uniforms['uSize'].value.set(readBuffer.width, readBuffer.height)
     @quad.material = @material
     if @renderToScreen
       renderer.render @scene, @camera
@@ -45,6 +45,80 @@ class @ShaderPassBase
       vUv = uv;
       gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
     }
+  """
+
+  @ashimaNoiseFunctions: """
+    //
+    // Description : Array and textureless GLSL 2D simplex noise function.
+    //      Author : Ian McEwan, Ashima Arts.
+    //  Maintainer : ijm
+    //     Lastmod : 20110822 (ijm)
+    //     License : Copyright (C) 2011 Ashima Arts. All rights reserved.
+    //               Distributed under the MIT License. See LICENSE file.
+    //               https://github.com/ashima/webgl-noise
+    // 
+
+    vec3 mod289(vec3 x) {
+      return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+
+    vec2 mod289(vec2 x) {
+      return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+
+    vec3 permute(vec3 x) {
+      return mod289(((x*34.0)+1.0)*x);
+    }
+
+    float snoise(vec2 v)
+      {
+      const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                          0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                         -0.577350269189626,  // -1.0 + 2.0 * C.x
+                          0.024390243902439); // 1.0 / 41.0
+    // First corner
+      vec2 i  = floor(v + dot(v, C.yy) );
+      vec2 x0 = v -   i + dot(i, C.xx);
+
+    // Other corners
+      vec2 i1;
+      //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
+      //i1.y = 1.0 - i1.x;
+      i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+      // x0 = x0 - 0.0 + 0.0 * C.xx ;
+      // x1 = x0 - i1 + 1.0 * C.xx ;
+      // x2 = x0 - 1.0 + 2.0 * C.xx ;
+      vec4 x12 = x0.xyxy + C.xxzz;
+      x12.xy -= i1;
+
+    // Permutations
+      i = mod289(i); // Avoid truncation effects in permutation
+      vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+        + i.x + vec3(0.0, i1.x, 1.0 ));
+
+      vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+      m = m*m ;
+      m = m*m ;
+
+    // Gradients: 41 points uniformly over a line, mapped onto a diamond.
+    // The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
+
+      vec3 x = 2.0 * fract(p * C.www) - 1.0;
+      vec3 h = abs(x) - 0.5;
+      vec3 ox = floor(x + 0.5);
+      vec3 a0 = x - ox;
+
+    // Normalise gradients implicitly by scaling m
+    // Approximation of: m *= inversesqrt( a0*a0 + h*h );
+      m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+
+    // Compute final noise value at P
+      vec3 g;
+      g.x  = a0.x  * x0.x  + h.x  * x0.y;
+      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+      return 130.0 * dot(m, g);
+    }
+
   """
 
   findUniforms: (shader) ->
@@ -129,6 +203,46 @@ class GLSLComposition extends Composition
       when "bool" then {type: "i", value: 0}
       when "sampler2D" then {type: "t", value: null}
 
+SPEED = 1 / 20000
+
+class @Wanderer
+  constructor: (@mesh) ->
+    requestAnimationFrame(@update);
+    @seed = Math.random() * 1000
+  update: (t) =>
+    t = t * SPEED + @seed
+    @mesh.x = noise.simplex2(t, 0) * 600
+    @mesh.y = noise.simplex2(0, t) * 300
+    @mesh.z = noise.simplex2(t * 1.1 + 300, 0) * 100
+    requestAnimationFrame(@update);
+
+class BlobbyComposition extends Composition
+  setup: (@renderer) ->
+    @scene = new THREE.Scene
+    @scene.fog = new THREE.FogExp2( 0x000000, 0.0005 );
+    @camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+    @camera.position.z = 1000;
+
+    sprite = new THREE.ImageUtils.loadTexture("assets/blurdisc.png")
+    sprite.premultiplyAlpha = true
+    sprite.needsUpdate = true
+    geometry = new THREE.Geometry
+    for i in [0..3000]
+      vtx = new THREE.Vector3
+      vtx.x = 500 * Math.random() - 250
+      vtx.y = 500 * Math.random() - 250
+      vtx.z = 500 * Math.random() - 250
+      geometry.vertices.push vtx
+    material = new THREE.ParticleSystemMaterial({size: 135, map: sprite, transparent: true})
+    material.color.setHSL( 1.0, 0.3, 0.7 );
+    material.opacity = 0.3
+    material.blending = THREE.AdditiveBlending
+    @particles = new THREE.ParticleSystem geometry, material
+    @particles.sortParticles = true
+    @scene.add @particles
+
+  update: () ->
+    @particles.rotation.y += 0.001
 class CircleGrower extends GLSLComposition
   setup: (@renderer) ->
     super(@renderer)
@@ -263,6 +377,50 @@ class VideoComposition extends Backbone.Model
     if @videoTexture
       @videoImageContext.drawImage @video, 0, 0
       @videoTexture.needsUpdate = true
+class BadTVPass extends ShaderPassBase
+  name: "TV Roll"
+  constructor: () ->
+    super()
+    @uniforms.distortion.value = 1
+    @uniforms.distortion2.value = .3
+    @time = 0
+
+  uniformValues: [
+    {uniform: "rollSpeed", name: "Roll Speed", start: 0, end: .01, default: .001}
+    {uniform: "speed", name: "Speed", start: 0, end: .1, default: .1}
+  ]
+
+  update: () ->
+    @time += 1
+    @uniforms.time.value = @time
+
+  fragmentShader: """
+    uniform sampler2D uTex;
+    uniform float time;
+    uniform float distortion;
+    uniform float distortion2;
+    uniform float speed;
+    uniform float rollSpeed;
+    varying vec2 vUv;
+    
+    #{ShaderPassBase.ashimaNoiseFunctions}
+
+    void main() {
+
+      vec2 p = vUv;
+      float ty = time*speed;
+      float yt = p.y - ty;
+
+      //smooth distortion
+      float offset = snoise(vec2(yt*3.0,0.0))*0.2;
+      // boost distortion
+      offset = pow( offset*distortion,3.0)/distortion;
+      //add fine grain distortion
+      offset += snoise(vec2(yt*50.0,0.0))*distortion2*0.001;
+      //combine distortion on X with roll on Y
+      gl_FragColor = texture2D(uTex,  vec2(fract(p.x + offset),fract(p.y-time*rollSpeed) ));
+    }
+  """
 class BlurPass extends ShaderPassBase
   fragmentShader: """
     uniform float blurX;
@@ -291,6 +449,31 @@ class BlurPass extends ShaderPassBase
        gl_FragColor = sum;
     }
   """
+
+class ChromaticAberration extends ShaderPassBase
+    name: "Chromatic Aberration"
+    uniformValues: [
+      {uniform: "rShift", name: "Red Shift", start: -1, end: 1, default: -1}
+      {uniform: "gShift", name: "Green Shift", start: -1, end: 1, default: 0}
+      {uniform: "bShift", name: "Blue Shift", start: -1, end: 1, default: 1}
+    ]
+    fragmentShader: """
+      uniform float rShift;
+      uniform float gShift;
+      uniform float bShift;
+      uniform vec2 uSize;
+      varying vec2 vUv;
+      uniform sampler2D uTex;
+
+      void main (void)
+      {
+          float r = texture2D(uTex, vUv + vec2(rShift * 0.01, 0.0)).r;
+          float g = texture2D(uTex, vUv + vec2(gShift * 0.01, 0.0)).g;
+          float b = texture2D(uTex, vUv + vec2(bShift * 0.01, 0.0)).b;
+          float a = max(r, max(g, b));
+          gl_FragColor = vec4(r, g, b, a);
+      }
+    """
 
 class InvertPass extends ShaderPassBase
   name: "Invert"
@@ -334,10 +517,13 @@ class ShroomPass extends ShaderPassBase
 
   name: "Wobble"
   uniformValues: [
-    {uniform: "amp", name: "Wobble Amount", start: 0, end: 0.05}
+    {uniform: "amp", name: "Strength", start: 0, end: 0.01}
+  ]
+  options: [
+    {property: "speed", name: "Speed", start: .001, end: .01, default: 0.005}
   ]
   update: () ->
-    @uniforms.StartRad.value += 0.01
+    @uniforms.StartRad.value += @speed
     
   fragmentShader: """
     // Constants
@@ -446,7 +632,7 @@ class @ShaderPassBase
       writeBuffer = readBuffer
       return
     @uniforms['uTex'].value = readBuffer
-    @uniforms['uSize'].value.set(readBuffer.width, readBuffer.height)
+    if @uniforms['uSize'] then @uniforms['uSize'].value.set(readBuffer.width, readBuffer.height)
     @quad.material = @material
     if @renderToScreen
       renderer.render @scene, @camera
@@ -464,6 +650,80 @@ class @ShaderPassBase
       vUv = uv;
       gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
     }
+  """
+
+  @ashimaNoiseFunctions: """
+    //
+    // Description : Array and textureless GLSL 2D simplex noise function.
+    //      Author : Ian McEwan, Ashima Arts.
+    //  Maintainer : ijm
+    //     Lastmod : 20110822 (ijm)
+    //     License : Copyright (C) 2011 Ashima Arts. All rights reserved.
+    //               Distributed under the MIT License. See LICENSE file.
+    //               https://github.com/ashima/webgl-noise
+    // 
+
+    vec3 mod289(vec3 x) {
+      return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+
+    vec2 mod289(vec2 x) {
+      return x - floor(x * (1.0 / 289.0)) * 289.0;
+    }
+
+    vec3 permute(vec3 x) {
+      return mod289(((x*34.0)+1.0)*x);
+    }
+
+    float snoise(vec2 v)
+      {
+      const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
+                          0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
+                         -0.577350269189626,  // -1.0 + 2.0 * C.x
+                          0.024390243902439); // 1.0 / 41.0
+    // First corner
+      vec2 i  = floor(v + dot(v, C.yy) );
+      vec2 x0 = v -   i + dot(i, C.xx);
+
+    // Other corners
+      vec2 i1;
+      //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
+      //i1.y = 1.0 - i1.x;
+      i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+      // x0 = x0 - 0.0 + 0.0 * C.xx ;
+      // x1 = x0 - i1 + 1.0 * C.xx ;
+      // x2 = x0 - 1.0 + 2.0 * C.xx ;
+      vec4 x12 = x0.xyxy + C.xxzz;
+      x12.xy -= i1;
+
+    // Permutations
+      i = mod289(i); // Avoid truncation effects in permutation
+      vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+        + i.x + vec3(0.0, i1.x, 1.0 ));
+
+      vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+      m = m*m ;
+      m = m*m ;
+
+    // Gradients: 41 points uniformly over a line, mapped onto a diamond.
+    // The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
+
+      vec3 x = 2.0 * fract(p * C.www) - 1.0;
+      vec3 h = abs(x) - 0.5;
+      vec3 ox = floor(x + 0.5);
+      vec3 a0 = x - ox;
+
+    // Normalise gradients implicitly by scaling m
+    // Approximation of: m *= inversesqrt( a0*a0 + h*h );
+      m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+
+    // Compute final noise value at P
+      vec3 g;
+      g.x  = a0.x  * x0.x  + h.x  * x0.y;
+      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+      return 130.0 * dot(m, g);
+    }
+
   """
 
   findUniforms: (shader) ->
@@ -493,7 +753,7 @@ $ ->
 
 class App extends Backbone.Model
   constructor: () ->
-    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
+    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
     @renderer.setSize(window.innerWidth, window.innerHeight)
 
     document.body.appendChild(@renderer.domElement);
@@ -503,6 +763,7 @@ class App extends Backbone.Model
     @initCompositions()
     @initPostProcessing()
     @initStats()
+    @setComposition new BlobbyComposition
 
   animate: () =>
     @composition?.update()
@@ -515,6 +776,7 @@ class App extends Backbone.Model
     document.body.appendChild @compositionPicker.render()
     @compositionPicker.addComposition new CircleGrower
     @compositionPicker.addComposition new SphereSphereComposition
+    @compositionPicker.addComposition new BlobbyComposition
   
   initPostProcessing: () ->
     @composer = new THREE.EffectComposer(@renderer)
@@ -523,6 +785,8 @@ class App extends Backbone.Model
     @composer.addPass @renderModel
     @addEffect new MirrorPass
     @addEffect new InvertPass
+    @addEffect new ChromaticAberration
+    @addEffect new BadTVPass
     @addEffect p = new ShroomPass
     p.enabled = true
     p.renderToScreen = true
@@ -546,8 +810,14 @@ class App extends Backbone.Model
     @composer.addPass effect
     f = @gui.addFolder effect.name
     f.add(effect, "enabled")
+    if effect.options
+      for values in effect.options
+        if values.default then effect[values.property] = values.default
+        f.add(effect, values.property, values.start, values.end).name(values.name) 
     if effect.uniformValues
       for values in effect.uniformValues
+        if values.default
+          effect.uniforms[values.uniform].value = values.default
         f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
 
 class Gamepad

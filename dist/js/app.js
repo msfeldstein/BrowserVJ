@@ -1,5 +1,5 @@
 (function() {
-  var App, BlurPass, CircleGrower, Composition, CompositionPicker, CompositionSlot, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, ShroomPass, SphereSphereComposition, VideoComposition, WashoutPass,
+  var App, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, SPEED, ShroomPass, SphereSphereComposition, VideoComposition, WashoutPass,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -36,7 +36,9 @@
         return;
       }
       this.uniforms['uTex'].value = readBuffer;
-      this.uniforms['uSize'].value.set(readBuffer.width, readBuffer.height);
+      if (this.uniforms['uSize']) {
+        this.uniforms['uSize'].value.set(readBuffer.width, readBuffer.height);
+      }
       this.quad.material = this.material;
       if (this.renderToScreen) {
         return renderer.render(this.scene, this.camera);
@@ -57,6 +59,8 @@
     };
 
     ShaderPassBase.prototype.vertexShader = "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}";
+
+    ShaderPassBase.ashimaNoiseFunctions = "//\n// Description : Array and textureless GLSL 2D simplex noise function.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n// \n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec2 mod289(vec2 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec3 permute(vec3 x) {\n  return mod289(((x*34.0)+1.0)*x);\n}\n\nfloat snoise(vec2 v)\n  {\n  const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0\n                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)\n                     -0.577350269189626,  // -1.0 + 2.0 * C.x\n                      0.024390243902439); // 1.0 / 41.0\n// First corner\n  vec2 i  = floor(v + dot(v, C.yy) );\n  vec2 x0 = v -   i + dot(i, C.xx);\n\n// Other corners\n  vec2 i1;\n  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0\n  //i1.y = 1.0 - i1.x;\n  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n  // x0 = x0 - 0.0 + 0.0 * C.xx ;\n  // x1 = x0 - i1 + 1.0 * C.xx ;\n  // x2 = x0 - 1.0 + 2.0 * C.xx ;\n  vec4 x12 = x0.xyxy + C.xxzz;\n  x12.xy -= i1;\n\n// Permutations\n  i = mod289(i); // Avoid truncation effects in permutation\n  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))\n    + i.x + vec3(0.0, i1.x, 1.0 ));\n\n  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n  m = m*m ;\n  m = m*m ;\n\n// Gradients: 41 points uniformly over a line, mapped onto a diamond.\n// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)\n\n  vec3 x = 2.0 * fract(p * C.www) - 1.0;\n  vec3 h = abs(x) - 0.5;\n  vec3 ox = floor(x + 0.5);\n  vec3 a0 = x - ox;\n\n// Normalise gradients implicitly by scaling m\n// Approximation of: m *= inversesqrt( a0*a0 + h*h );\n  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\n// Compute final noise value at P\n  vec3 g;\n  g.x  = a0.x  * x0.x  + h.x  * x0.y;\n  g.yz = a0.yz * x12.xz + h.yz * x12.yw;\n  return 130.0 * dot(m, g);\n}\n";
 
     ShaderPassBase.prototype.findUniforms = function(shader) {
       var line, lines, name, tokens, uniforms, _i, _len;
@@ -218,6 +222,74 @@
     };
 
     return GLSLComposition;
+
+  })(Composition);
+
+  SPEED = 1 / 20000;
+
+  this.Wanderer = (function() {
+    function Wanderer(mesh) {
+      this.mesh = mesh;
+      this.update = __bind(this.update, this);
+      requestAnimationFrame(this.update);
+      this.seed = Math.random() * 1000;
+    }
+
+    Wanderer.prototype.update = function(t) {
+      t = t * SPEED + this.seed;
+      this.mesh.x = noise.simplex2(t, 0) * 600;
+      this.mesh.y = noise.simplex2(0, t) * 300;
+      this.mesh.z = noise.simplex2(t * 1.1 + 300, 0) * 100;
+      return requestAnimationFrame(this.update);
+    };
+
+    return Wanderer;
+
+  })();
+
+  BlobbyComposition = (function(_super) {
+    __extends(BlobbyComposition, _super);
+
+    function BlobbyComposition() {
+      return BlobbyComposition.__super__.constructor.apply(this, arguments);
+    }
+
+    BlobbyComposition.prototype.setup = function(renderer) {
+      var geometry, i, material, sprite, vtx, _i;
+      this.renderer = renderer;
+      this.scene = new THREE.Scene;
+      this.scene.fog = new THREE.FogExp2(0x000000, 0.0005);
+      this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+      this.camera.position.z = 1000;
+      sprite = new THREE.ImageUtils.loadTexture("assets/blurdisc.png");
+      sprite.premultiplyAlpha = true;
+      sprite.needsUpdate = true;
+      geometry = new THREE.Geometry;
+      for (i = _i = 0; _i <= 3000; i = ++_i) {
+        vtx = new THREE.Vector3;
+        vtx.x = 500 * Math.random() - 250;
+        vtx.y = 500 * Math.random() - 250;
+        vtx.z = 500 * Math.random() - 250;
+        geometry.vertices.push(vtx);
+      }
+      material = new THREE.ParticleSystemMaterial({
+        size: 135,
+        map: sprite,
+        transparent: true
+      });
+      material.color.setHSL(1.0, 0.3, 0.7);
+      material.opacity = 0.3;
+      material.blending = THREE.AdditiveBlending;
+      this.particles = new THREE.ParticleSystem(geometry, material);
+      this.particles.sortParticles = true;
+      return this.scene.add(this.particles);
+    };
+
+    BlobbyComposition.prototype.update = function() {
+      return this.particles.rotation.y += 0.001;
+    };
+
+    return BlobbyComposition;
 
   })(Composition);
 
@@ -393,6 +465,45 @@
 
   })(Backbone.Model);
 
+  BadTVPass = (function(_super) {
+    __extends(BadTVPass, _super);
+
+    BadTVPass.prototype.name = "TV Roll";
+
+    function BadTVPass() {
+      BadTVPass.__super__.constructor.call(this);
+      this.uniforms.distortion.value = 1;
+      this.uniforms.distortion2.value = .3;
+      this.time = 0;
+    }
+
+    BadTVPass.prototype.uniformValues = [
+      {
+        uniform: "rollSpeed",
+        name: "Roll Speed",
+        start: 0,
+        end: .01,
+        "default": .001
+      }, {
+        uniform: "speed",
+        name: "Speed",
+        start: 0,
+        end: .1,
+        "default": .1
+      }
+    ];
+
+    BadTVPass.prototype.update = function() {
+      this.time += 1;
+      return this.uniforms.time.value = this.time;
+    };
+
+    BadTVPass.prototype.fragmentShader = "uniform sampler2D uTex;\nuniform float time;\nuniform float distortion;\nuniform float distortion2;\nuniform float speed;\nuniform float rollSpeed;\nvarying vec2 vUv;\n\n" + ShaderPassBase.ashimaNoiseFunctions + "\n\nvoid main() {\n\n  vec2 p = vUv;\n  float ty = time*speed;\n  float yt = p.y - ty;\n\n  //smooth distortion\n  float offset = snoise(vec2(yt*3.0,0.0))*0.2;\n  // boost distortion\n  offset = pow( offset*distortion,3.0)/distortion;\n  //add fine grain distortion\n  offset += snoise(vec2(yt*50.0,0.0))*distortion2*0.001;\n  //combine distortion on X with roll on Y\n  gl_FragColor = texture2D(uTex,  vec2(fract(p.x + offset),fract(p.y-time*rollSpeed) ));\n}";
+
+    return BadTVPass;
+
+  })(ShaderPassBase);
+
   BlurPass = (function(_super) {
     __extends(BlurPass, _super);
 
@@ -403,6 +514,43 @@
     BlurPass.prototype.fragmentShader = "uniform float blurX;\nuniform vec2 uSize;\nvarying vec2 vUv;\nuniform sampler2D uTex;\n\nconst float blurSize = 1.0/512.0; // I've chosen this size because this will result in that every step will be one pixel wide if the RTScene texture is of size 512x512\n \nvoid main(void)\n{\n   vec4 sum = vec4(0.0);\n \n   // blur in y (vertical)\n   // take nine samples, with the distance blurSize between them\n   sum += texture2D(uTex, vec2(vUv.x - 4.0*blurX, vUv.y)) * 0.05;\n   sum += texture2D(uTex, vec2(vUv.x - 3.0*blurX, vUv.y)) * 0.09;\n   sum += texture2D(uTex, vec2(vUv.x - 2.0*blurX, vUv.y)) * 0.12;\n   sum += texture2D(uTex, vec2(vUv.x - blurX, vUv.y)) * 0.15;\n   sum += texture2D(uTex, vec2(vUv.x, vUv.y)) * 0.16;\n   sum += texture2D(uTex, vec2(vUv.x + blurX, vUv.y)) * 0.15;\n   sum += texture2D(uTex, vec2(vUv.x + 2.0*blurX, vUv.y)) * 0.12;\n   sum += texture2D(uTex, vec2(vUv.x + 3.0*blurX, vUv.y)) * 0.09;\n   sum += texture2D(uTex, vec2(vUv.x + 4.0*blurX, vUv.y)) * 0.05;\n \n   gl_FragColor = sum;\n}";
 
     return BlurPass;
+
+  })(ShaderPassBase);
+
+  ChromaticAberration = (function(_super) {
+    __extends(ChromaticAberration, _super);
+
+    function ChromaticAberration() {
+      return ChromaticAberration.__super__.constructor.apply(this, arguments);
+    }
+
+    ChromaticAberration.prototype.name = "Chromatic Aberration";
+
+    ChromaticAberration.prototype.uniformValues = [
+      {
+        uniform: "rShift",
+        name: "Red Shift",
+        start: -1,
+        end: 1,
+        "default": -1
+      }, {
+        uniform: "gShift",
+        name: "Green Shift",
+        start: -1,
+        end: 1,
+        "default": 0
+      }, {
+        uniform: "bShift",
+        name: "Blue Shift",
+        start: -1,
+        end: 1,
+        "default": 1
+      }
+    ];
+
+    ChromaticAberration.prototype.fragmentShader = "uniform float rShift;\nuniform float gShift;\nuniform float bShift;\nuniform vec2 uSize;\nvarying vec2 vUv;\nuniform sampler2D uTex;\n\nvoid main (void)\n{\n    float r = texture2D(uTex, vUv + vec2(rShift * 0.01, 0.0)).r;\n    float g = texture2D(uTex, vUv + vec2(gShift * 0.01, 0.0)).g;\n    float b = texture2D(uTex, vUv + vec2(bShift * 0.01, 0.0)).b;\n    float a = max(r, max(g, b));\n    gl_FragColor = vec4(r, g, b, a);\n}";
+
+    return ChromaticAberration;
 
   })(ShaderPassBase);
 
@@ -461,14 +609,24 @@
     ShroomPass.prototype.uniformValues = [
       {
         uniform: "amp",
-        name: "Wobble Amount",
+        name: "Strength",
         start: 0,
-        end: 0.05
+        end: 0.01
+      }
+    ];
+
+    ShroomPass.prototype.options = [
+      {
+        property: "speed",
+        name: "Speed",
+        start: .001,
+        end: .01,
+        "default": 0.005
       }
     ];
 
     ShroomPass.prototype.update = function() {
-      return this.uniforms.StartRad.value += 0.01;
+      return this.uniforms.StartRad.value += this.speed;
     };
 
     ShroomPass.prototype.fragmentShader = "// Constants\nconst float C_PI    = 3.1415;\nconst float C_2PI   = 2.0 * C_PI;\nconst float C_2PI_I = 1.0 / (2.0 * C_PI);\nconst float C_PI_2  = C_PI / 2.0;\n\nuniform float StartRad;\nuniform float freq;\nuniform float amp;\nuniform vec2 uSize;\nvarying vec2 vUv;\n\nuniform sampler2D uTex;\n\nvoid main (void)\n{\n    vec2  perturb;\n    float rad;\n    vec4  color;\n\n    // Compute a perturbation factor for the x-direction\n    rad = (vUv.s + vUv.t - 1.0 + StartRad) * freq;\n\n    // Wrap to -2.0*PI, 2*PI\n    rad = rad * C_2PI_I;\n    rad = fract(rad);\n    rad = rad * C_2PI;\n\n    // Center in -PI, PI\n    if (rad >  C_PI) rad = rad - C_2PI;\n    if (rad < -C_PI) rad = rad + C_2PI;\n\n    // Center in -PI/2, PI/2\n    if (rad >  C_PI_2) rad =  C_PI - rad;\n    if (rad < -C_PI_2) rad = -C_PI - rad;\n\n    perturb.x  = (rad - (rad * rad * rad / 6.0)) * amp;\n\n    // Now compute a perturbation factor for the y-direction\n    rad = (vUv.s - vUv.t + StartRad) * freq;\n\n    // Wrap to -2*PI, 2*PI\n    rad = rad * C_2PI_I;\n    rad = fract(rad);\n    rad = rad * C_2PI;\n\n    // Center in -PI, PI\n    if (rad >  C_PI) rad = rad - C_2PI;\n    if (rad < -C_PI) rad = rad + C_2PI;\n\n    // Center in -PI/2, PI/2\n    if (rad >  C_PI_2) rad =  C_PI - rad;\n    if (rad < -C_PI_2) rad = -C_PI - rad;\n\n    perturb.y  = (rad - (rad * rad * rad / 6.0)) * amp;\n    vec2 pos = vUv.st;\n    pos.x = 1.0 - pos.x;\n    color = texture2D(uTex, perturb + pos);\n\n    gl_FragColor = vec4(color.rgb, color.a);\n}";
@@ -522,7 +680,9 @@
         return;
       }
       this.uniforms['uTex'].value = readBuffer;
-      this.uniforms['uSize'].value.set(readBuffer.width, readBuffer.height);
+      if (this.uniforms['uSize']) {
+        this.uniforms['uSize'].value.set(readBuffer.width, readBuffer.height);
+      }
       this.quad.material = this.material;
       if (this.renderToScreen) {
         return renderer.render(this.scene, this.camera);
@@ -543,6 +703,8 @@
     };
 
     ShaderPassBase.prototype.vertexShader = "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}";
+
+    ShaderPassBase.ashimaNoiseFunctions = "//\n// Description : Array and textureless GLSL 2D simplex noise function.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n// \n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec2 mod289(vec2 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec3 permute(vec3 x) {\n  return mod289(((x*34.0)+1.0)*x);\n}\n\nfloat snoise(vec2 v)\n  {\n  const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0\n                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)\n                     -0.577350269189626,  // -1.0 + 2.0 * C.x\n                      0.024390243902439); // 1.0 / 41.0\n// First corner\n  vec2 i  = floor(v + dot(v, C.yy) );\n  vec2 x0 = v -   i + dot(i, C.xx);\n\n// Other corners\n  vec2 i1;\n  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0\n  //i1.y = 1.0 - i1.x;\n  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n  // x0 = x0 - 0.0 + 0.0 * C.xx ;\n  // x1 = x0 - i1 + 1.0 * C.xx ;\n  // x2 = x0 - 1.0 + 2.0 * C.xx ;\n  vec4 x12 = x0.xyxy + C.xxzz;\n  x12.xy -= i1;\n\n// Permutations\n  i = mod289(i); // Avoid truncation effects in permutation\n  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))\n    + i.x + vec3(0.0, i1.x, 1.0 ));\n\n  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n  m = m*m ;\n  m = m*m ;\n\n// Gradients: 41 points uniformly over a line, mapped onto a diamond.\n// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)\n\n  vec3 x = 2.0 * fract(p * C.www) - 1.0;\n  vec3 h = abs(x) - 0.5;\n  vec3 ox = floor(x + 0.5);\n  vec3 a0 = x - ox;\n\n// Normalise gradients implicitly by scaling m\n// Approximation of: m *= inversesqrt( a0*a0 + h*h );\n  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\n// Compute final noise value at P\n  vec3 g;\n  g.x  = a0.x  * x0.x  + h.x  * x0.y;\n  g.yz = a0.yz * x12.xz + h.yz * x12.yw;\n  return 130.0 * dot(m, g);\n}\n";
 
     ShaderPassBase.prototype.findUniforms = function(shader) {
       var line, lines, name, tokens, uniforms, _i, _len;
@@ -612,7 +774,7 @@
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
-        clearAlpha: 0,
+        clearAlpha: 1,
         transparent: true
       });
       this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -621,6 +783,7 @@
       this.initCompositions();
       this.initPostProcessing();
       this.initStats();
+      this.setComposition(new BlobbyComposition);
     }
 
     App.prototype.animate = function() {
@@ -637,7 +800,8 @@
       this.compositionPicker = new CompositionPicker;
       document.body.appendChild(this.compositionPicker.render());
       this.compositionPicker.addComposition(new CircleGrower);
-      return this.compositionPicker.addComposition(new SphereSphereComposition);
+      this.compositionPicker.addComposition(new SphereSphereComposition);
+      return this.compositionPicker.addComposition(new BlobbyComposition);
     };
 
     App.prototype.initPostProcessing = function() {
@@ -648,6 +812,8 @@
       this.composer.addPass(this.renderModel);
       this.addEffect(new MirrorPass);
       this.addEffect(new InvertPass);
+      this.addEffect(new ChromaticAberration);
+      this.addEffect(new BadTVPass);
       this.addEffect(p = new ShroomPass);
       p.enabled = true;
       return p.renderToScreen = true;
@@ -670,16 +836,29 @@
     };
 
     App.prototype.addEffect = function(effect) {
-      var f, values, _i, _len, _ref, _results;
+      var f, values, _i, _j, _len, _len1, _ref, _ref1, _results;
       effect.enabled = false;
       this.composer.addPass(effect);
       f = this.gui.addFolder(effect.name);
       f.add(effect, "enabled");
-      if (effect.uniformValues) {
-        _ref = effect.uniformValues;
-        _results = [];
+      if (effect.options) {
+        _ref = effect.options;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           values = _ref[_i];
+          if (values["default"]) {
+            effect[values.property] = values["default"];
+          }
+          f.add(effect, values.property, values.start, values.end).name(values.name);
+        }
+      }
+      if (effect.uniformValues) {
+        _ref1 = effect.uniformValues;
+        _results = [];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          values = _ref1[_j];
+          if (values["default"]) {
+            effect.uniforms[values.uniform].value = values["default"];
+          }
           _results.push(f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name));
         }
         return _results;

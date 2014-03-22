@@ -4,10 +4,13 @@ class ShroomPass extends ShaderPassBase
 
   name: "Wobble"
   uniformValues: [
-    {uniform: "amp", name: "Wobble Amount", start: 0, end: 0.05}
+    {uniform: "amp", name: "Strength", start: 0, end: 0.01}
+  ]
+  options: [
+    {property: "speed", name: "Speed", start: .001, end: .01, default: 0.005}
   ]
   update: () ->
-    @uniforms.StartRad.value += 0.01
+    @uniforms.StartRad.value += @speed
     
   fragmentShader: """
     // Constants

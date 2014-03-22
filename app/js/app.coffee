@@ -5,7 +5,7 @@ $ ->
 
 class App extends Backbone.Model
   constructor: () ->
-    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
+    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
     @renderer.setSize(window.innerWidth, window.innerHeight)
 
     document.body.appendChild(@renderer.domElement);
@@ -15,6 +15,7 @@ class App extends Backbone.Model
     @initCompositions()
     @initPostProcessing()
     @initStats()
+    @setComposition new BlobbyComposition
 
   animate: () =>
     @composition?.update()
@@ -27,6 +28,7 @@ class App extends Backbone.Model
     document.body.appendChild @compositionPicker.render()
     @compositionPicker.addComposition new CircleGrower
     @compositionPicker.addComposition new SphereSphereComposition
+    @compositionPicker.addComposition new BlobbyComposition
   
   initPostProcessing: () ->
     @composer = new THREE.EffectComposer(@renderer)
@@ -35,6 +37,8 @@ class App extends Backbone.Model
     @composer.addPass @renderModel
     @addEffect new MirrorPass
     @addEffect new InvertPass
+    @addEffect new ChromaticAberration
+    @addEffect new BadTVPass
     @addEffect p = new ShroomPass
     p.enabled = true
     p.renderToScreen = true
@@ -58,6 +62,12 @@ class App extends Backbone.Model
     @composer.addPass effect
     f = @gui.addFolder effect.name
     f.add(effect, "enabled")
+    if effect.options
+      for values in effect.options
+        if values.default then effect[values.property] = values.default
+        f.add(effect, values.property, values.start, values.end).name(values.name) 
     if effect.uniformValues
       for values in effect.uniformValues
+        if values.default
+          effect.uniforms[values.uniform].value = values.default
         f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
