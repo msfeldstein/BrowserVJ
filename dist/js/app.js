@@ -257,11 +257,12 @@
     BlobbyComposition.prototype.setup = function(renderer) {
       var geometry, i, material, sprite, vtx, _i;
       this.renderer = renderer;
+      this.time = 0;
       this.scene = new THREE.Scene;
       this.scene.fog = new THREE.FogExp2(0x000000, 0.0005);
       this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
       this.camera.position.z = 1000;
-      sprite = new THREE.ImageUtils.loadTexture("assets/blurdisc.png");
+      sprite = new THREE.ImageUtils.loadTexture("assets/disc.png");
       sprite.premultiplyAlpha = true;
       sprite.needsUpdate = true;
       geometry = new THREE.Geometry;
@@ -270,6 +271,7 @@
         vtx.x = 500 * Math.random() - 250;
         vtx.y = 500 * Math.random() - 250;
         vtx.z = 500 * Math.random() - 250;
+        vtx.seed = i;
         geometry.vertices.push(vtx);
       }
       material = new THREE.ParticleSystemMaterial({
@@ -278,7 +280,7 @@
         transparent: true
       });
       material.color.setHSL(1.0, 0.3, 0.7);
-      material.opacity = 0.3;
+      material.opacity = 0.1;
       material.blending = THREE.AdditiveBlending;
       this.particles = new THREE.ParticleSystem(geometry, material);
       this.particles.sortParticles = true;
@@ -286,7 +288,18 @@
     };
 
     BlobbyComposition.prototype.update = function() {
-      return this.particles.rotation.y += 0.001;
+      var vertex, _i, _len, _ref, _results;
+      this.time += .001;
+      this.particles.rotation.y += 0.001;
+      _ref = this.particles.geometry.vertices;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        vertex = _ref[_i];
+        vertex.x = noise.simplex2(this.time, vertex.seed) * 500 * (Math.abs(Math.sin(this.time * 25)) + .01);
+        vertex.y = noise.simplex2(vertex.seed, this.time) * 500 * (Math.abs(Math.sin(this.time * 25)) + .01);
+        _results.push(vertex.z = noise.simplex2(this.time + vertex.seed, vertex.seed) * 500 * (Math.abs(Math.sin(this.time * 25)) + .01));
+      }
+      return _results;
     };
 
     return BlobbyComposition;
