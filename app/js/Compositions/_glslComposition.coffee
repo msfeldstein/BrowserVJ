@@ -10,7 +10,6 @@ class Composition extends Backbone.Model
     renderer.render @scene, @camera
     @thumbnail = document.createElement('img')
     @thumbnail.src = renderer.domElement.toDataURL()
-    @thumbnail = renderer.domElement
     @trigger "thumbnail-available"
 
 

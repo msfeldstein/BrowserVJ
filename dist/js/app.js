@@ -137,7 +137,6 @@
       renderer.render(this.scene, this.camera);
       this.thumbnail = document.createElement('img');
       this.thumbnail.src = renderer.domElement.toDataURL();
-      this.thumbnail = renderer.domElement;
       return this.trigger("thumbnail-available");
     };
 
@@ -1372,6 +1371,7 @@
     };
 
     CompositionSlot.prototype.launch = function() {
+      console.log("LAUNCH");
       return application.setComposition(this.model);
     };
 
