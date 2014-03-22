@@ -16,16 +16,13 @@ class VideoComposition extends Backbone.Model
             setTimeout f, 100
             return
           context.drawImage videoTag, 0, 0
-          @img = document.createElement('img')
-          @img.src = canvas.toDataURL()
+          @thumbnail = document.createElement('img')
+          @thumbnail.src = canvas.toDataURL()
           videoTag.pause()
           videoTag = null
           @trigger "thumbnail-available"
-
         setTimeout f, 100
 
-  thumbnail: () ->
-    @img
 
   setup: (@renderer) ->
     @enabled = true
@@ -34,8 +31,6 @@ class VideoComposition extends Backbone.Model
 
     @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
     @scene = new THREE.Scene
-
-    
 
     @video = document.createElement 'video'
     if @videoFile

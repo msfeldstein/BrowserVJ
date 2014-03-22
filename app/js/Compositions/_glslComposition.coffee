@@ -1,4 +1,19 @@
-class GLSLComposition
+class Composition extends Backbone.Model
+  constructor: () ->
+    super()
+    @generateThumbnail()
+
+  generateThumbnail: () ->
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
+    renderer.setSize(140, 90)
+    @setup renderer
+    renderer.render @scene, @camera
+    @thumbnail = document.createElement('img')
+    @thumbnail.src = renderer.domElement.toDataURL()
+    @trigger "thumbnail-available"
+
+
+class GLSLComposition extends Composition
   setup: (@renderer) ->
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
     @material = new THREE.ShaderMaterial {

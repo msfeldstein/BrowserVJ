@@ -67,7 +67,22 @@ class @ShaderPassBase
       when "sampler2D" then {type: "t", value: null}
 
 
-class GLSLComposition
+class Composition extends Backbone.Model
+  constructor: () ->
+    super()
+    @generateThumbnail()
+
+  generateThumbnail: () ->
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
+    renderer.setSize(140, 90)
+    @setup renderer
+    renderer.render @scene, @camera
+    @thumbnail = document.createElement('img')
+    @thumbnail.src = renderer.domElement.toDataURL()
+    @trigger "thumbnail-available"
+
+
+class GLSLComposition extends Composition
   setup: (@renderer) ->
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
     @material = new THREE.ShaderMaterial {
@@ -139,7 +154,7 @@ class CircleGrower extends GLSLComposition
           : vec4(0.0);
     }
   """
-class SphereSphereComposition
+class SphereSphereComposition extends Composition
   setup: (@renderer) ->
     @scene = new THREE.Scene
     @camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
@@ -205,16 +220,13 @@ class VideoComposition extends Backbone.Model
             setTimeout f, 100
             return
           context.drawImage videoTag, 0, 0
-          @img = document.createElement('img')
-          @img.src = canvas.toDataURL()
+          @thumbnail = document.createElement('img')
+          @thumbnail.src = canvas.toDataURL()
           videoTag.pause()
           videoTag = null
           @trigger "thumbnail-available"
-
         setTimeout f, 100
 
-  thumbnail: () ->
-    @img
 
   setup: (@renderer) ->
     @enabled = true
@@ -223,8 +235,6 @@ class VideoComposition extends Backbone.Model
 
     @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
     @scene = new THREE.Scene
-
-    
 
     @video = document.createElement 'video'
     if @videoFile
@@ -480,13 +490,7 @@ class @ShaderPassBase
 
 renderer = null
 
-composition = bokehPass = renderModel = composer = rgbShift = shroomPass = gui = stats = null
-gamepad = null
-
-# Add options here to use with dat.gui
-options = {
-
-}
+composition = renderModel = composer = gui = stats = null
 
 _init = () ->
   noise.seed(Math.random())
@@ -498,14 +502,7 @@ _init = () ->
   gui = new dat.gui.GUI
 
   initPostProcessing()
-  gamepad = new Gamepad
-  window.gamepad = gamepad
-  gamepad.addEventListener Gamepad.STICK_1, (val) ->
-    if Math.abs(val.y) < 0.04 then val.y = 0
-    rgbShift.uniforms.uRedShift.value = rgbShift.uniforms.uBlueShift.value  = rgbShift.uniforms.uGreenShift.value = 1 + val.y
-
-  gamepad.addEventListener Gamepad.RIGHT_SHOULDER, (val) ->
-    console.log val
+  initCompositions()
 
   stats = new Stats
   stats.domElement.style.position = 'absolute'
@@ -514,11 +511,11 @@ _init = () ->
 
   document.body.appendChild stats.domElement
 
-  setComposition(new SphereSphereComposition)
-
+initCompositions = () ->
   compositionPicker = new CompositionPicker
   document.body.appendChild compositionPicker.domElement
-  
+  compositionPicker.addComposition new CircleGrower
+  compositionPicker.addComposition new SphereSphereComposition
 
 window.setComposition = (comp) ->
   composition = comp
@@ -550,10 +547,9 @@ addEffect = (effect) ->
       f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
 
 _update = (t) ->
-  composition.update()
+  composition?.update()
 
 _animate = () ->
-  # renderer.clear()
   composer.render()
   stats.update()
   # renderer.render(scene, camera)
@@ -693,33 +689,51 @@ class RGBShiftShader
       gl_FragColor = vec4(r,g,b,1.0);
     }
   """
-drop = (e) ->
-  target = e.target
-  file = e.dataTransfer.files[0]
-  console.log file
-  composition = new VideoComposition file
-  composition.on "thumbnail-available", () ->
-    target.appendChild composition.thumbnail()
-  target.addEventListener 'click', (e) ->
-    setComposition composition
-
-
 class CompositionPicker
   constructor: () ->
+    @compositions = []
+
     @domElement = document.createElement 'div'
     @domElement.className = 'composition-picker'
     @domElement.draggable = true
-    for i in [0..5]
+    for i in [0..1]
       slot = document.createElement 'div'
       slot.className = 'slot'
       @domElement.appendChild slot
-      slot.addEventListener 'dragover', (e) ->
-        e.preventDefault()
-        e.target.classList.add 'dragover'
-      slot.addEventListener 'dragleave', (e) ->
-        e.preventDefault()
-        e.target.classList.remove 'dragover'
-      slot.addEventListener 'drop', (e) ->
-        e.preventDefault()
-        e.target.classList.remove 'dragover'
-        drop(e)
+    @domElement.addEventListener 'dragover', (e) =>
+      e.preventDefault()
+      e.target.classList.add 'dragover'
+    @domElement.addEventListener 'dragleave', (e) =>
+      e.preventDefault()
+      e.target.classList.remove 'dragover'
+    @domElement.addEventListener 'drop', (e) =>
+      e.preventDefault()
+      e.target.classList.remove 'dragover'
+      @drop(e)
+
+  addComposition: (comp) ->
+    slot = new CompositionSlot(model: comp)
+    @domElement.appendChild slot.render()
+
+  drop: (e) ->
+    file = e.dataTransfer.files[0]
+    console.log file
+    composition = new VideoComposition file
+    @addComposition composition
+
+class CompositionSlot extends Backbone.View
+  className: 'slot'
+  events:
+    "click img": "launch"
+
+  initialize: () =>
+    super()
+    @listenTo @model, "thumbnail-available", @render
+
+  render: () =>
+    @$el.html(@model.thumbnail)
+    @el
+
+  launch: () =>
+    setComposition @model
+

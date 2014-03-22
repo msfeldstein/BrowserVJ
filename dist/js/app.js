@@ -1,5 +1,5 @@
 (function() {
-  var BlurPass, CircleGrower, CompositionPicker, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, ShroomPass, SphereSphereComposition, VideoComposition, WashoutPass, addEffect, bokehPass, composer, composition, drop, gamepad, gui, initPostProcessing, options, renderModel, renderer, rgbShift, shroomPass, stats, _animate, _init, _update,
+  var BlurPass, CircleGrower, Composition, CompositionPicker, CompositionSlot, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, ShroomPass, SphereSphereComposition, VideoComposition, WashoutPass, addEffect, composer, composition, gui, initCompositions, initPostProcessing, renderModel, renderer, stats, _animate, _init, _update,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -112,8 +112,40 @@
 
   })();
 
-  GLSLComposition = (function() {
-    function GLSLComposition() {}
+  Composition = (function(_super) {
+    __extends(Composition, _super);
+
+    function Composition() {
+      Composition.__super__.constructor.call(this);
+      this.generateThumbnail();
+    }
+
+    Composition.prototype.generateThumbnail = function() {
+      var renderer;
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        clearAlpha: 0,
+        transparent: true
+      });
+      renderer.setSize(140, 90);
+      this.setup(renderer);
+      renderer.render(this.scene, this.camera);
+      this.thumbnail = document.createElement('img');
+      this.thumbnail.src = renderer.domElement.toDataURL();
+      return this.trigger("thumbnail-available");
+    };
+
+    return Composition;
+
+  })(Backbone.Model);
+
+  GLSLComposition = (function(_super) {
+    __extends(GLSLComposition, _super);
+
+    function GLSLComposition() {
+      return GLSLComposition.__super__.constructor.apply(this, arguments);
+    }
 
     GLSLComposition.prototype.setup = function(renderer) {
       this.renderer = renderer;
@@ -187,7 +219,7 @@
 
     return GLSLComposition;
 
-  })();
+  })(Composition);
 
   CircleGrower = (function(_super) {
     __extends(CircleGrower, _super);
@@ -213,8 +245,12 @@
 
   })(GLSLComposition);
 
-  SphereSphereComposition = (function() {
-    function SphereSphereComposition() {}
+  SphereSphereComposition = (function(_super) {
+    __extends(SphereSphereComposition, _super);
+
+    function SphereSphereComposition() {
+      return SphereSphereComposition.__super__.constructor.apply(this, arguments);
+    }
 
     SphereSphereComposition.prototype.setup = function(renderer) {
       var ambient, light, res, size, skeleton, vertex, _i, _j, _len, _len1, _ref, _ref1;
@@ -273,7 +309,7 @@
 
     return SphereSphereComposition;
 
-  })();
+  })(Composition);
 
   VideoComposition = (function(_super) {
     __extends(VideoComposition, _super);
@@ -300,8 +336,8 @@
                 return;
               }
               context.drawImage(videoTag, 0, 0);
-              _this.img = document.createElement('img');
-              _this.img.src = canvas.toDataURL();
+              _this.thumbnail = document.createElement('img');
+              _this.thumbnail.src = canvas.toDataURL();
               videoTag.pause();
               videoTag = null;
               return _this.trigger("thumbnail-available");
@@ -311,10 +347,6 @@
         })(this));
       }
     }
-
-    VideoComposition.prototype.thumbnail = function() {
-      return this.img;
-    };
 
     VideoComposition.prototype.setup = function(renderer) {
       this.renderer = renderer;
@@ -570,14 +602,9 @@
 
   renderer = null;
 
-  composition = bokehPass = renderModel = composer = rgbShift = shroomPass = gui = stats = null;
-
-  gamepad = null;
-
-  options = {};
+  composition = renderModel = composer = gui = stats = null;
 
   _init = function() {
-    var compositionPicker;
     noise.seed(Math.random());
     renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -589,25 +616,20 @@
     document.body.appendChild(renderer.domElement);
     gui = new dat.gui.GUI;
     initPostProcessing();
-    gamepad = new Gamepad;
-    window.gamepad = gamepad;
-    gamepad.addEventListener(Gamepad.STICK_1, function(val) {
-      if (Math.abs(val.y) < 0.04) {
-        val.y = 0;
-      }
-      return rgbShift.uniforms.uRedShift.value = rgbShift.uniforms.uBlueShift.value = rgbShift.uniforms.uGreenShift.value = 1 + val.y;
-    });
-    gamepad.addEventListener(Gamepad.RIGHT_SHOULDER, function(val) {
-      return console.log(val);
-    });
+    initCompositions();
     stats = new Stats;
     stats.domElement.style.position = 'absolute';
     stats.domElement.style.left = '0px';
     stats.domElement.style.top = '0px';
-    document.body.appendChild(stats.domElement);
-    setComposition(new SphereSphereComposition);
+    return document.body.appendChild(stats.domElement);
+  };
+
+  initCompositions = function() {
+    var compositionPicker;
     compositionPicker = new CompositionPicker;
-    return document.body.appendChild(compositionPicker.domElement);
+    document.body.appendChild(compositionPicker.domElement);
+    compositionPicker.addComposition(new CircleGrower);
+    return compositionPicker.addComposition(new SphereSphereComposition);
   };
 
   window.setComposition = function(comp) {
@@ -648,7 +670,7 @@
   };
 
   _update = function(t) {
-    return composition.update();
+    return composition != null ? composition.update() : void 0;
   };
 
   _animate = function() {
@@ -854,49 +876,92 @@
 
   })();
 
-  drop = function(e) {
-    var file, target;
-    target = e.target;
-    file = e.dataTransfer.files[0];
-    console.log(file);
-    composition = new VideoComposition(file);
-    composition.on("thumbnail-available", function() {
-      return target.appendChild(composition.thumbnail());
-    });
-    return target.addEventListener('click', function(e) {
-      return setComposition(composition);
-    });
-  };
-
   CompositionPicker = (function() {
     function CompositionPicker() {
       var i, slot, _i;
+      this.compositions = [];
       this.domElement = document.createElement('div');
       this.domElement.className = 'composition-picker';
       this.domElement.draggable = true;
-      for (i = _i = 0; _i <= 5; i = ++_i) {
+      for (i = _i = 0; _i <= 1; i = ++_i) {
         slot = document.createElement('div');
         slot.className = 'slot';
         this.domElement.appendChild(slot);
-        slot.addEventListener('dragover', function(e) {
+      }
+      this.domElement.addEventListener('dragover', (function(_this) {
+        return function(e) {
           e.preventDefault();
           return e.target.classList.add('dragover');
-        });
-        slot.addEventListener('dragleave', function(e) {
+        };
+      })(this));
+      this.domElement.addEventListener('dragleave', (function(_this) {
+        return function(e) {
           e.preventDefault();
           return e.target.classList.remove('dragover');
-        });
-        slot.addEventListener('drop', function(e) {
+        };
+      })(this));
+      this.domElement.addEventListener('drop', (function(_this) {
+        return function(e) {
           e.preventDefault();
           e.target.classList.remove('dragover');
-          return drop(e);
-        });
-      }
+          return _this.drop(e);
+        };
+      })(this));
     }
+
+    CompositionPicker.prototype.addComposition = function(comp) {
+      var slot;
+      slot = new CompositionSlot({
+        model: comp
+      });
+      return this.domElement.appendChild(slot.render());
+    };
+
+    CompositionPicker.prototype.drop = function(e) {
+      var file;
+      file = e.dataTransfer.files[0];
+      console.log(file);
+      composition = new VideoComposition(file);
+      return this.addComposition(composition);
+    };
 
     return CompositionPicker;
 
   })();
+
+  CompositionSlot = (function(_super) {
+    __extends(CompositionSlot, _super);
+
+    function CompositionSlot() {
+      this.launch = __bind(this.launch, this);
+      this.render = __bind(this.render, this);
+      this.initialize = __bind(this.initialize, this);
+      return CompositionSlot.__super__.constructor.apply(this, arguments);
+    }
+
+    CompositionSlot.prototype.className = 'slot';
+
+    CompositionSlot.prototype.events = {
+      "click img": "launch"
+    };
+
+    CompositionSlot.prototype.initialize = function() {
+      CompositionSlot.__super__.initialize.call(this);
+      return this.listenTo(this.model, "thumbnail-available", this.render);
+    };
+
+    CompositionSlot.prototype.render = function() {
+      this.$el.html(this.model.thumbnail);
+      return this.el;
+    };
+
+    CompositionSlot.prototype.launch = function() {
+      return setComposition(this.model);
+    };
+
+    return CompositionSlot;
+
+  })(Backbone.View);
 
 }).call(this);
 

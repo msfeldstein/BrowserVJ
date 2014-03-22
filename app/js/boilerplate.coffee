@@ -1,12 +1,6 @@
 renderer = null
 
-composition = bokehPass = renderModel = composer = rgbShift = shroomPass = gui = stats = null
-gamepad = null
-
-# Add options here to use with dat.gui
-options = {
-
-}
+composition = renderModel = composer = gui = stats = null
 
 _init = () ->
   noise.seed(Math.random())
@@ -18,14 +12,7 @@ _init = () ->
   gui = new dat.gui.GUI
 
   initPostProcessing()
-  gamepad = new Gamepad
-  window.gamepad = gamepad
-  gamepad.addEventListener Gamepad.STICK_1, (val) ->
-    if Math.abs(val.y) < 0.04 then val.y = 0
-    rgbShift.uniforms.uRedShift.value = rgbShift.uniforms.uBlueShift.value  = rgbShift.uniforms.uGreenShift.value = 1 + val.y
-
-  gamepad.addEventListener Gamepad.RIGHT_SHOULDER, (val) ->
-    console.log val
+  initCompositions()
 
   stats = new Stats
   stats.domElement.style.position = 'absolute'
@@ -34,11 +21,11 @@ _init = () ->
 
   document.body.appendChild stats.domElement
 
-  setComposition(new SphereSphereComposition)
-
+initCompositions = () ->
   compositionPicker = new CompositionPicker
   document.body.appendChild compositionPicker.domElement
-  
+  compositionPicker.addComposition new CircleGrower
+  compositionPicker.addComposition new SphereSphereComposition
 
 window.setComposition = (comp) ->
   composition = comp
@@ -70,10 +57,9 @@ addEffect = (effect) ->
       f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
 
 _update = (t) ->
-  composition.update()
+  composition?.update()
 
 _animate = () ->
-  # renderer.clear()
   composer.render()
   stats.update()
   # renderer.render(scene, camera)

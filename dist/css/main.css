@@ -46,10 +46,6 @@ canvas {
     margin: 0;
 }
 
-.composition-picker .slot.dragover {
-    width: 140px;
-    background: blue;
-    display: inline-block;
-    height: 90px;
-    margin: 5px;
+.composition-picker.dragover {
+    background: #5183A6;
 }
