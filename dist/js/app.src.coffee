@@ -203,18 +203,76 @@ class GLSLComposition extends Composition
       when "bool" then {type: "i", value: 0}
       when "sampler2D" then {type: "t", value: null}
 
-SPEED = 1 / 20000
+class AudioVisualizer extends Backbone.View
+  className: "audio-visualizer"
 
-class @Wanderer
-  constructor: (@mesh) ->
-    requestAnimationFrame(@update);
-    @seed = Math.random() * 1000
-  update: (t) =>
-    t = t * SPEED + @seed
-    @mesh.x = noise.simplex2(t, 0) * 600
-    @mesh.y = noise.simplex2(0, t) * 300
-    @mesh.z = noise.simplex2(t * 1.1 + 300, 0) * 100
-    requestAnimationFrame(@update);
+  events:
+    "mousemove canvas": "drag"
+    "mouseout canvas": "mouseOut"
+    "click canvas": "clickCanvas"
+
+  constructor: () ->
+    super()
+    navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+    navigator.getUserMedia_({audio: true}, @startAudio, (()->))
+    @context = new webkitAudioContext()
+    @analyzer = @context.createAnalyser()
+    @canvas = document.createElement 'canvas'
+    @el.appendChild @canvas
+    @canvas.width = 500
+    @canvas.height = 300
+    @selectedFreq = 500
+    @hoveredFreq = null
+
+  startAudio: (stream) =>
+    mediaStreamSource = @context.createMediaStreamSource(stream)
+    mediaStreamSource.connect @analyzer
+    requestAnimationFrame @update
+
+  update: () =>
+    requestAnimationFrame @update
+    @data = @data || new Uint8Array(@analyzer.frequencyBinCount)
+    @analyzer.getByteFrequencyData(@data);
+    total = 0
+    ctx = @canvas.getContext('2d')
+    ctx.fillStyle = "rgba(0,0,0,0.5)"
+    ctx.fillRect(0, 0, @canvas.width, @canvas.height);
+    ctx.beginPath()
+    ctx.strokeStyle = "#FF0000"
+    ctx.moveTo 0, @canvas.height
+    for amp, i in @data
+      total += amp
+      ctx.lineTo(i / 2, @canvas.height - amp)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.strokeStyle = "#FF0000"
+    ctx.moveTo @selectedFreq, @canvas.height
+    ctx.lineTo @selectedFreq, 0
+    ctx.stroke()
+
+    if @hoveredFreq
+      ctx.beginPath()
+      ctx.strokeStyle = "#444444"
+      ctx.moveTo @hoveredFreq, 0
+      ctx.lineTo @hoveredFreq, @canvas.height
+      ctx.stroke()
+
+    ctx.fillStyle = "#FF0000"
+    @level = @data[@selectedFreq]
+    ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height
+
+  render: () =>
+    @el
+
+  drag: (e) =>
+    @hoveredFreq = e.offsetX
+
+  mouseOut: (e) =>
+    @hoveredFreq = null
+
+  clickCanvas: (e) =>
+    @selectedFreq = e.offsetX
+SPEED = 1 / 20000
 
 class BlobbyComposition extends Composition
   setup: (@renderer) ->
@@ -228,7 +286,7 @@ class BlobbyComposition extends Composition
     sprite.premultiplyAlpha = true
     sprite.needsUpdate = true
     geometry = new THREE.Geometry
-    for i in [0..3000]
+    for i in [0..1000]
       vtx = new THREE.Vector3
       vtx.x = 500 * Math.random() - 250
       vtx.y = 500 * Math.random() - 250
@@ -237,19 +295,23 @@ class BlobbyComposition extends Composition
       geometry.vertices.push vtx
     material = new THREE.ParticleSystemMaterial({size: 135, map: sprite, transparent: true})
     material.color.setHSL( 1.0, 0.3, 0.7 );
-    material.opacity = 0.1
+    material.opacity = 0.2
     material.blending = THREE.AdditiveBlending
     @particles = new THREE.ParticleSystem geometry, material
     @particles.sortParticles = true
     @scene.add @particles
 
-  update: () ->
-    @time += .001
-    @particles.rotation.y += 0.001
+  update: (params) ->
+    @time += .004
+    @particles.rotation.y += 0.01
+
+    a = params.audio * 5
+    a = a + 1
+    a = Math.max a, 60
     for vertex in @particles.geometry.vertices
-      vertex.x = noise.simplex2(@time, vertex.seed) * 500 * (Math.abs(Math.sin(@time * 25)) + .01)
-      vertex.y = noise.simplex2(vertex.seed, @time) * 500 * (Math.abs(Math.sin(@time * 25)) + .01)
-      vertex.z = noise.simplex2(@time + vertex.seed, vertex.seed) * 500 * (Math.abs(Math.sin(@time * 25)) + .01)
+      vertex.x = noise.simplex2(@time, vertex.seed) * a
+      vertex.y = noise.simplex2(vertex.seed, @time) * a
+      vertex.z = noise.simplex2(@time + vertex.seed, vertex.seed) * a
 
 
 class CircleGrower extends GLSLComposition
@@ -285,21 +347,23 @@ class SphereSphereComposition extends Composition
     @origin = new THREE.Vector3 0, 0, 0
     @group = new THREE.Object3D
     @scene.add @group
-    @sphereGeometry = new THREE.SphereGeometry(10, 32, 32)
-    @sphereMaterial = new THREE.MeshPhongMaterial({
-      transparent: false
-      opacity: 1
-      color: 0xDA8258
-      specular: 0xD67484
-      shininess: 10
-      ambient: 0xAAAAAA
-      shading: THREE.FlatShading
-    })
-    for size in [400]#[200, 300, 400]
-      res = 50
+    
+
+    sprite = new THREE.ImageUtils.loadTexture("assets/disc.png")
+    sprite.premultiplyAlpha = true
+    sprite.needsUpdate = true
+    geometry = new THREE.Geometry
+    for size in [400]
+      res = 80
       skeleton = new THREE.SphereGeometry(size, res, res)
       for vertex in skeleton.vertices
-        @addCube @group, vertex
+        geometry.vertices.push vertex
+      material = new THREE.ParticleSystemMaterial({size: 35, map: sprite, transparent: true})
+      material.blending = THREE.AdditiveBlending
+      material.opacity = 0.2
+      @particles = new THREE.ParticleSystem geometry, material
+      @particles.sortParticles = true
+      @group.add @particles
 
     light = new THREE.SpotLight 0xFFFFFF
     light.position.set 1000, 1000, 300
@@ -317,13 +381,14 @@ class SphereSphereComposition extends Composition
     @scene.add ambient
   update: () ->
     @group.rotation.y += 0.001
+    @group.rotation.z += 0.0001
+    @group.rotation.x += 0.00014
 
   addCube: (group, position) ->
     mesh = new THREE.Mesh @sphereGeometry, @sphereMaterial
     mesh.position = position
     mesh.lookAt @origin
     @group.add mesh
-
 
 class VideoComposition extends Backbone.Model
   constructor: (@videoFile) ->
@@ -462,9 +527,9 @@ class BlurPass extends ShaderPassBase
 class ChromaticAberration extends ShaderPassBase
     name: "Chromatic Aberration"
     uniformValues: [
-      {uniform: "rShift", name: "Red Shift", start: -1, end: 1, default: -1}
+      {uniform: "rShift", name: "Red Shift", start: -1, end: 1, default: -.2}
       {uniform: "gShift", name: "Green Shift", start: -1, end: 1, default: 0}
-      {uniform: "bShift", name: "Blue Shift", start: -1, end: 1, default: 1}
+      {uniform: "bShift", name: "Blue Shift", start: -1, end: 1, default: .21}
     ]
     fragmentShader: """
       uniform float rShift;
@@ -755,6 +820,20 @@ class @ShaderPassBase
       when "sampler2D" then {type: "t", value: null}
 
 
+# class EffectsManager extends Backbone.Model
+#   constructor: () ->
+#     super()
+#     @effectClasses = []
+#     @stack = []
+
+#   registerEffect: (effectClass) ->
+#     @effectClasses.push effectClass
+
+#   addEffectToStack: (effect) ->
+    
+
+# class EffectsPanel extends Backbone.View
+
 noise.seed(Math.random())
 
 $ ->
@@ -772,10 +851,11 @@ class App extends Backbone.Model
     @initCompositions()
     @initPostProcessing()
     @initStats()
+    @initMicrophone()
     @setComposition new BlobbyComposition
 
   animate: () =>
-    @composition?.update()
+    @composition?.update({audio: @audioVisualizer.level})
     @composer.render()
     @stats.update()
     requestAnimationFrame @animate
@@ -806,6 +886,14 @@ class App extends Backbone.Model
     @stats.domElement.style.left = '0px'
     @stats.domElement.style.top = '0px'
     document.body.appendChild @stats.domElement
+
+  initMicrophone: () ->
+    @audioVisualizer = new AudioVisualizer
+    document.body.appendChild @audioVisualizer.render()
+
+  startAudio: (stream) =>
+    mediaStreamSource = @context.createMediaStreamSource(stream)
+    mediaStreamSource.connect @analyzer
 
   setComposition: (comp) ->
     @composition = comp
@@ -1003,3 +1091,6 @@ class CompositionSlot extends Backbone.View
   launch: () =>
     application.setComposition @model
 
+
+class SmoothValue
+  

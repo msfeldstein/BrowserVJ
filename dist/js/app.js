@@ -1,5 +1,5 @@
 (function() {
-  var App, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, SPEED, ShroomPass, SphereSphereComposition, VideoComposition, WashoutPass,
+  var App, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, SPEED, ShroomPass, SmoothValue, SphereSphereComposition, VideoComposition, WashoutPass,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -225,27 +225,103 @@
 
   })(Composition);
 
-  SPEED = 1 / 20000;
+  AudioVisualizer = (function(_super) {
+    __extends(AudioVisualizer, _super);
 
-  this.Wanderer = (function() {
-    function Wanderer(mesh) {
-      this.mesh = mesh;
+    AudioVisualizer.prototype.className = "audio-visualizer";
+
+    AudioVisualizer.prototype.events = {
+      "mousemove canvas": "drag",
+      "mouseout canvas": "mouseOut",
+      "click canvas": "clickCanvas"
+    };
+
+    function AudioVisualizer() {
+      this.clickCanvas = __bind(this.clickCanvas, this);
+      this.mouseOut = __bind(this.mouseOut, this);
+      this.drag = __bind(this.drag, this);
+      this.render = __bind(this.render, this);
       this.update = __bind(this.update, this);
-      requestAnimationFrame(this.update);
-      this.seed = Math.random() * 1000;
+      this.startAudio = __bind(this.startAudio, this);
+      AudioVisualizer.__super__.constructor.call(this);
+      navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+      navigator.getUserMedia_({
+        audio: true
+      }, this.startAudio, (function() {}));
+      this.context = new webkitAudioContext();
+      this.analyzer = this.context.createAnalyser();
+      this.canvas = document.createElement('canvas');
+      this.el.appendChild(this.canvas);
+      this.canvas.width = 500;
+      this.canvas.height = 300;
+      this.selectedFreq = 500;
+      this.hoveredFreq = null;
     }
 
-    Wanderer.prototype.update = function(t) {
-      t = t * SPEED + this.seed;
-      this.mesh.x = noise.simplex2(t, 0) * 600;
-      this.mesh.y = noise.simplex2(0, t) * 300;
-      this.mesh.z = noise.simplex2(t * 1.1 + 300, 0) * 100;
+    AudioVisualizer.prototype.startAudio = function(stream) {
+      var mediaStreamSource;
+      mediaStreamSource = this.context.createMediaStreamSource(stream);
+      mediaStreamSource.connect(this.analyzer);
       return requestAnimationFrame(this.update);
     };
 
-    return Wanderer;
+    AudioVisualizer.prototype.update = function() {
+      var amp, ctx, i, total, _i, _len, _ref;
+      requestAnimationFrame(this.update);
+      this.data = this.data || new Uint8Array(this.analyzer.frequencyBinCount);
+      this.analyzer.getByteFrequencyData(this.data);
+      total = 0;
+      ctx = this.canvas.getContext('2d');
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.beginPath();
+      ctx.strokeStyle = "#FF0000";
+      ctx.moveTo(0, this.canvas.height);
+      _ref = this.data;
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        amp = _ref[i];
+        total += amp;
+        ctx.lineTo(i / 2, this.canvas.height - amp);
+      }
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.strokeStyle = "#FF0000";
+      ctx.moveTo(this.selectedFreq, this.canvas.height);
+      ctx.lineTo(this.selectedFreq, 0);
+      ctx.stroke();
+      if (this.hoveredFreq) {
+        ctx.beginPath();
+        ctx.strokeStyle = "#444444";
+        ctx.moveTo(this.hoveredFreq, 0);
+        ctx.lineTo(this.hoveredFreq, this.canvas.height);
+        ctx.stroke();
+      }
+      ctx.fillStyle = "#FF0000";
+      this.level = this.data[this.selectedFreq];
+      return ctx.fillRect(this.canvas.width - 10, this.canvas.height - this.level, 10, this.canvas.height);
+    };
 
-  })();
+    AudioVisualizer.prototype.render = function() {
+      return this.el;
+    };
+
+    AudioVisualizer.prototype.drag = function(e) {
+      return this.hoveredFreq = e.offsetX;
+    };
+
+    AudioVisualizer.prototype.mouseOut = function(e) {
+      return this.hoveredFreq = null;
+    };
+
+    AudioVisualizer.prototype.clickCanvas = function(e) {
+      return this.selectedFreq = e.offsetX;
+    };
+
+    return AudioVisualizer;
+
+  })(Backbone.View);
+
+  SPEED = 1 / 20000;
 
   BlobbyComposition = (function(_super) {
     __extends(BlobbyComposition, _super);
@@ -266,7 +342,7 @@
       sprite.premultiplyAlpha = true;
       sprite.needsUpdate = true;
       geometry = new THREE.Geometry;
-      for (i = _i = 0; _i <= 3000; i = ++_i) {
+      for (i = _i = 0; _i <= 1000; i = ++_i) {
         vtx = new THREE.Vector3;
         vtx.x = 500 * Math.random() - 250;
         vtx.y = 500 * Math.random() - 250;
@@ -280,24 +356,27 @@
         transparent: true
       });
       material.color.setHSL(1.0, 0.3, 0.7);
-      material.opacity = 0.1;
+      material.opacity = 0.2;
       material.blending = THREE.AdditiveBlending;
       this.particles = new THREE.ParticleSystem(geometry, material);
       this.particles.sortParticles = true;
       return this.scene.add(this.particles);
     };
 
-    BlobbyComposition.prototype.update = function() {
-      var vertex, _i, _len, _ref, _results;
-      this.time += .001;
-      this.particles.rotation.y += 0.001;
+    BlobbyComposition.prototype.update = function(params) {
+      var a, vertex, _i, _len, _ref, _results;
+      this.time += .004;
+      this.particles.rotation.y += 0.01;
+      a = params.audio * 5;
+      a = a + 1;
+      a = Math.max(a, 60);
       _ref = this.particles.geometry.vertices;
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         vertex = _ref[_i];
-        vertex.x = noise.simplex2(this.time, vertex.seed) * 500 * (Math.abs(Math.sin(this.time * 25)) + .01);
-        vertex.y = noise.simplex2(vertex.seed, this.time) * 500 * (Math.abs(Math.sin(this.time * 25)) + .01);
-        _results.push(vertex.z = noise.simplex2(this.time + vertex.seed, vertex.seed) * 500 * (Math.abs(Math.sin(this.time * 25)) + .01));
+        vertex.x = noise.simplex2(this.time, vertex.seed) * a;
+        vertex.y = noise.simplex2(vertex.seed, this.time) * a;
+        _results.push(vertex.z = noise.simplex2(this.time + vertex.seed, vertex.seed) * a);
       }
       return _results;
     };
@@ -338,7 +417,7 @@
     }
 
     SphereSphereComposition.prototype.setup = function(renderer) {
-      var ambient, light, res, size, skeleton, vertex, _i, _j, _len, _len1, _ref, _ref1;
+      var ambient, geometry, light, material, res, size, skeleton, sprite, vertex, _i, _j, _len, _len1, _ref, _ref1;
       this.renderer = renderer;
       this.scene = new THREE.Scene;
       this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
@@ -346,26 +425,30 @@
       this.origin = new THREE.Vector3(0, 0, 0);
       this.group = new THREE.Object3D;
       this.scene.add(this.group);
-      this.sphereGeometry = new THREE.SphereGeometry(10, 32, 32);
-      this.sphereMaterial = new THREE.MeshPhongMaterial({
-        transparent: false,
-        opacity: 1,
-        color: 0xDA8258,
-        specular: 0xD67484,
-        shininess: 10,
-        ambient: 0xAAAAAA,
-        shading: THREE.FlatShading
-      });
+      sprite = new THREE.ImageUtils.loadTexture("assets/disc.png");
+      sprite.premultiplyAlpha = true;
+      sprite.needsUpdate = true;
+      geometry = new THREE.Geometry;
       _ref = [400];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         size = _ref[_i];
-        res = 50;
+        res = 80;
         skeleton = new THREE.SphereGeometry(size, res, res);
         _ref1 = skeleton.vertices;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           vertex = _ref1[_j];
-          this.addCube(this.group, vertex);
+          geometry.vertices.push(vertex);
         }
+        material = new THREE.ParticleSystemMaterial({
+          size: 35,
+          map: sprite,
+          transparent: true
+        });
+        material.blending = THREE.AdditiveBlending;
+        material.opacity = 0.2;
+        this.particles = new THREE.ParticleSystem(geometry, material);
+        this.particles.sortParticles = true;
+        this.group.add(this.particles);
       }
       light = new THREE.SpotLight(0xFFFFFF);
       light.position.set(1000, 1000, 300);
@@ -381,7 +464,9 @@
     };
 
     SphereSphereComposition.prototype.update = function() {
-      return this.group.rotation.y += 0.001;
+      this.group.rotation.y += 0.001;
+      this.group.rotation.z += 0.0001;
+      return this.group.rotation.x += 0.00014;
     };
 
     SphereSphereComposition.prototype.addCube = function(group, position) {
@@ -545,7 +630,7 @@
         name: "Red Shift",
         start: -1,
         end: 1,
-        "default": -1
+        "default": -.2
       }, {
         uniform: "gShift",
         name: "Green Shift",
@@ -557,7 +642,7 @@
         name: "Blue Shift",
         start: -1,
         end: 1,
-        "default": 1
+        "default": .21
       }
     ];
 
@@ -783,6 +868,7 @@
     __extends(App, _super);
 
     function App() {
+      this.startAudio = __bind(this.startAudio, this);
       this.animate = __bind(this.animate, this);
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -796,13 +882,16 @@
       this.initCompositions();
       this.initPostProcessing();
       this.initStats();
+      this.initMicrophone();
       this.setComposition(new BlobbyComposition);
     }
 
     App.prototype.animate = function() {
       var _ref;
       if ((_ref = this.composition) != null) {
-        _ref.update();
+        _ref.update({
+          audio: this.audioVisualizer.level
+        });
       }
       this.composer.render();
       this.stats.update();
@@ -838,6 +927,17 @@
       this.stats.domElement.style.left = '0px';
       this.stats.domElement.style.top = '0px';
       return document.body.appendChild(this.stats.domElement);
+    };
+
+    App.prototype.initMicrophone = function() {
+      this.audioVisualizer = new AudioVisualizer;
+      return document.body.appendChild(this.audioVisualizer.render());
+    };
+
+    App.prototype.startAudio = function(stream) {
+      var mediaStreamSource;
+      mediaStreamSource = this.context.createMediaStreamSource(stream);
+      return mediaStreamSource.connect(this.analyzer);
     };
 
     App.prototype.setComposition = function(comp) {
@@ -1153,6 +1253,13 @@
     return CompositionSlot;
 
   })(Backbone.View);
+
+  SmoothValue = (function() {
+    function SmoothValue() {}
+
+    return SmoothValue;
+
+  })();
 
 }).call(this);
 

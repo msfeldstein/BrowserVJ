@@ -15,10 +15,11 @@ class App extends Backbone.Model
     @initCompositions()
     @initPostProcessing()
     @initStats()
+    @initMicrophone()
     @setComposition new BlobbyComposition
 
   animate: () =>
-    @composition?.update()
+    @composition?.update({audio: @audioVisualizer.level})
     @composer.render()
     @stats.update()
     requestAnimationFrame @animate
@@ -49,6 +50,14 @@ class App extends Backbone.Model
     @stats.domElement.style.left = '0px'
     @stats.domElement.style.top = '0px'
     document.body.appendChild @stats.domElement
+
+  initMicrophone: () ->
+    @audioVisualizer = new AudioVisualizer
+    document.body.appendChild @audioVisualizer.render()
+
+  startAudio: (stream) =>
+    mediaStreamSource = @context.createMediaStreamSource(stream)
+    mediaStreamSource.connect @analyzer
 
   setComposition: (comp) ->
     @composition = comp

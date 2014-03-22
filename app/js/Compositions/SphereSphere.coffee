@@ -6,21 +6,23 @@ class SphereSphereComposition extends Composition
     @origin = new THREE.Vector3 0, 0, 0
     @group = new THREE.Object3D
     @scene.add @group
-    @sphereGeometry = new THREE.SphereGeometry(10, 32, 32)
-    @sphereMaterial = new THREE.MeshPhongMaterial({
-      transparent: false
-      opacity: 1
-      color: 0xDA8258
-      specular: 0xD67484
-      shininess: 10
-      ambient: 0xAAAAAA
-      shading: THREE.FlatShading
-    })
-    for size in [400]#[200, 300, 400]
-      res = 50
+    
+
+    sprite = new THREE.ImageUtils.loadTexture("assets/disc.png")
+    sprite.premultiplyAlpha = true
+    sprite.needsUpdate = true
+    geometry = new THREE.Geometry
+    for size in [400]
+      res = 80
       skeleton = new THREE.SphereGeometry(size, res, res)
       for vertex in skeleton.vertices
-        @addCube @group, vertex
+        geometry.vertices.push vertex
+      material = new THREE.ParticleSystemMaterial({size: 35, map: sprite, transparent: true})
+      material.blending = THREE.AdditiveBlending
+      material.opacity = 0.2
+      @particles = new THREE.ParticleSystem geometry, material
+      @particles.sortParticles = true
+      @group.add @particles
 
     light = new THREE.SpotLight 0xFFFFFF
     light.position.set 1000, 1000, 300
@@ -38,10 +40,11 @@ class SphereSphereComposition extends Composition
     @scene.add ambient
   update: () ->
     @group.rotation.y += 0.001
+    @group.rotation.z += 0.0001
+    @group.rotation.x += 0.00014
 
   addCube: (group, position) ->
     mesh = new THREE.Mesh @sphereGeometry, @sphereMaterial
     mesh.position = position
     mesh.lookAt @origin
     @group.add mesh
-
