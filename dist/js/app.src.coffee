@@ -203,27 +203,14 @@ class GLSLComposition extends Composition
       when "bool" then {type: "i", value: 0}
       when "sampler2D" then {type: "t", value: null}
 
-class AudioVisualizer extends Backbone.View
-  el: ".audio-analyzer"
-
-  events:
-    "mousemove canvas": "drag"
-    "mouseout canvas": "mouseOut"
-    "click canvas": "clickCanvas"
-
+class AudioInputNode extends Backbone.Model
   constructor: () ->
     super()
     navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
     navigator.getUserMedia_({audio: true}, @startAudio, (()->))
     @context = new webkitAudioContext()
     @analyzer = @context.createAnalyser()
-    @canvas = document.createElement 'canvas'
-    @el.appendChild @canvas
-    @canvas.width = @el.offsetWidth
-    @canvas.height = 200
-    @selectedFreq = 500
-    @hoveredFreq = null
-    @update()
+    @set "selectedFreq", 500
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)
@@ -232,53 +219,13 @@ class AudioVisualizer extends Backbone.View
 
   update: () =>
     requestAnimationFrame @update
-    @data = @data || new Uint8Array(@analyzer.frequencyBinCount)
+    if !@data
+      @data = new Uint8Array(@analyzer.frequencyBinCount)
+      @set "data", @data
     @analyzer.getByteFrequencyData(@data);
-    @scale = @canvas.width / @data.length
+    @set "peak", @data[@get('selectedFreq')]
+    @trigger "change:data"
 
-    ctx = @canvas.getContext('2d')
-    ctx.save()
-    ctx.fillStyle = "rgba(0,0,0,0.5)"
-    ctx.fillRect(0, 0, @canvas.width, @canvas.height);
-    ctx.translate(0, @canvas.height)
-    ctx.scale @scale, @scale
-    ctx.translate(0, -@canvas.height)
-    ctx.beginPath()
-    ctx.strokeStyle = "#FF0000"
-    ctx.moveTo 0, @canvas.height
-    for amp, i in @data
-      ctx.lineTo(i, @canvas.height - amp)
-    ctx.stroke()
-    ctx.beginPath()
-    ctx.strokeStyle = "#FF0000"
-    ctx.moveTo @selectedFreq, @canvas.height
-    ctx.lineTo @selectedFreq, 0
-    ctx.stroke()
-
-    if @hoveredFreq
-      ctx.beginPath()
-      ctx.strokeStyle = "#444444"
-      ctx.moveTo @hoveredFreq, 0
-      ctx.lineTo @hoveredFreq, @canvas.height
-      ctx.stroke()
-
-    ctx.fillStyle = "#FF0000"
-    @level = @data[@selectedFreq]
-    ctx.restore()
-    ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height
-    
-
-  render: () =>
-    @el
-
-  drag: (e) =>
-    @hoveredFreq = parseInt(e.offsetX / @scale)
-
-  mouseOut: (e) =>
-    @hoveredFreq = null
-
-  clickCanvas: (e) =>
-    @selectedFreq = parseInt(e.offsetX / @scale)
 SPEED = 1 / 20000
 
 class BlobbyComposition extends Composition
@@ -861,6 +808,10 @@ class EffectsManager extends Backbone.Model
     @composer.insertPass effect, @composer.passes.length - 1
     @trigger "change"
 
+class EffectParameter extends Backbone.Model
+  constructor: () ->
+    super()
+
 class EffectsPanel extends Backbone.View
   el: ".effects"
   events:
@@ -896,12 +847,31 @@ class EffectsPanel extends Backbone.View
       if effect.options
         for values in effect.options
           if values.default then effect[values.property] = values.default
-          f.add(effect, values.property, values.start, values.end).name(values.name) 
+          val = f.add(effect, values.property, values.start, values.end).name(values.name) 
+          val.domElement.querySelector('.property-name').appendChild audio = document.createElement 'checkbox'
+          audio.className = 'audio-toggle'
       if effect.uniformValues
         for values in effect.uniformValues
           if values.default
             effect.uniforms[values.uniform].value = values.default
-          f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
+          val = f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
+          val.domElement.previousSibling.appendChild audio = document.createElement 'input'
+          audio.type = 'checkbox'
+          audio.datgui = val
+          audio.target = effect.uniforms
+          audio.property = values.uniform
+          audio.className = 'audio-toggle'
+          audio.addEventListener 'change', (e) ->
+            e.target.datgui.listen()
+            application.audioVisualizer.addListener (params) ->
+              audio.target[audio.property].value = params.peak
+
+
+class Node
+  constructor: () ->
+    @inputs = []
+    @outputs = []
+
 
 noise.seed(Math.random())
 
@@ -920,7 +890,7 @@ class App extends Backbone.Model
     @initEffects()
     @initStats()
     @initMicrophone()
-    @setComposition new BlobbyComposition
+    @setComposition new SphereSphereComposition
 
   animate: () =>
     @composition?.update({audio: @audioVisualizer.level || 0})
@@ -953,6 +923,7 @@ class App extends Backbone.Model
     @effectsManager.registerEffect MirrorPass
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
+    @effectsManager.addEffectToStack new ChromaticAberration
 
   initStats: () ->
     @stats = new Stats
@@ -962,7 +933,8 @@ class App extends Backbone.Model
     document.body.appendChild @stats.domElement
 
   initMicrophone: () ->
-    @audioVisualizer = new AudioVisualizer
+    @audioInputNode = new AudioInputNode
+    @audioVisualizer = new AudioVisualizer model: @audioInputNode
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)
@@ -1101,6 +1073,74 @@ class RGBShiftShader
       gl_FragColor = vec4(r,g,b,1.0);
     }
   """
+
+class AudioVisualizer extends Backbone.View
+  el: ".audio-analyzer"
+
+  events:
+    "mousemove canvas": "drag"
+    "mouseout canvas": "mouseOut"
+    "click canvas": "clickCanvas"
+
+  initialize: () ->
+    @canvas = document.createElement 'canvas'
+    @el.appendChild @canvas
+    @canvas.width = @el.offsetWidth
+    @canvas.height = 200
+    @hoveredFreq = null
+    @listenTo @model, "change:data", @update
+
+  update: () =>
+    data = @model.get('data')
+    selectedFreq = @model.get('selectedFreq')
+    if !data then return
+    @scale = @canvas.width / data.length
+
+    ctx = @canvas.getContext('2d')
+    ctx.save()
+    ctx.fillStyle = "rgba(0,0,0,0.5)"
+    ctx.fillRect(0, 0, @canvas.width, @canvas.height);
+    ctx.translate(0, @canvas.height)
+    ctx.scale @scale, @scale
+    ctx.translate(0, -@canvas.height)
+    ctx.beginPath()
+    ctx.strokeStyle = "#FF0000"
+    ctx.moveTo 0, @canvas.height
+    for amp, i in data
+      ctx.lineTo(i, @canvas.height - amp)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.strokeStyle = "#FF0000"
+    ctx.moveTo selectedFreq, @canvas.height
+    ctx.lineTo selectedFreq, 0
+    ctx.stroke()
+
+    if @hoveredFreq
+      ctx.beginPath()
+      ctx.strokeStyle = "#FFFFFF"
+      ctx.moveTo @hoveredFreq, 0
+      ctx.lineTo @hoveredFreq, @canvas.height
+      ctx.stroke()
+
+    
+    @level = @model.get('peak')
+    ctx.restore()
+    ctx.fillStyle = "#FF0000"
+    ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height    
+
+  render: () =>
+    @el
+
+  drag: (e) =>
+    @hoveredFreq = parseInt(e.offsetX / @scale)
+
+  mouseOut: (e) =>
+    @hoveredFreq = null
+
+  clickCanvas: (e) =>
+    @model.set "selectedFreq", parseInt(e.offsetX / @scale)
+
+
 class CompositionPicker extends Backbone.View
   el: ".composition-picker"
 
@@ -1148,7 +1188,6 @@ class CompositionSlot extends Backbone.View
     @el
 
   launch: () =>
-    console.log "LAUNCH"
     application.setComposition @model
 
 

@@ -13,6 +13,10 @@ class EffectsManager extends Backbone.Model
     @composer.insertPass effect, @composer.passes.length - 1
     @trigger "change"
 
+class EffectParameter extends Backbone.Model
+  constructor: () ->
+    super()
+
 class EffectsPanel extends Backbone.View
   el: ".effects"
   events:
@@ -48,9 +52,22 @@ class EffectsPanel extends Backbone.View
       if effect.options
         for values in effect.options
           if values.default then effect[values.property] = values.default
-          f.add(effect, values.property, values.start, values.end).name(values.name) 
+          val = f.add(effect, values.property, values.start, values.end).name(values.name) 
+          val.domElement.querySelector('.property-name').appendChild audio = document.createElement 'checkbox'
+          audio.className = 'audio-toggle'
       if effect.uniformValues
         for values in effect.uniformValues
           if values.default
             effect.uniforms[values.uniform].value = values.default
-          f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
+          val = f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
+          val.domElement.previousSibling.appendChild audio = document.createElement 'input'
+          audio.type = 'checkbox'
+          audio.datgui = val
+          audio.target = effect.uniforms
+          audio.property = values.uniform
+          audio.className = 'audio-toggle'
+          audio.addEventListener 'change', (e) ->
+            e.target.datgui.listen()
+            application.audioVisualizer.addListener (params) ->
+              audio.target[audio.property].value = params.peak
+

@@ -15,7 +15,7 @@ class App extends Backbone.Model
     @initEffects()
     @initStats()
     @initMicrophone()
-    @setComposition new BlobbyComposition
+    @setComposition new SphereSphereComposition
 
   animate: () =>
     @composition?.update({audio: @audioVisualizer.level || 0})
@@ -48,6 +48,7 @@ class App extends Backbone.Model
     @effectsManager.registerEffect MirrorPass
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
+    @effectsManager.addEffectToStack new ChromaticAberration
 
   initStats: () ->
     @stats = new Stats
@@ -57,7 +58,8 @@ class App extends Backbone.Model
     document.body.appendChild @stats.domElement
 
   initMicrophone: () ->
-    @audioVisualizer = new AudioVisualizer
+    @audioInputNode = new AudioInputNode
+    @audioVisualizer = new AudioVisualizer model: @audioInputNode
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)

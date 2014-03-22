@@ -1,5 +1,5 @@
 (function() {
-  var App, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, EffectsManager, EffectsPanel, GLSLComposition, Gamepad, InvertPass, MirrorPass, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShroomPass, SmoothValue, SphereSphereComposition, VideoComposition, WashoutPass,
+  var App, AudioInputNode, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, EffectParameter, EffectsManager, EffectsPanel, GLSLComposition, Gamepad, InvertPass, MirrorPass, Node, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShroomPass, SmoothValue, SphereSphereComposition, VideoComposition, WashoutPass,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -225,106 +225,43 @@
 
   })(Composition);
 
-  AudioVisualizer = (function(_super) {
-    __extends(AudioVisualizer, _super);
+  AudioInputNode = (function(_super) {
+    __extends(AudioInputNode, _super);
 
-    AudioVisualizer.prototype.el = ".audio-analyzer";
-
-    AudioVisualizer.prototype.events = {
-      "mousemove canvas": "drag",
-      "mouseout canvas": "mouseOut",
-      "click canvas": "clickCanvas"
-    };
-
-    function AudioVisualizer() {
-      this.clickCanvas = __bind(this.clickCanvas, this);
-      this.mouseOut = __bind(this.mouseOut, this);
-      this.drag = __bind(this.drag, this);
-      this.render = __bind(this.render, this);
+    function AudioInputNode() {
       this.update = __bind(this.update, this);
       this.startAudio = __bind(this.startAudio, this);
-      AudioVisualizer.__super__.constructor.call(this);
+      AudioInputNode.__super__.constructor.call(this);
       navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
       navigator.getUserMedia_({
         audio: true
       }, this.startAudio, (function() {}));
       this.context = new webkitAudioContext();
       this.analyzer = this.context.createAnalyser();
-      this.canvas = document.createElement('canvas');
-      this.el.appendChild(this.canvas);
-      this.canvas.width = this.el.offsetWidth;
-      this.canvas.height = 200;
-      this.selectedFreq = 500;
-      this.hoveredFreq = null;
-      this.update();
+      this.set("selectedFreq", 500);
     }
 
-    AudioVisualizer.prototype.startAudio = function(stream) {
+    AudioInputNode.prototype.startAudio = function(stream) {
       var mediaStreamSource;
       mediaStreamSource = this.context.createMediaStreamSource(stream);
       mediaStreamSource.connect(this.analyzer);
       return requestAnimationFrame(this.update);
     };
 
-    AudioVisualizer.prototype.update = function() {
-      var amp, ctx, i, _i, _len, _ref;
+    AudioInputNode.prototype.update = function() {
       requestAnimationFrame(this.update);
-      this.data = this.data || new Uint8Array(this.analyzer.frequencyBinCount);
+      if (!this.data) {
+        this.data = new Uint8Array(this.analyzer.frequencyBinCount);
+        this.set("data", this.data);
+      }
       this.analyzer.getByteFrequencyData(this.data);
-      this.scale = this.canvas.width / this.data.length;
-      ctx = this.canvas.getContext('2d');
-      ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,0.5)";
-      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-      ctx.translate(0, this.canvas.height);
-      ctx.scale(this.scale, this.scale);
-      ctx.translate(0, -this.canvas.height);
-      ctx.beginPath();
-      ctx.strokeStyle = "#FF0000";
-      ctx.moveTo(0, this.canvas.height);
-      _ref = this.data;
-      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-        amp = _ref[i];
-        ctx.lineTo(i, this.canvas.height - amp);
-      }
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.strokeStyle = "#FF0000";
-      ctx.moveTo(this.selectedFreq, this.canvas.height);
-      ctx.lineTo(this.selectedFreq, 0);
-      ctx.stroke();
-      if (this.hoveredFreq) {
-        ctx.beginPath();
-        ctx.strokeStyle = "#444444";
-        ctx.moveTo(this.hoveredFreq, 0);
-        ctx.lineTo(this.hoveredFreq, this.canvas.height);
-        ctx.stroke();
-      }
-      ctx.fillStyle = "#FF0000";
-      this.level = this.data[this.selectedFreq];
-      ctx.restore();
-      return ctx.fillRect(this.canvas.width - 10, this.canvas.height - this.level, 10, this.canvas.height);
+      this.set("peak", this.data[this.get('selectedFreq')]);
+      return this.trigger("change:data");
     };
 
-    AudioVisualizer.prototype.render = function() {
-      return this.el;
-    };
+    return AudioInputNode;
 
-    AudioVisualizer.prototype.drag = function(e) {
-      return this.hoveredFreq = parseInt(e.offsetX / this.scale);
-    };
-
-    AudioVisualizer.prototype.mouseOut = function(e) {
-      return this.hoveredFreq = null;
-    };
-
-    AudioVisualizer.prototype.clickCanvas = function(e) {
-      return this.selectedFreq = parseInt(e.offsetX / this.scale);
-    };
-
-    return AudioVisualizer;
-
-  })(Backbone.View);
+  })(Backbone.Model);
 
   SPEED = 1 / 20000;
 
@@ -915,6 +852,17 @@
 
   })(Backbone.Model);
 
+  EffectParameter = (function(_super) {
+    __extends(EffectParameter, _super);
+
+    function EffectParameter() {
+      EffectParameter.__super__.constructor.call(this);
+    }
+
+    return EffectParameter;
+
+  })(Backbone.Model);
+
   EffectsPanel = (function(_super) {
     __extends(EffectsPanel, _super);
 
@@ -952,7 +900,7 @@
     };
 
     EffectsPanel.prototype.render = function() {
-      var effect, f, i, option, values, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
+      var audio, effect, f, i, option, val, values, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
       this.addButton.innerHTML = "<option value=-1>Add Effect</option>";
       _ref = this.model.effectClasses;
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
@@ -980,7 +928,9 @@
             if (values["default"]) {
               effect[values.property] = values["default"];
             }
-            f.add(effect, values.property, values.start, values.end).name(values.name);
+            val = f.add(effect, values.property, values.start, values.end).name(values.name);
+            val.domElement.querySelector('.property-name').appendChild(audio = document.createElement('checkbox'));
+            audio.className = 'audio-toggle';
           }
         }
         if (effect.uniformValues) {
@@ -993,7 +943,19 @@
               if (values["default"]) {
                 effect.uniforms[values.uniform].value = values["default"];
               }
-              _results1.push(f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name));
+              val = f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name);
+              val.domElement.previousSibling.appendChild(audio = document.createElement('input'));
+              audio.type = 'checkbox';
+              audio.datgui = val;
+              audio.target = effect.uniforms;
+              audio.property = values.uniform;
+              audio.className = 'audio-toggle';
+              _results1.push(audio.addEventListener('change', function(e) {
+                e.target.datgui.listen();
+                return application.audioVisualizer.addListener(function(params) {
+                  return audio.target[audio.property].value = params.peak;
+                });
+              }));
             }
             return _results1;
           })());
@@ -1007,6 +969,16 @@
     return EffectsPanel;
 
   })(Backbone.View);
+
+  Node = (function() {
+    function Node() {
+      this.inputs = [];
+      this.outputs = [];
+    }
+
+    return Node;
+
+  })();
 
   noise.seed(Math.random());
 
@@ -1034,7 +1006,7 @@
       this.initEffects();
       this.initStats();
       this.initMicrophone();
-      this.setComposition(new BlobbyComposition);
+      this.setComposition(new SphereSphereComposition);
     }
 
     App.prototype.animate = function() {
@@ -1071,9 +1043,10 @@
       this.effectsManager.registerEffect(InvertPass);
       this.effectsManager.registerEffect(ChromaticAberration);
       this.effectsManager.registerEffect(MirrorPass);
-      return this.effectsPanel = new EffectsPanel({
+      this.effectsPanel = new EffectsPanel({
         model: this.effectsManager
       });
+      return this.effectsManager.addEffectToStack(new ChromaticAberration);
     };
 
     App.prototype.initStats = function() {
@@ -1085,7 +1058,10 @@
     };
 
     App.prototype.initMicrophone = function() {
-      return this.audioVisualizer = new AudioVisualizer;
+      this.audioInputNode = new AudioInputNode;
+      return this.audioVisualizer = new AudioVisualizer({
+        model: this.audioInputNode
+      });
     };
 
     App.prototype.startAudio = function(stream) {
@@ -1289,6 +1265,96 @@
 
   })();
 
+  AudioVisualizer = (function(_super) {
+    __extends(AudioVisualizer, _super);
+
+    function AudioVisualizer() {
+      this.clickCanvas = __bind(this.clickCanvas, this);
+      this.mouseOut = __bind(this.mouseOut, this);
+      this.drag = __bind(this.drag, this);
+      this.render = __bind(this.render, this);
+      this.update = __bind(this.update, this);
+      return AudioVisualizer.__super__.constructor.apply(this, arguments);
+    }
+
+    AudioVisualizer.prototype.el = ".audio-analyzer";
+
+    AudioVisualizer.prototype.events = {
+      "mousemove canvas": "drag",
+      "mouseout canvas": "mouseOut",
+      "click canvas": "clickCanvas"
+    };
+
+    AudioVisualizer.prototype.initialize = function() {
+      this.canvas = document.createElement('canvas');
+      this.el.appendChild(this.canvas);
+      this.canvas.width = this.el.offsetWidth;
+      this.canvas.height = 200;
+      this.hoveredFreq = null;
+      return this.listenTo(this.model, "change:data", this.update);
+    };
+
+    AudioVisualizer.prototype.update = function() {
+      var amp, ctx, data, i, selectedFreq, _i, _len;
+      data = this.model.get('data');
+      selectedFreq = this.model.get('selectedFreq');
+      if (!data) {
+        return;
+      }
+      this.scale = this.canvas.width / data.length;
+      ctx = this.canvas.getContext('2d');
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,0.5)";
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.translate(0, this.canvas.height);
+      ctx.scale(this.scale, this.scale);
+      ctx.translate(0, -this.canvas.height);
+      ctx.beginPath();
+      ctx.strokeStyle = "#FF0000";
+      ctx.moveTo(0, this.canvas.height);
+      for (i = _i = 0, _len = data.length; _i < _len; i = ++_i) {
+        amp = data[i];
+        ctx.lineTo(i, this.canvas.height - amp);
+      }
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.strokeStyle = "#FF0000";
+      ctx.moveTo(selectedFreq, this.canvas.height);
+      ctx.lineTo(selectedFreq, 0);
+      ctx.stroke();
+      if (this.hoveredFreq) {
+        ctx.beginPath();
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.moveTo(this.hoveredFreq, 0);
+        ctx.lineTo(this.hoveredFreq, this.canvas.height);
+        ctx.stroke();
+      }
+      this.level = this.model.get('peak');
+      ctx.restore();
+      ctx.fillStyle = "#FF0000";
+      return ctx.fillRect(this.canvas.width - 10, this.canvas.height - this.level, 10, this.canvas.height);
+    };
+
+    AudioVisualizer.prototype.render = function() {
+      return this.el;
+    };
+
+    AudioVisualizer.prototype.drag = function(e) {
+      return this.hoveredFreq = parseInt(e.offsetX / this.scale);
+    };
+
+    AudioVisualizer.prototype.mouseOut = function(e) {
+      return this.hoveredFreq = null;
+    };
+
+    AudioVisualizer.prototype.clickCanvas = function(e) {
+      return this.model.set("selectedFreq", parseInt(e.offsetX / this.scale));
+    };
+
+    return AudioVisualizer;
+
+  })(Backbone.View);
+
   CompositionPicker = (function(_super) {
     __extends(CompositionPicker, _super);
 
@@ -1371,7 +1437,6 @@
     };
 
     CompositionSlot.prototype.launch = function() {
-      console.log("LAUNCH");
       return application.setComposition(this.model);
     };
 
