@@ -148,9 +148,11 @@ class Composition extends Backbone.Model
 
   generateThumbnail: () ->
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
-    renderer.setSize(140, 90)
+    renderer.setSize(640, 480)
     @setup renderer
+    renderer.setClearColorHex( 0xffffff, 0 )
     renderer.render @scene, @camera
+
     @thumbnail = document.createElement('img')
     @thumbnail.src = renderer.domElement.toDataURL()
     @trigger "thumbnail-available"
@@ -809,7 +811,7 @@ class EffectsManager extends Backbone.Model
     @trigger "change"
 
 class EffectParameter extends Backbone.Model
-  constructor: () ->
+  constructor: (target, property) ->
     super()
 
 class EffectsPanel extends Backbone.View
@@ -891,6 +893,7 @@ class App extends Backbone.Model
     @initStats()
     @initMicrophone()
     @setComposition new SphereSphereComposition
+    requestAnimationFrame @animate
 
   animate: () =>
     @composition?.update({audio: @audioVisualizer.level || 0})
@@ -928,7 +931,7 @@ class App extends Backbone.Model
   initStats: () ->
     @stats = new Stats
     @stats.domElement.style.position = 'absolute'
-    @stats.domElement.style.left = '0px'
+    @stats.domElement.style.right = '0px'
     @stats.domElement.style.top = '0px'
     document.body.appendChild @stats.domElement
 
@@ -945,7 +948,6 @@ class App extends Backbone.Model
     @composition.setup(@renderer)
     @renderModel.scene = @composition.scene
     @renderModel.camera = @composition.camera
-    requestAnimationFrame @animate
 
 
 class Gamepad

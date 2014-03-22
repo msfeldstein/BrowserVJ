@@ -14,7 +14,7 @@ class EffectsManager extends Backbone.Model
     @trigger "change"
 
 class EffectParameter extends Backbone.Model
-  constructor: () ->
+  constructor: (target, property) ->
     super()
 
 class EffectsPanel extends Backbone.View

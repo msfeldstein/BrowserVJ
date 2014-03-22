@@ -16,6 +16,7 @@ class App extends Backbone.Model
     @initStats()
     @initMicrophone()
     @setComposition new SphereSphereComposition
+    requestAnimationFrame @animate
 
   animate: () =>
     @composition?.update({audio: @audioVisualizer.level || 0})
@@ -53,7 +54,7 @@ class App extends Backbone.Model
   initStats: () ->
     @stats = new Stats
     @stats.domElement.style.position = 'absolute'
-    @stats.domElement.style.left = '0px'
+    @stats.domElement.style.right = '0px'
     @stats.domElement.style.top = '0px'
     document.body.appendChild @stats.domElement
 
@@ -70,5 +71,4 @@ class App extends Backbone.Model
     @composition.setup(@renderer)
     @renderModel.scene = @composition.scene
     @renderModel.camera = @composition.camera
-    requestAnimationFrame @animate
 

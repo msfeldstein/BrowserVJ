@@ -132,8 +132,9 @@
         clearAlpha: 1,
         transparent: true
       });
-      renderer.setSize(140, 90);
+      renderer.setSize(640, 480);
       this.setup(renderer);
+      renderer.setClearColorHex(0xffffff, 0);
       renderer.render(this.scene, this.camera);
       this.thumbnail = document.createElement('img');
       this.thumbnail.src = renderer.domElement.toDataURL();
@@ -855,7 +856,7 @@
   EffectParameter = (function(_super) {
     __extends(EffectParameter, _super);
 
-    function EffectParameter() {
+    function EffectParameter(target, property) {
       EffectParameter.__super__.constructor.call(this);
     }
 
@@ -1007,6 +1008,7 @@
       this.initStats();
       this.initMicrophone();
       this.setComposition(new SphereSphereComposition);
+      requestAnimationFrame(this.animate);
     }
 
     App.prototype.animate = function() {
@@ -1052,7 +1054,7 @@
     App.prototype.initStats = function() {
       this.stats = new Stats;
       this.stats.domElement.style.position = 'absolute';
-      this.stats.domElement.style.left = '0px';
+      this.stats.domElement.style.right = '0px';
       this.stats.domElement.style.top = '0px';
       return document.body.appendChild(this.stats.domElement);
     };
@@ -1074,8 +1076,7 @@
       this.composition = comp;
       this.composition.setup(this.renderer);
       this.renderModel.scene = this.composition.scene;
-      this.renderModel.camera = this.composition.camera;
-      return requestAnimationFrame(this.animate);
+      return this.renderModel.camera = this.composition.camera;
     };
 
     return App;
