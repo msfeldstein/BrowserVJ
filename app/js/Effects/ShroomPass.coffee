@@ -1,4 +1,11 @@
-class @ShroomPass extends ShaderPassBase
+class ShroomPass extends ShaderPassBase
+  constructor: () ->
+    super amp: 0, StartRad: 0, freq: 10
+
+  name: "Wobble"
+  uniformValues: [
+    {uniform: "amp", name: "Wobble Amount", start: 0, end: 0.05}
+  ]
   update: () ->
     @uniforms.StartRad.value += 0.01
     

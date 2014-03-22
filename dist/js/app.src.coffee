@@ -2,7 +2,6 @@ class @ShaderPassBase
   constructor: (initialValues) ->
     @enabled = true
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
-    console.log @uniforms
     for key, value of initialValues
       @uniforms[key].value = value
 
@@ -53,7 +52,6 @@ class @ShaderPassBase
     uniforms = {}
     for line in lines
       if (line.indexOf("uniform") == 0)
-        console.log line
         tokens = line.split(" ")
         name = tokens[2].substring(0, tokens[2].length - 1)
         uniforms[name] = @typeToUniform tokens[1]
@@ -65,10 +63,271 @@ class @ShaderPassBase
       when "vec2" then {type: "v2", value: new THREE.Vector2}
       when "vec3" then {type: "v3", value: new THREE.Vector3}
       when "vec4" then {type: "v4", value: new THREE.Vector4}
+      when "bool" then {type: "i", value: 0}
       when "sampler2D" then {type: "t", value: null}
 
 
-class @ShroomPass extends ShaderPassBase
+class GLSLComposition
+  setup: (@renderer) ->
+    @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
+    @material = new THREE.ShaderMaterial {
+      uniforms: @uniforms
+      vertexShader: @vertexShader
+      fragmentShader: @fragmentShader
+    }
+
+    @enabled = true
+    @renderToScreen = false
+    @needsSwap = true
+
+    @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+    @scene = new THREE.Scene
+
+    @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
+    @quad.material = @material
+    @scene.add @quad
+
+  vertexShader: """
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+  """
+
+  findUniforms: (shader) ->
+    lines = shader.split("\n")
+    uniforms = {}
+    for line in lines
+      if (line.indexOf("uniform") == 0)
+        tokens = line.split(" ")
+        name = tokens[2].substring(0, tokens[2].length - 1)
+        uniforms[name] = @typeToUniform tokens[1]
+    uniforms
+
+  typeToUniform: (type) ->
+    switch type
+      when "float" then {type: "f", value: 0}
+      when "vec2" then {type: "v2", value: new THREE.Vector2}
+      when "vec3" then {type: "v3", value: new THREE.Vector3}
+      when "vec4" then {type: "v4", value: new THREE.Vector4}
+      when "bool" then {type: "i", value: 0}
+      when "sampler2D" then {type: "t", value: null}
+
+class CircleGrower extends GLSLComposition
+  setup: (@renderer) ->
+    super(@renderer)
+    @uniforms.circleSize.value = 300
+
+  update: () ->
+    @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)
+    @uniforms['time'].value += 1
+  
+  fragmentShader: """
+    uniform vec2 uSize;
+    varying vec2 vUv;
+    uniform float circleSize;
+    uniform float time;
+    void main (void)
+    {
+      vec2 pos = mod(gl_FragCoord.xy, vec2(circleSize)) - vec2(circleSize / 2.0);
+      float dist = sqrt(dot(pos, pos));
+      dist = mod(dist + time * -1.0, circleSize + 1.0) * 2.0;
+      
+      gl_FragColor = (sin(dist / 25.0) > 0.0) 
+          ? vec4(.90, .90, .90, 1.0)
+          : vec4(0.0);
+    }
+  """
+class SphereSphereComposition
+  setup: (@renderer) ->
+    @scene = new THREE.Scene
+    @camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+    @camera.position.z = 1000;
+    @origin = new THREE.Vector3 0, 0, 0
+    @group = new THREE.Object3D
+    @scene.add @group
+    @sphereGeometry = new THREE.SphereGeometry(10, 32, 32)
+    @sphereMaterial = new THREE.MeshPhongMaterial({
+      transparent: false
+      opacity: 1
+      color: 0xDA8258
+      specular: 0xD67484
+      shininess: 10
+      ambient: 0xAAAAAA
+      shading: THREE.FlatShading
+    })
+    for size in [400]#[200, 300, 400]
+      res = 50
+      skeleton = new THREE.SphereGeometry(size, res, res)
+      for vertex in skeleton.vertices
+        @addCube @group, vertex
+
+    light = new THREE.SpotLight 0xFFFFFF
+    light.position.set 1000, 1000, 300
+    @scene.add light
+
+    light = new THREE.AmbientLight 0x222222
+    @scene.add light
+
+    ambient = new THREE.PointLight( 0x444444, 1, 10000 );
+    ambient.position.set 500, 500, 500
+    @scene.add ambient
+
+    ambient = new THREE.PointLight( 0x444444, 1, 10000 );
+    ambient.position.set -500, 500, 500
+    @scene.add ambient
+  update: () ->
+    @group.rotation.y += 0.001
+
+  addCube: (group, position) ->
+    mesh = new THREE.Mesh @sphereGeometry, @sphereMaterial
+    mesh.position = position
+    mesh.lookAt @origin
+    @group.add mesh
+
+
+class VideoComposition extends Backbone.Model
+  constructor: (@videoFile) ->
+    super()
+    if @videoFile
+      videoTag = document.createElement('video')
+      document.body.appendChild videoTag
+      videoTag.src = URL.createObjectURL(@videoFile)
+      videoTag.addEventListener 'loadeddata', (e) =>
+        videoTag.currentTime = videoTag.duration / 2
+        canvas = document.createElement('canvas')
+        canvas.width = videoTag.videoWidth
+        canvas.height = videoTag.videoHeight
+        context = canvas.getContext('2d')
+        f = () =>
+          if videoTag.readyState != videoTag.HAVE_ENOUGH_DATA
+            setTimeout f, 100
+            return
+          context.drawImage videoTag, 0, 0
+          @img = document.createElement('img')
+          @img.src = canvas.toDataURL()
+          videoTag.pause()
+          videoTag = null
+          @trigger "thumbnail-available"
+
+        setTimeout f, 100
+
+  thumbnail: () ->
+    @img
+
+  setup: (@renderer) ->
+    @enabled = true
+    @renderToScreen = false
+    @needsSwap = true
+
+    @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+    @scene = new THREE.Scene
+
+    
+
+    @video = document.createElement 'video'
+    if @videoFile
+      @video.src = URL.createObjectURL(@videoFile)
+    else
+      @video.src = "assets/timescapes.mp4"
+    @video.load()
+    @video.play()
+    @video.volume = 0
+    window.video = @video
+    @video.addEventListener 'loadeddata', () =>
+      console.log @video.videoWidth
+      @videoImage = document.createElement 'canvas'
+      @videoImage.width = @video.videoWidth
+      @videoImage.height = @video.videoHeight
+
+      @videoImageContext = @videoImage.getContext('2d')
+      @videoTexture = new THREE.Texture(@videoImage)
+      @videoTexture.minFilter = THREE.LinearFilter;
+      @videoTexture.magFilter = THREE.LinearFilter;
+      @material = new THREE.MeshBasicMaterial(map: @videoTexture)
+
+
+      @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), @material)
+      @scene.add @quad
+
+  update: () ->
+    if @videoTexture
+      @videoImageContext.drawImage @video, 0, 0
+      @videoTexture.needsUpdate = true
+class BlurPass extends ShaderPassBase
+  fragmentShader: """
+    uniform float blurX;
+    uniform vec2 uSize;
+    varying vec2 vUv;
+    uniform sampler2D uTex;
+
+    const float blurSize = 1.0/512.0; // I've chosen this size because this will result in that every step will be one pixel wide if the RTScene texture is of size 512x512
+     
+    void main(void)
+    {
+       vec4 sum = vec4(0.0);
+     
+       // blur in y (vertical)
+       // take nine samples, with the distance blurSize between them
+       sum += texture2D(uTex, vec2(vUv.x - 4.0*blurX, vUv.y)) * 0.05;
+       sum += texture2D(uTex, vec2(vUv.x - 3.0*blurX, vUv.y)) * 0.09;
+       sum += texture2D(uTex, vec2(vUv.x - 2.0*blurX, vUv.y)) * 0.12;
+       sum += texture2D(uTex, vec2(vUv.x - blurX, vUv.y)) * 0.15;
+       sum += texture2D(uTex, vec2(vUv.x, vUv.y)) * 0.16;
+       sum += texture2D(uTex, vec2(vUv.x + blurX, vUv.y)) * 0.15;
+       sum += texture2D(uTex, vec2(vUv.x + 2.0*blurX, vUv.y)) * 0.12;
+       sum += texture2D(uTex, vec2(vUv.x + 3.0*blurX, vUv.y)) * 0.09;
+       sum += texture2D(uTex, vec2(vUv.x + 4.0*blurX, vUv.y)) * 0.05;
+     
+       gl_FragColor = sum;
+    }
+  """
+
+class InvertPass extends ShaderPassBase
+  name: "Invert"
+  uniformValues: [
+    {uniform: "amount", name: "Invert Amount", start: 0, end: 1}
+  ]
+  fragmentShader: """
+    uniform float amount;
+    uniform vec2 uSize;
+    varying vec2 vUv;
+    uniform sampler2D uTex;
+
+    void main (void)
+    {
+        vec4 color = texture2D(uTex, vUv);
+        color = (1.0 - amount) * color + (amount) * (1.0 - color);
+        gl_FragColor = vec4(color.rgb, color.a);
+    }
+  """
+
+class MirrorPass extends ShaderPassBase
+  name: "Mirror"
+  fragmentShader: """
+    uniform vec2 uSize;
+    varying vec2 vUv;
+    uniform sampler2D uTex;
+
+    void main (void)
+    {
+      vec4 color = texture2D(uTex, vUv);
+      vec2 flipPos = vec2(0.0);
+      flipPos.x = 1.0 - vUv.x;
+      flipPos.y = vUv.y;
+      gl_FragColor = color + texture2D(uTex, flipPos);
+    }
+  """
+
+class ShroomPass extends ShaderPassBase
+  constructor: () ->
+    super amp: 0, StartRad: 0, freq: 10
+
+  name: "Wobble"
+  uniformValues: [
+    {uniform: "amp", name: "Wobble Amount", start: 0, end: 0.05}
+  ]
   update: () ->
     @uniforms.StartRad.value += 0.01
     
@@ -136,11 +395,24 @@ class @ShroomPass extends ShaderPassBase
     }
   """
 
+class WashoutPass extends ShaderPassBase
+  fragmentShader: """
+    uniform vec2 uSize;
+    varying vec2 vUv;
+    uniform float amount;
+    uniform sampler2D uTex;
+
+    void main (void)
+    {
+      vec4 color = texture2D(uTex, vUv);
+      gl_FragColor = color * (1.0 + amount);
+    }
+  """
+
 class @ShaderPassBase
   constructor: (initialValues) ->
     @enabled = true
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
-    console.log @uniforms
     for key, value of initialValues
       @uniforms[key].value = value
 
@@ -191,7 +463,6 @@ class @ShaderPassBase
     uniforms = {}
     for line in lines
       if (line.indexOf("uniform") == 0)
-        console.log line
         tokens = line.split(" ")
         name = tokens[2].substring(0, tokens[2].length - 1)
         uniforms[name] = @typeToUniform tokens[1]
@@ -203,87 +474,13 @@ class @ShaderPassBase
       when "vec2" then {type: "v2", value: new THREE.Vector2}
       when "vec3" then {type: "v3", value: new THREE.Vector3}
       when "vec4" then {type: "v4", value: new THREE.Vector4}
+      when "bool" then {type: "i", value: 0}
       when "sampler2D" then {type: "t", value: null}
 
 
-scene = group = null
-geometry = new THREE.CubeGeometry(20, 20, 2)
-geometry = new THREE.SphereGeometry(10, 32, 32)
-origin = new THREE.Vector3 0, 0, 0
-addCube = (group, position) ->
-  material = new THREE.MeshPhongMaterial({
-    transparent: false
-    opacity: 1
-    color: 0xDA8258
-    specular: 0xD67484
-    shininess: 10
-    ambient: 0xAAAAAA
-    shading: THREE.FlatShading
-  })
-  mesh = new THREE.Mesh geometry, material
-  mesh.castShadow = true
-  mesh.receiveShadow = true
-  mesh.position = position
-  mesh.lookAt origin
-  group.add mesh
+renderer = null
 
-addFace = (group, face, skeleton) ->
-  material = new THREE.MeshBasicMaterial({
-    transparent: true, opacity: 0.3, color: 0xFFFFFF, side: THREE.DoubleSide
-  })
-  v1 = skeleton.vertices[face.a].clone()
-  v2 = skeleton.vertices[face.b].clone()
-  v3 = skeleton.vertices[face.c].clone()
-  d1 = v1.distanceTo(v2)
-  d2 = v1.distanceTo(v3)
-  d3 = v2.distanceTo(v3)
-  p1 = p2 = null
-  if d1 > d2 && d1 > d3
-    p1 = v1
-    p2 = v2
-  else if d2 > d1 && d2 > d3
-    p1 = v1
-    p2 = v3
-  else
-    p1 = v2
-    p2 = v3
-  geometry = new THREE.Geometry
-  geometry.vertices.push p1
-  geometry.vertices.push p2
-  geometry = new THREE.SphereGeometry 20, 8, 8
-  lineMaterial = new THREE.LineBasicMaterial {transparent: true, linewidth: 5, opacity: 0.5,color:0xFFFFFF, linecap: "butt"}
-  line = new THREE.Line geometry, lineMaterial
-  group.add line
-
-@setup = (s) ->
-  scene = s
-  group = new THREE.Object3D
-  scene.add group
-  for size in [400]#[200, 300, 400]
-    res = 50
-    skeleton = new THREE.SphereGeometry(size, res, res)
-    for vertex in skeleton.vertices
-      addCube group, vertex
-
-  light = new THREE.SpotLight 0xFFFFFF
-  light.position.set 1000, 1000, 300
-  scene.add light
-
-  light = new THREE.AmbientLight 0x222222
-  scene.add light
-
-  ambient = new THREE.PointLight( 0x444444, 1, 10000 );
-  ambient.position.set 500, 500, 500
-  scene.add ambient
-
-  ambient = new THREE.PointLight( 0x444444, 1, 10000 );
-  ambient.position.set -500, 500, 500
-  scene.add ambient
-@update = (scene) ->
-  group.rotation.y += 0.001
-camera = scene = renderer = controls = null
-
-renderModel = composer = rgbShift = shroomPass = gui = null
+composition = bokehPass = renderModel = composer = rgbShift = shroomPass = gui = stats = null
 gamepad = null
 
 # Add options here to use with dat.gui
@@ -292,73 +489,85 @@ options = {
 }
 
 _init = () ->
-    noise.seed(Math.random())
+  noise.seed(Math.random())
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
+  renderer.setSize(window.innerWidth, window.innerHeight)
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-    camera.position.z = 1000;
+  document.body.appendChild(renderer.domElement);
 
-    # _useTrackball(camera)
-    scene = new THREE.Scene();
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
-    renderer.setSize(window.innerWidth, window.innerHeight)
+  gui = new dat.gui.GUI
 
-    document.body.appendChild(renderer.domElement);
+  initPostProcessing()
+  gamepad = new Gamepad
+  window.gamepad = gamepad
+  gamepad.addEventListener Gamepad.STICK_1, (val) ->
+    if Math.abs(val.y) < 0.04 then val.y = 0
+    rgbShift.uniforms.uRedShift.value = rgbShift.uniforms.uBlueShift.value  = rgbShift.uniforms.uGreenShift.value = 1 + val.y
 
-    gui = new dat.gui.GUI
+  gamepad.addEventListener Gamepad.RIGHT_SHOULDER, (val) ->
+    console.log val
 
-    setup(scene)
-    initPostProcessing()
-    gamepad = new Gamepad
-    window.gamepad = gamepad
-    gamepad.addEventListener Gamepad.STICK_1, (val) ->
-        if Math.abs(val.y) < 0.04 then val.y = 0
-        rgbShift.uniforms.uRedShift.value = rgbShift.uniforms.uBlueShift.value  = rgbShift.uniforms.uGreenShift.value = 1 + val.y
+  stats = new Stats
+  stats.domElement.style.position = 'absolute'
+  stats.domElement.style.left = '0px'
+  stats.domElement.style.top = '0px'
 
-    gamepad.addEventListener Gamepad.RIGHT_SHOULDER, (val) ->
-        console.log val
+  document.body.appendChild stats.domElement
+
+  setComposition(new SphereSphereComposition)
+
+  compositionPicker = new CompositionPicker
+  document.body.appendChild compositionPicker.domElement
+  
+
+window.setComposition = (comp) ->
+  composition = comp
+  composition.setup(renderer)
+  renderModel.scene = composition.scene
+  renderModel.camera = composition.camera
+  
 
 initPostProcessing = () ->
-    composer = new THREE.EffectComposer(renderer)
-    renderModel = new THREE.RenderPass(scene, camera)
-    renderModel.renderToScreen = true
-    composer.addPass renderModel
-    shroomPass = new ShroomPass(amp: .01, StartRad: 0, freq: 10)
-    shroomPass.renderToScreen = true
-    gui.add shroomPass.uniforms.amp, "value", 0, 0.05
-    composer.addPass shroomPass
+  composer = new THREE.EffectComposer(renderer)
+  renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera)
+  renderModel.renderToScreen = true
+  composer.addPass renderModel
 
-_useTrackball = (camera) ->
-    controls = new THREE.TrackballControls( camera );
-    controls.rotateSpeed = 2.0;
-    controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;
-    controls.noZoom = false;
-    controls.noPan = false;
-    controls.staticMoving = true;
-    controls.dynamicDampingFactor = 0.3;
+  
+  addEffect new MirrorPass
+  addEffect new InvertPass
+  addEffect p = new ShroomPass
+  p.enabled = true
+  p.renderToScreen = true
 
-    controls.keys = [ 65, 83, 68 ];
-    controls.addEventListener( 'change', _animate );
+addEffect = (effect) ->
+  effect.enabled = false
+  composer.addPass effect
+  f = gui.addFolder effect.name
+  f.add(effect, "enabled")
+  if effect.uniformValues
+    for values in effect.uniformValues
+      f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
 
 _update = (t) ->
-    controls?.update();
-    update()
+  composition.update()
 
 _animate = () ->
-    # renderer.clear()
-    composer.render()
-    # renderer.render(scene, camera)
+  # renderer.clear()
+  composer.render()
+  stats.update()
+  # renderer.render(scene, camera)
 
 window.loopF = (fn) ->
-    f = () ->
-        fn()
-        requestAnimationFrame(f)
-    f()
+  f = () ->
+    fn()
+    requestAnimationFrame(f)
+  f()
 
 $ ->
-    _init()
-    loopF _update
-    loopF _animate
+  _init()
+  loopF _update
+  loopF _animate
 class Gamepad
   @FACE_1: 0
   @FACE_2: 1
@@ -484,3 +693,33 @@ class RGBShiftShader
       gl_FragColor = vec4(r,g,b,1.0);
     }
   """
+drop = (e) ->
+  target = e.target
+  file = e.dataTransfer.files[0]
+  console.log file
+  composition = new VideoComposition file
+  composition.on "thumbnail-available", () ->
+    target.appendChild composition.thumbnail()
+  target.addEventListener 'click', (e) ->
+    setComposition composition
+
+
+class CompositionPicker
+  constructor: () ->
+    @domElement = document.createElement 'div'
+    @domElement.className = 'composition-picker'
+    @domElement.draggable = true
+    for i in [0..5]
+      slot = document.createElement 'div'
+      slot.className = 'slot'
+      @domElement.appendChild slot
+      slot.addEventListener 'dragover', (e) ->
+        e.preventDefault()
+        e.target.classList.add 'dragover'
+      slot.addEventListener 'dragleave', (e) ->
+        e.preventDefault()
+        e.target.classList.remove 'dragover'
+      slot.addEventListener 'drop', (e) ->
+        e.preventDefault()
+        e.target.classList.remove 'dragover'
+        drop(e)

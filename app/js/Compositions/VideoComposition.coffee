@@ -1,0 +1,68 @@
+class VideoComposition extends Backbone.Model
+  constructor: (@videoFile) ->
+    super()
+    if @videoFile
+      videoTag = document.createElement('video')
+      document.body.appendChild videoTag
+      videoTag.src = URL.createObjectURL(@videoFile)
+      videoTag.addEventListener 'loadeddata', (e) =>
+        videoTag.currentTime = videoTag.duration / 2
+        canvas = document.createElement('canvas')
+        canvas.width = videoTag.videoWidth
+        canvas.height = videoTag.videoHeight
+        context = canvas.getContext('2d')
+        f = () =>
+          if videoTag.readyState != videoTag.HAVE_ENOUGH_DATA
+            setTimeout f, 100
+            return
+          context.drawImage videoTag, 0, 0
+          @img = document.createElement('img')
+          @img.src = canvas.toDataURL()
+          videoTag.pause()
+          videoTag = null
+          @trigger "thumbnail-available"
+
+        setTimeout f, 100
+
+  thumbnail: () ->
+    @img
+
+  setup: (@renderer) ->
+    @enabled = true
+    @renderToScreen = false
+    @needsSwap = true
+
+    @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+    @scene = new THREE.Scene
+
+    
+
+    @video = document.createElement 'video'
+    if @videoFile
+      @video.src = URL.createObjectURL(@videoFile)
+    else
+      @video.src = "assets/timescapes.mp4"
+    @video.load()
+    @video.play()
+    @video.volume = 0
+    window.video = @video
+    @video.addEventListener 'loadeddata', () =>
+      console.log @video.videoWidth
+      @videoImage = document.createElement 'canvas'
+      @videoImage.width = @video.videoWidth
+      @videoImage.height = @video.videoHeight
+
+      @videoImageContext = @videoImage.getContext('2d')
+      @videoTexture = new THREE.Texture(@videoImage)
+      @videoTexture.minFilter = THREE.LinearFilter;
+      @videoTexture.magFilter = THREE.LinearFilter;
+      @material = new THREE.MeshBasicMaterial(map: @videoTexture)
+
+
+      @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), @material)
+      @scene.add @quad
+
+  update: () ->
+    if @videoTexture
+      @videoImageContext.drawImage @video, 0, 0
+      @videoTexture.needsUpdate = true

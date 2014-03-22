@@ -33,7 +33,7 @@ module.exports = function(grunt) {
                     sourceMap: true
                 },
                 files: {
-                    "dist/js/app.js": [base + "/js/effects/_shaderpass.coffee", base + '/js/**/*.coffee']
+                    "dist/js/app.js": [base + "/js/effects/_shaderpass.coffee", base + '/js/Compositions/_glslComposition.coffee', base + '/js/**/*.coffee']
                 }
             }
         },
@@ -77,6 +77,12 @@ module.exports = function(grunt) {
                 ],
                 tasks: ['coffee']
             },
+            css: {
+                files: [
+                    '**/*.css'
+                ],
+                tasks: ['copy:css']
+            },
             concat: {
                 files: ['app/js/lib/**/*.js'],
                 tasks: ['concat']
@@ -102,6 +108,17 @@ module.exports = function(grunt) {
             }
         },
         copy: {
+            css: {
+                files: [{
+                    expand: true,
+                    dot: true,
+                    cwd: base,
+                    dest: out,
+                    src: [
+                        '**/*.css',
+                    ]
+                }]
+            },
             dist: {
                 files: [{
                     expand: true,
@@ -113,7 +130,8 @@ module.exports = function(grunt) {
                         '{,*/}*.html',
                         'bower_components/' + (this.includeCompass ? 'sass-' : '') + 'bootstrap/' + (this.includeCompass ? 'fonts/' : 'dist/fonts/') +'*.*',
                         '**/*.js',
-                        '**/*.css'
+                        '**/*.css',
+                        'assets/*'
                     ]
                 }]
             },

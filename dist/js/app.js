@@ -1,5 +1,5 @@
 (function() {
-  var Gamepad, RGBShiftPass, RGBShiftShader, addCube, addFace, camera, composer, controls, gamepad, geometry, group, gui, initPostProcessing, options, origin, renderModel, renderer, rgbShift, scene, shroomPass, _animate, _init, _update, _useTrackball,
+  var BlurPass, CircleGrower, CompositionPicker, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, ShroomPass, SphereSphereComposition, VideoComposition, WashoutPass, addEffect, bokehPass, composer, composition, drop, gamepad, gui, initPostProcessing, options, renderModel, renderer, rgbShift, shroomPass, stats, _animate, _init, _update,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -9,7 +9,6 @@
       var key, value;
       this.enabled = true;
       this.uniforms = THREE.UniformsUtils.clone(this.findUniforms(this.fragmentShader));
-      console.log(this.uniforms);
       for (key in initialValues) {
         value = initialValues[key];
         this.uniforms[key].value = value;
@@ -66,7 +65,6 @@
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
         if (line.indexOf("uniform") === 0) {
-          console.log(line);
           tokens = line.split(" ");
           name = tokens[2].substring(0, tokens[2].length - 1);
           uniforms[name] = this.typeToUniform(tokens[1]);
@@ -97,6 +95,11 @@
             type: "v4",
             value: new THREE.Vector4
           };
+        case "bool":
+          return {
+            type: "i",
+            value: 0
+          };
         case "sampler2D":
           return {
             type: "t",
@@ -109,12 +112,330 @@
 
   })();
 
-  this.ShroomPass = (function(_super) {
+  GLSLComposition = (function() {
+    function GLSLComposition() {}
+
+    GLSLComposition.prototype.setup = function(renderer) {
+      this.renderer = renderer;
+      this.uniforms = THREE.UniformsUtils.clone(this.findUniforms(this.fragmentShader));
+      this.material = new THREE.ShaderMaterial({
+        uniforms: this.uniforms,
+        vertexShader: this.vertexShader,
+        fragmentShader: this.fragmentShader
+      });
+      this.enabled = true;
+      this.renderToScreen = false;
+      this.needsSwap = true;
+      this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      this.scene = new THREE.Scene;
+      this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
+      this.quad.material = this.material;
+      return this.scene.add(this.quad);
+    };
+
+    GLSLComposition.prototype.vertexShader = "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}";
+
+    GLSLComposition.prototype.findUniforms = function(shader) {
+      var line, lines, name, tokens, uniforms, _i, _len;
+      lines = shader.split("\n");
+      uniforms = {};
+      for (_i = 0, _len = lines.length; _i < _len; _i++) {
+        line = lines[_i];
+        if (line.indexOf("uniform") === 0) {
+          tokens = line.split(" ");
+          name = tokens[2].substring(0, tokens[2].length - 1);
+          uniforms[name] = this.typeToUniform(tokens[1]);
+        }
+      }
+      return uniforms;
+    };
+
+    GLSLComposition.prototype.typeToUniform = function(type) {
+      switch (type) {
+        case "float":
+          return {
+            type: "f",
+            value: 0
+          };
+        case "vec2":
+          return {
+            type: "v2",
+            value: new THREE.Vector2
+          };
+        case "vec3":
+          return {
+            type: "v3",
+            value: new THREE.Vector3
+          };
+        case "vec4":
+          return {
+            type: "v4",
+            value: new THREE.Vector4
+          };
+        case "bool":
+          return {
+            type: "i",
+            value: 0
+          };
+        case "sampler2D":
+          return {
+            type: "t",
+            value: null
+          };
+      }
+    };
+
+    return GLSLComposition;
+
+  })();
+
+  CircleGrower = (function(_super) {
+    __extends(CircleGrower, _super);
+
+    function CircleGrower() {
+      return CircleGrower.__super__.constructor.apply(this, arguments);
+    }
+
+    CircleGrower.prototype.setup = function(renderer) {
+      this.renderer = renderer;
+      CircleGrower.__super__.setup.call(this, this.renderer);
+      return this.uniforms.circleSize.value = 300;
+    };
+
+    CircleGrower.prototype.update = function() {
+      this.uniforms['uSize'].value.set(this.renderer.domElement.width, this.renderer.domElement.height);
+      return this.uniforms['time'].value += 1;
+    };
+
+    CircleGrower.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float circleSize;\nuniform float time;\nvoid main (void)\n{\n  vec2 pos = mod(gl_FragCoord.xy, vec2(circleSize)) - vec2(circleSize / 2.0);\n  float dist = sqrt(dot(pos, pos));\n  dist = mod(dist + time * -1.0, circleSize + 1.0) * 2.0;\n  \n  gl_FragColor = (sin(dist / 25.0) > 0.0) \n      ? vec4(.90, .90, .90, 1.0)\n      : vec4(0.0);\n}";
+
+    return CircleGrower;
+
+  })(GLSLComposition);
+
+  SphereSphereComposition = (function() {
+    function SphereSphereComposition() {}
+
+    SphereSphereComposition.prototype.setup = function(renderer) {
+      var ambient, light, res, size, skeleton, vertex, _i, _j, _len, _len1, _ref, _ref1;
+      this.renderer = renderer;
+      this.scene = new THREE.Scene;
+      this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+      this.camera.position.z = 1000;
+      this.origin = new THREE.Vector3(0, 0, 0);
+      this.group = new THREE.Object3D;
+      this.scene.add(this.group);
+      this.sphereGeometry = new THREE.SphereGeometry(10, 32, 32);
+      this.sphereMaterial = new THREE.MeshPhongMaterial({
+        transparent: false,
+        opacity: 1,
+        color: 0xDA8258,
+        specular: 0xD67484,
+        shininess: 10,
+        ambient: 0xAAAAAA,
+        shading: THREE.FlatShading
+      });
+      _ref = [400];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        size = _ref[_i];
+        res = 50;
+        skeleton = new THREE.SphereGeometry(size, res, res);
+        _ref1 = skeleton.vertices;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          vertex = _ref1[_j];
+          this.addCube(this.group, vertex);
+        }
+      }
+      light = new THREE.SpotLight(0xFFFFFF);
+      light.position.set(1000, 1000, 300);
+      this.scene.add(light);
+      light = new THREE.AmbientLight(0x222222);
+      this.scene.add(light);
+      ambient = new THREE.PointLight(0x444444, 1, 10000);
+      ambient.position.set(500, 500, 500);
+      this.scene.add(ambient);
+      ambient = new THREE.PointLight(0x444444, 1, 10000);
+      ambient.position.set(-500, 500, 500);
+      return this.scene.add(ambient);
+    };
+
+    SphereSphereComposition.prototype.update = function() {
+      return this.group.rotation.y += 0.001;
+    };
+
+    SphereSphereComposition.prototype.addCube = function(group, position) {
+      var mesh;
+      mesh = new THREE.Mesh(this.sphereGeometry, this.sphereMaterial);
+      mesh.position = position;
+      mesh.lookAt(this.origin);
+      return this.group.add(mesh);
+    };
+
+    return SphereSphereComposition;
+
+  })();
+
+  VideoComposition = (function(_super) {
+    __extends(VideoComposition, _super);
+
+    function VideoComposition(videoFile) {
+      var videoTag;
+      this.videoFile = videoFile;
+      VideoComposition.__super__.constructor.call(this);
+      if (this.videoFile) {
+        videoTag = document.createElement('video');
+        document.body.appendChild(videoTag);
+        videoTag.src = URL.createObjectURL(this.videoFile);
+        videoTag.addEventListener('loadeddata', (function(_this) {
+          return function(e) {
+            var canvas, context, f;
+            videoTag.currentTime = videoTag.duration / 2;
+            canvas = document.createElement('canvas');
+            canvas.width = videoTag.videoWidth;
+            canvas.height = videoTag.videoHeight;
+            context = canvas.getContext('2d');
+            f = function() {
+              if (videoTag.readyState !== videoTag.HAVE_ENOUGH_DATA) {
+                setTimeout(f, 100);
+                return;
+              }
+              context.drawImage(videoTag, 0, 0);
+              _this.img = document.createElement('img');
+              _this.img.src = canvas.toDataURL();
+              videoTag.pause();
+              videoTag = null;
+              return _this.trigger("thumbnail-available");
+            };
+            return setTimeout(f, 100);
+          };
+        })(this));
+      }
+    }
+
+    VideoComposition.prototype.thumbnail = function() {
+      return this.img;
+    };
+
+    VideoComposition.prototype.setup = function(renderer) {
+      this.renderer = renderer;
+      this.enabled = true;
+      this.renderToScreen = false;
+      this.needsSwap = true;
+      this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      this.scene = new THREE.Scene;
+      this.video = document.createElement('video');
+      if (this.videoFile) {
+        this.video.src = URL.createObjectURL(this.videoFile);
+      } else {
+        this.video.src = "assets/timescapes.mp4";
+      }
+      this.video.load();
+      this.video.play();
+      this.video.volume = 0;
+      window.video = this.video;
+      return this.video.addEventListener('loadeddata', (function(_this) {
+        return function() {
+          console.log(_this.video.videoWidth);
+          _this.videoImage = document.createElement('canvas');
+          _this.videoImage.width = _this.video.videoWidth;
+          _this.videoImage.height = _this.video.videoHeight;
+          _this.videoImageContext = _this.videoImage.getContext('2d');
+          _this.videoTexture = new THREE.Texture(_this.videoImage);
+          _this.videoTexture.minFilter = THREE.LinearFilter;
+          _this.videoTexture.magFilter = THREE.LinearFilter;
+          _this.material = new THREE.MeshBasicMaterial({
+            map: _this.videoTexture
+          });
+          _this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), _this.material);
+          return _this.scene.add(_this.quad);
+        };
+      })(this));
+    };
+
+    VideoComposition.prototype.update = function() {
+      if (this.videoTexture) {
+        this.videoImageContext.drawImage(this.video, 0, 0);
+        return this.videoTexture.needsUpdate = true;
+      }
+    };
+
+    return VideoComposition;
+
+  })(Backbone.Model);
+
+  BlurPass = (function(_super) {
+    __extends(BlurPass, _super);
+
+    function BlurPass() {
+      return BlurPass.__super__.constructor.apply(this, arguments);
+    }
+
+    BlurPass.prototype.fragmentShader = "uniform float blurX;\nuniform vec2 uSize;\nvarying vec2 vUv;\nuniform sampler2D uTex;\n\nconst float blurSize = 1.0/512.0; // I've chosen this size because this will result in that every step will be one pixel wide if the RTScene texture is of size 512x512\n \nvoid main(void)\n{\n   vec4 sum = vec4(0.0);\n \n   // blur in y (vertical)\n   // take nine samples, with the distance blurSize between them\n   sum += texture2D(uTex, vec2(vUv.x - 4.0*blurX, vUv.y)) * 0.05;\n   sum += texture2D(uTex, vec2(vUv.x - 3.0*blurX, vUv.y)) * 0.09;\n   sum += texture2D(uTex, vec2(vUv.x - 2.0*blurX, vUv.y)) * 0.12;\n   sum += texture2D(uTex, vec2(vUv.x - blurX, vUv.y)) * 0.15;\n   sum += texture2D(uTex, vec2(vUv.x, vUv.y)) * 0.16;\n   sum += texture2D(uTex, vec2(vUv.x + blurX, vUv.y)) * 0.15;\n   sum += texture2D(uTex, vec2(vUv.x + 2.0*blurX, vUv.y)) * 0.12;\n   sum += texture2D(uTex, vec2(vUv.x + 3.0*blurX, vUv.y)) * 0.09;\n   sum += texture2D(uTex, vec2(vUv.x + 4.0*blurX, vUv.y)) * 0.05;\n \n   gl_FragColor = sum;\n}";
+
+    return BlurPass;
+
+  })(ShaderPassBase);
+
+  InvertPass = (function(_super) {
+    __extends(InvertPass, _super);
+
+    function InvertPass() {
+      return InvertPass.__super__.constructor.apply(this, arguments);
+    }
+
+    InvertPass.prototype.name = "Invert";
+
+    InvertPass.prototype.uniformValues = [
+      {
+        uniform: "amount",
+        name: "Invert Amount",
+        start: 0,
+        end: 1
+      }
+    ];
+
+    InvertPass.prototype.fragmentShader = "uniform float amount;\nuniform vec2 uSize;\nvarying vec2 vUv;\nuniform sampler2D uTex;\n\nvoid main (void)\n{\n    vec4 color = texture2D(uTex, vUv);\n    color = (1.0 - amount) * color + (amount) * (1.0 - color);\n    gl_FragColor = vec4(color.rgb, color.a);\n}";
+
+    return InvertPass;
+
+  })(ShaderPassBase);
+
+  MirrorPass = (function(_super) {
+    __extends(MirrorPass, _super);
+
+    function MirrorPass() {
+      return MirrorPass.__super__.constructor.apply(this, arguments);
+    }
+
+    MirrorPass.prototype.name = "Mirror";
+
+    MirrorPass.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform sampler2D uTex;\n\nvoid main (void)\n{\n  vec4 color = texture2D(uTex, vUv);\n  vec2 flipPos = vec2(0.0);\n  flipPos.x = 1.0 - vUv.x;\n  flipPos.y = vUv.y;\n  gl_FragColor = color + texture2D(uTex, flipPos);\n}";
+
+    return MirrorPass;
+
+  })(ShaderPassBase);
+
+  ShroomPass = (function(_super) {
     __extends(ShroomPass, _super);
 
     function ShroomPass() {
-      return ShroomPass.__super__.constructor.apply(this, arguments);
+      ShroomPass.__super__.constructor.call(this, {
+        amp: 0,
+        StartRad: 0,
+        freq: 10
+      });
     }
+
+    ShroomPass.prototype.name = "Wobble";
+
+    ShroomPass.prototype.uniformValues = [
+      {
+        uniform: "amp",
+        name: "Wobble Amount",
+        start: 0,
+        end: 0.05
+      }
+    ];
 
     ShroomPass.prototype.update = function() {
       return this.uniforms.StartRad.value += 0.01;
@@ -126,12 +447,24 @@
 
   })(ShaderPassBase);
 
+  WashoutPass = (function(_super) {
+    __extends(WashoutPass, _super);
+
+    function WashoutPass() {
+      return WashoutPass.__super__.constructor.apply(this, arguments);
+    }
+
+    WashoutPass.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float amount;\nuniform sampler2D uTex;\n\nvoid main (void)\n{\n  vec4 color = texture2D(uTex, vUv);\n  gl_FragColor = color * (1.0 + amount);\n}";
+
+    return WashoutPass;
+
+  })(ShaderPassBase);
+
   this.ShaderPassBase = (function() {
     function ShaderPassBase(initialValues) {
       var key, value;
       this.enabled = true;
       this.uniforms = THREE.UniformsUtils.clone(this.findUniforms(this.fragmentShader));
-      console.log(this.uniforms);
       for (key in initialValues) {
         value = initialValues[key];
         this.uniforms[key].value = value;
@@ -188,7 +521,6 @@
       for (_i = 0, _len = lines.length; _i < _len; _i++) {
         line = lines[_i];
         if (line.indexOf("uniform") === 0) {
-          console.log(line);
           tokens = line.split(" ");
           name = tokens[2].substring(0, tokens[2].length - 1);
           uniforms[name] = this.typeToUniform(tokens[1]);
@@ -219,6 +551,11 @@
             type: "v4",
             value: new THREE.Vector4
           };
+        case "bool":
+          return {
+            type: "i",
+            value: 0
+          };
         case "sampler2D":
           return {
             type: "t",
@@ -231,119 +568,17 @@
 
   })();
 
-  scene = group = null;
+  renderer = null;
 
-  geometry = new THREE.CubeGeometry(20, 20, 2);
-
-  geometry = new THREE.SphereGeometry(10, 32, 32);
-
-  origin = new THREE.Vector3(0, 0, 0);
-
-  addCube = function(group, position) {
-    var material, mesh;
-    material = new THREE.MeshPhongMaterial({
-      transparent: false,
-      opacity: 1,
-      color: 0xDA8258,
-      specular: 0xD67484,
-      shininess: 10,
-      ambient: 0xAAAAAA,
-      shading: THREE.FlatShading
-    });
-    mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.position = position;
-    mesh.lookAt(origin);
-    return group.add(mesh);
-  };
-
-  addFace = function(group, face, skeleton) {
-    var d1, d2, d3, line, lineMaterial, material, p1, p2, v1, v2, v3;
-    material = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 0.3,
-      color: 0xFFFFFF,
-      side: THREE.DoubleSide
-    });
-    v1 = skeleton.vertices[face.a].clone();
-    v2 = skeleton.vertices[face.b].clone();
-    v3 = skeleton.vertices[face.c].clone();
-    d1 = v1.distanceTo(v2);
-    d2 = v1.distanceTo(v3);
-    d3 = v2.distanceTo(v3);
-    p1 = p2 = null;
-    if (d1 > d2 && d1 > d3) {
-      p1 = v1;
-      p2 = v2;
-    } else if (d2 > d1 && d2 > d3) {
-      p1 = v1;
-      p2 = v3;
-    } else {
-      p1 = v2;
-      p2 = v3;
-    }
-    geometry = new THREE.Geometry;
-    geometry.vertices.push(p1);
-    geometry.vertices.push(p2);
-    geometry = new THREE.SphereGeometry(20, 8, 8);
-    lineMaterial = new THREE.LineBasicMaterial({
-      transparent: true,
-      linewidth: 5,
-      opacity: 0.5,
-      color: 0xFFFFFF,
-      linecap: "butt"
-    });
-    line = new THREE.Line(geometry, lineMaterial);
-    return group.add(line);
-  };
-
-  this.setup = function(s) {
-    var ambient, light, res, size, skeleton, vertex, _i, _j, _len, _len1, _ref, _ref1;
-    scene = s;
-    group = new THREE.Object3D;
-    scene.add(group);
-    _ref = [400];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      size = _ref[_i];
-      res = 50;
-      skeleton = new THREE.SphereGeometry(size, res, res);
-      _ref1 = skeleton.vertices;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        vertex = _ref1[_j];
-        addCube(group, vertex);
-      }
-    }
-    light = new THREE.SpotLight(0xFFFFFF);
-    light.position.set(1000, 1000, 300);
-    scene.add(light);
-    light = new THREE.AmbientLight(0x222222);
-    scene.add(light);
-    ambient = new THREE.PointLight(0x444444, 1, 10000);
-    ambient.position.set(500, 500, 500);
-    scene.add(ambient);
-    ambient = new THREE.PointLight(0x444444, 1, 10000);
-    ambient.position.set(-500, 500, 500);
-    return scene.add(ambient);
-  };
-
-  this.update = function(scene) {
-    return group.rotation.y += 0.001;
-  };
-
-  camera = scene = renderer = controls = null;
-
-  renderModel = composer = rgbShift = shroomPass = gui = null;
+  composition = bokehPass = renderModel = composer = rgbShift = shroomPass = gui = stats = null;
 
   gamepad = null;
 
   options = {};
 
   _init = function() {
+    var compositionPicker;
     noise.seed(Math.random());
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
-    camera.position.z = 1000;
-    scene = new THREE.Scene();
     renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -353,7 +588,6 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
     gui = new dat.gui.GUI;
-    setup(scene);
     initPostProcessing();
     gamepad = new Gamepad;
     window.gamepad = gamepad;
@@ -363,48 +597,63 @@
       }
       return rgbShift.uniforms.uRedShift.value = rgbShift.uniforms.uBlueShift.value = rgbShift.uniforms.uGreenShift.value = 1 + val.y;
     });
-    return gamepad.addEventListener(Gamepad.RIGHT_SHOULDER, function(val) {
+    gamepad.addEventListener(Gamepad.RIGHT_SHOULDER, function(val) {
       return console.log(val);
     });
+    stats = new Stats;
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.top = '0px';
+    document.body.appendChild(stats.domElement);
+    setComposition(new SphereSphereComposition);
+    compositionPicker = new CompositionPicker;
+    return document.body.appendChild(compositionPicker.domElement);
+  };
+
+  window.setComposition = function(comp) {
+    composition = comp;
+    composition.setup(renderer);
+    renderModel.scene = composition.scene;
+    return renderModel.camera = composition.camera;
   };
 
   initPostProcessing = function() {
+    var p;
     composer = new THREE.EffectComposer(renderer);
-    renderModel = new THREE.RenderPass(scene, camera);
+    renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera);
     renderModel.renderToScreen = true;
     composer.addPass(renderModel);
-    shroomPass = new ShroomPass({
-      amp: .01,
-      StartRad: 0,
-      freq: 10
-    });
-    shroomPass.renderToScreen = true;
-    gui.add(shroomPass.uniforms.amp, "value", 0, 0.05);
-    return composer.addPass(shroomPass);
+    addEffect(new MirrorPass);
+    addEffect(new InvertPass);
+    addEffect(p = new ShroomPass);
+    p.enabled = true;
+    return p.renderToScreen = true;
   };
 
-  _useTrackball = function(camera) {
-    controls = new THREE.TrackballControls(camera);
-    controls.rotateSpeed = 2.0;
-    controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;
-    controls.noZoom = false;
-    controls.noPan = false;
-    controls.staticMoving = true;
-    controls.dynamicDampingFactor = 0.3;
-    controls.keys = [65, 83, 68];
-    return controls.addEventListener('change', _animate);
+  addEffect = function(effect) {
+    var f, values, _i, _len, _ref, _results;
+    effect.enabled = false;
+    composer.addPass(effect);
+    f = gui.addFolder(effect.name);
+    f.add(effect, "enabled");
+    if (effect.uniformValues) {
+      _ref = effect.uniformValues;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        values = _ref[_i];
+        _results.push(f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name));
+      }
+      return _results;
+    }
   };
 
   _update = function(t) {
-    if (controls != null) {
-      controls.update();
-    }
-    return update();
+    return composition.update();
   };
 
   _animate = function() {
-    return composer.render();
+    composer.render();
+    return stats.update();
   };
 
   window.loopF = function(fn) {
@@ -602,6 +851,50 @@
     RGBShiftShader.prototype.fragmentShader = "uniform sampler2D uTex;\nuniform float uRedShift;\nuniform float uGreenShift;\nuniform float uBlueShift;\nuniform vec2 uSize;\n\nvarying vec2 vUv;\n\nvoid main() {\n  float r = texture2D(uTex, (vUv - 0.5) * vec2(uRedShift, 1.0) + 0.5).r;\n  float g = texture2D(uTex, (vUv - 0.5) * vec2(uGreenShift, 1.0) + 0.5).g;\n  float b = texture2D(uTex, (vUv - 0.5) * vec2(uBlueShift, 1.0) + 0.5).b;\n  \n  gl_FragColor = vec4(r,g,b,1.0);\n}";
 
     return RGBShiftShader;
+
+  })();
+
+  drop = function(e) {
+    var file, target;
+    target = e.target;
+    file = e.dataTransfer.files[0];
+    console.log(file);
+    composition = new VideoComposition(file);
+    composition.on("thumbnail-available", function() {
+      return target.appendChild(composition.thumbnail());
+    });
+    return target.addEventListener('click', function(e) {
+      return setComposition(composition);
+    });
+  };
+
+  CompositionPicker = (function() {
+    function CompositionPicker() {
+      var i, slot, _i;
+      this.domElement = document.createElement('div');
+      this.domElement.className = 'composition-picker';
+      this.domElement.draggable = true;
+      for (i = _i = 0; _i <= 5; i = ++_i) {
+        slot = document.createElement('div');
+        slot.className = 'slot';
+        this.domElement.appendChild(slot);
+        slot.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          return e.target.classList.add('dragover');
+        });
+        slot.addEventListener('dragleave', function(e) {
+          e.preventDefault();
+          return e.target.classList.remove('dragover');
+        });
+        slot.addEventListener('drop', function(e) {
+          e.preventDefault();
+          e.target.classList.remove('dragover');
+          return drop(e);
+        });
+      }
+    }
+
+    return CompositionPicker;
 
   })();
 
