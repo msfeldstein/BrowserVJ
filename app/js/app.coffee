@@ -6,43 +6,48 @@ $ ->
 class App extends Backbone.Model
   constructor: () ->
     @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
-    @renderer.setSize(window.innerWidth, window.innerHeight)
+    outputWindow = document.querySelector(".output")
+    @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
 
-    document.body.appendChild(@renderer.domElement);
-
-    @gui = new dat.gui.GUI
+    outputWindow.appendChild(@renderer.domElement);
 
     @initCompositions()
-    @initPostProcessing()
+    @initEffects()
     @initStats()
     @initMicrophone()
     @setComposition new BlobbyComposition
 
   animate: () =>
-    @composition?.update({audio: @audioVisualizer.level})
+    @composition?.update({audio: @audioVisualizer.level || 0})
     @composer.render()
     @stats.update()
     requestAnimationFrame @animate
 
   initCompositions: () ->
     @compositionPicker = new CompositionPicker
-    document.body.appendChild @compositionPicker.render()
     @compositionPicker.addComposition new CircleGrower
     @compositionPicker.addComposition new SphereSphereComposition
     @compositionPicker.addComposition new BlobbyComposition
   
-  initPostProcessing: () ->
+  initEffects: () ->
     @composer = new THREE.EffectComposer(@renderer)
     @renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera)
-    @renderModel.renderToScreen = true
+    @renderModel.enabled = true
     @composer.addPass @renderModel
-    @addEffect new MirrorPass
-    @addEffect new InvertPass
-    @addEffect new ChromaticAberration
-    @addEffect new BadTVPass
-    @addEffect p = new ShroomPass
-    p.enabled = true
-    p.renderToScreen = true
+
+    # Todo: Why can we render without this?
+    passthrough = new Passthrough
+    passthrough.enabled = true
+    passthrough.renderToScreen = true
+    @composer.addPass passthrough
+
+    @effectsManager = new EffectsManager @composer
+    @effectsManager.registerEffect MirrorPass
+    @effectsManager.registerEffect InvertPass
+    @effectsManager.registerEffect ChromaticAberration
+    @effectsManager.registerEffect MirrorPass
+
+    @effectsPanel = new EffectsPanel(model: @effectsManager)
 
   initStats: () ->
     @stats = new Stats
@@ -53,7 +58,6 @@ class App extends Backbone.Model
 
   initMicrophone: () ->
     @audioVisualizer = new AudioVisualizer
-    document.body.appendChild @audioVisualizer.render()
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)
@@ -65,18 +69,4 @@ class App extends Backbone.Model
     @renderModel.scene = @composition.scene
     @renderModel.camera = @composition.camera
     requestAnimationFrame @animate
-    
-  addEffect: (effect) ->
-    effect.enabled = false
-    @composer.addPass effect
-    f = @gui.addFolder effect.name
-    f.add(effect, "enabled")
-    if effect.options
-      for values in effect.options
-        if values.default then effect[values.property] = values.default
-        f.add(effect, values.property, values.start, values.end).name(values.name) 
-    if effect.uniformValues
-      for values in effect.uniformValues
-        if values.default
-          effect.uniforms[values.uniform].value = values.default
-        f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
+

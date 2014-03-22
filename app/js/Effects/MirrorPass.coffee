@@ -1,5 +1,6 @@
 class MirrorPass extends ShaderPassBase
   name: "Mirror"
+  @name: "Mirror"
   fragmentShader: """
     uniform vec2 uSize;
     varying vec2 vUv;

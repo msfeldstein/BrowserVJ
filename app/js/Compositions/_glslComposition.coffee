@@ -4,12 +4,13 @@ class Composition extends Backbone.Model
     @generateThumbnail()
 
   generateThumbnail: () ->
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
     renderer.setSize(140, 90)
     @setup renderer
     renderer.render @scene, @camera
     @thumbnail = document.createElement('img')
     @thumbnail.src = renderer.domElement.toDataURL()
+    @thumbnail = renderer.domElement
     @trigger "thumbnail-available"
 
 

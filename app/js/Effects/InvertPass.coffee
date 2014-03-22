@@ -1,5 +1,6 @@
 class InvertPass extends ShaderPassBase
   name: "Invert"
+  @name: "Invert"
   uniformValues: [
     {uniform: "amount", name: "Invert Amount", start: 0, end: 1}
   ]

@@ -3,6 +3,7 @@ class ShroomPass extends ShaderPassBase
     super amp: 0, StartRad: 0, freq: 10
 
   name: "Wobble"
+  @name: "Wobble"
   uniformValues: [
     {uniform: "amp", name: "Strength", start: 0, end: 0.01}
   ]

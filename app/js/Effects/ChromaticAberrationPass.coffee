@@ -1,5 +1,6 @@
 class ChromaticAberration extends ShaderPassBase
     name: "Chromatic Aberration"
+    @name: "Chromatic Aberration"
     uniformValues: [
       {uniform: "rShift", name: "Red Shift", start: -1, end: 1, default: -.2}
       {uniform: "gShift", name: "Green Shift", start: -1, end: 1, default: 0}

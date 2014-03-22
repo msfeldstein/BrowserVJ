@@ -1,5 +1,5 @@
 class AudioVisualizer extends Backbone.View
-  className: "audio-visualizer"
+  el: ".audio-analyzer"
 
   events:
     "mousemove canvas": "drag"
@@ -14,10 +14,11 @@ class AudioVisualizer extends Backbone.View
     @analyzer = @context.createAnalyser()
     @canvas = document.createElement 'canvas'
     @el.appendChild @canvas
-    @canvas.width = 500
-    @canvas.height = 300
+    @canvas.width = @el.offsetWidth
+    @canvas.height = 200
     @selectedFreq = 500
     @hoveredFreq = null
+    @update()
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)
@@ -28,16 +29,20 @@ class AudioVisualizer extends Backbone.View
     requestAnimationFrame @update
     @data = @data || new Uint8Array(@analyzer.frequencyBinCount)
     @analyzer.getByteFrequencyData(@data);
-    total = 0
+    @scale = @canvas.width / @data.length
+
     ctx = @canvas.getContext('2d')
+    ctx.save()
     ctx.fillStyle = "rgba(0,0,0,0.5)"
     ctx.fillRect(0, 0, @canvas.width, @canvas.height);
+    ctx.translate(0, @canvas.height)
+    ctx.scale @scale, @scale
+    ctx.translate(0, -@canvas.height)
     ctx.beginPath()
     ctx.strokeStyle = "#FF0000"
     ctx.moveTo 0, @canvas.height
     for amp, i in @data
-      total += amp
-      ctx.lineTo(i / 2, @canvas.height - amp)
+      ctx.lineTo(i, @canvas.height - amp)
     ctx.stroke()
     ctx.beginPath()
     ctx.strokeStyle = "#FF0000"
@@ -54,16 +59,18 @@ class AudioVisualizer extends Backbone.View
 
     ctx.fillStyle = "#FF0000"
     @level = @data[@selectedFreq]
+    ctx.restore()
     ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height
+    
 
   render: () =>
     @el
 
   drag: (e) =>
-    @hoveredFreq = e.offsetX
+    @hoveredFreq = parseInt(e.offsetX / @scale)
 
   mouseOut: (e) =>
     @hoveredFreq = null
 
   clickCanvas: (e) =>
-    @selectedFreq = e.offsetX
+    @selectedFreq = parseInt(e.offsetX / @scale)

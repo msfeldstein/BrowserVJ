@@ -1,25 +1,28 @@
-body {
-    background: #fafafa;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    color: #333;
-    overflow: hidden;
+html, body {
     padding: 0;
     margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: black;
 }
 
-.composition-picker {
-    width: 300px;
-    height: 310px;
-    background: #333333;
-    position: absolute;
-    bottom: 0px;
-    right: 0px;
-    opacity: 0.2;
-    overflow:scroll;
+body {
+    display: -webkit-box;
+    -webkit-box-orient: horizontal;
 }
 
-.composition-picker:hover {
-    opacity: 1;
+.output {
+    width: 70%;
+    height: 100%;
+}
+
+.sidebar {
+    width: 30%;
+    height: 100%;
+    border-left: 1px solid gray;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    color: white;
 }
 
 .composition-picker .slot {
@@ -44,10 +47,9 @@ body {
 }
 
 .audio-visualizer {
-    width: 400px
-    height: 300px;
-    position: absolute;
-    left: 0;
-    top: 0;
     background: black;
+}
+
+.dg.main .close-button {
+    position: relative !important;
 }

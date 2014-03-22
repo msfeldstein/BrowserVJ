@@ -1,4 +1,5 @@
 class BlurPass extends ShaderPassBase
+  @name: "Blur"
   fragmentShader: """
     uniform float blurX;
     uniform vec2 uSize;

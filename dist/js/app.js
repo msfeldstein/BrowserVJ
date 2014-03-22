@@ -1,5 +1,5 @@
 (function() {
-  var App, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, GLSLComposition, Gamepad, InvertPass, MirrorPass, RGBShiftPass, RGBShiftShader, SPEED, ShroomPass, SmoothValue, SphereSphereComposition, VideoComposition, WashoutPass,
+  var App, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, EffectsManager, EffectsPanel, GLSLComposition, Gamepad, InvertPass, MirrorPass, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShroomPass, SmoothValue, SphereSphereComposition, VideoComposition, WashoutPass,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -129,7 +129,7 @@
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
-        clearAlpha: 0,
+        clearAlpha: 1,
         transparent: true
       });
       renderer.setSize(140, 90);
@@ -137,6 +137,7 @@
       renderer.render(this.scene, this.camera);
       this.thumbnail = document.createElement('img');
       this.thumbnail.src = renderer.domElement.toDataURL();
+      this.thumbnail = renderer.domElement;
       return this.trigger("thumbnail-available");
     };
 
@@ -228,7 +229,7 @@
   AudioVisualizer = (function(_super) {
     __extends(AudioVisualizer, _super);
 
-    AudioVisualizer.prototype.className = "audio-visualizer";
+    AudioVisualizer.prototype.el = ".audio-analyzer";
 
     AudioVisualizer.prototype.events = {
       "mousemove canvas": "drag",
@@ -252,10 +253,11 @@
       this.analyzer = this.context.createAnalyser();
       this.canvas = document.createElement('canvas');
       this.el.appendChild(this.canvas);
-      this.canvas.width = 500;
-      this.canvas.height = 300;
+      this.canvas.width = this.el.offsetWidth;
+      this.canvas.height = 200;
       this.selectedFreq = 500;
       this.hoveredFreq = null;
+      this.update();
     }
 
     AudioVisualizer.prototype.startAudio = function(stream) {
@@ -266,22 +268,25 @@
     };
 
     AudioVisualizer.prototype.update = function() {
-      var amp, ctx, i, total, _i, _len, _ref;
+      var amp, ctx, i, _i, _len, _ref;
       requestAnimationFrame(this.update);
       this.data = this.data || new Uint8Array(this.analyzer.frequencyBinCount);
       this.analyzer.getByteFrequencyData(this.data);
-      total = 0;
+      this.scale = this.canvas.width / this.data.length;
       ctx = this.canvas.getContext('2d');
+      ctx.save();
       ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.translate(0, this.canvas.height);
+      ctx.scale(this.scale, this.scale);
+      ctx.translate(0, -this.canvas.height);
       ctx.beginPath();
       ctx.strokeStyle = "#FF0000";
       ctx.moveTo(0, this.canvas.height);
       _ref = this.data;
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         amp = _ref[i];
-        total += amp;
-        ctx.lineTo(i / 2, this.canvas.height - amp);
+        ctx.lineTo(i, this.canvas.height - amp);
       }
       ctx.stroke();
       ctx.beginPath();
@@ -298,6 +303,7 @@
       }
       ctx.fillStyle = "#FF0000";
       this.level = this.data[this.selectedFreq];
+      ctx.restore();
       return ctx.fillRect(this.canvas.width - 10, this.canvas.height - this.level, 10, this.canvas.height);
     };
 
@@ -306,7 +312,7 @@
     };
 
     AudioVisualizer.prototype.drag = function(e) {
-      return this.hoveredFreq = e.offsetX;
+      return this.hoveredFreq = parseInt(e.offsetX / this.scale);
     };
 
     AudioVisualizer.prototype.mouseOut = function(e) {
@@ -314,7 +320,7 @@
     };
 
     AudioVisualizer.prototype.clickCanvas = function(e) {
-      return this.selectedFreq = e.offsetX;
+      return this.selectedFreq = parseInt(e.offsetX / this.scale);
     };
 
     return AudioVisualizer;
@@ -336,7 +342,7 @@
       this.time = 0;
       this.scene = new THREE.Scene;
       this.scene.fog = new THREE.FogExp2(0x000000, 0.0005);
-      this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+      this.camera = new THREE.PerspectiveCamera(75, this.renderer.domElement.width / this.renderer.domElement.height, 1, 10000);
       this.camera.position.z = 1000;
       sprite = new THREE.ImageUtils.loadTexture("assets/disc.png");
       sprite.premultiplyAlpha = true;
@@ -609,6 +615,8 @@
       return BlurPass.__super__.constructor.apply(this, arguments);
     }
 
+    BlurPass.name = "Blur";
+
     BlurPass.prototype.fragmentShader = "uniform float blurX;\nuniform vec2 uSize;\nvarying vec2 vUv;\nuniform sampler2D uTex;\n\nconst float blurSize = 1.0/512.0; // I've chosen this size because this will result in that every step will be one pixel wide if the RTScene texture is of size 512x512\n \nvoid main(void)\n{\n   vec4 sum = vec4(0.0);\n \n   // blur in y (vertical)\n   // take nine samples, with the distance blurSize between them\n   sum += texture2D(uTex, vec2(vUv.x - 4.0*blurX, vUv.y)) * 0.05;\n   sum += texture2D(uTex, vec2(vUv.x - 3.0*blurX, vUv.y)) * 0.09;\n   sum += texture2D(uTex, vec2(vUv.x - 2.0*blurX, vUv.y)) * 0.12;\n   sum += texture2D(uTex, vec2(vUv.x - blurX, vUv.y)) * 0.15;\n   sum += texture2D(uTex, vec2(vUv.x, vUv.y)) * 0.16;\n   sum += texture2D(uTex, vec2(vUv.x + blurX, vUv.y)) * 0.15;\n   sum += texture2D(uTex, vec2(vUv.x + 2.0*blurX, vUv.y)) * 0.12;\n   sum += texture2D(uTex, vec2(vUv.x + 3.0*blurX, vUv.y)) * 0.09;\n   sum += texture2D(uTex, vec2(vUv.x + 4.0*blurX, vUv.y)) * 0.05;\n \n   gl_FragColor = sum;\n}";
 
     return BlurPass;
@@ -623,6 +631,8 @@
     }
 
     ChromaticAberration.prototype.name = "Chromatic Aberration";
+
+    ChromaticAberration.name = "Chromatic Aberration";
 
     ChromaticAberration.prototype.uniformValues = [
       {
@@ -661,6 +671,8 @@
 
     InvertPass.prototype.name = "Invert";
 
+    InvertPass.name = "Invert";
+
     InvertPass.prototype.uniformValues = [
       {
         uniform: "amount",
@@ -685,6 +697,8 @@
 
     MirrorPass.prototype.name = "Mirror";
 
+    MirrorPass.name = "Mirror";
+
     MirrorPass.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform sampler2D uTex;\n\nvoid main (void)\n{\n  vec4 color = texture2D(uTex, vUv);\n  vec2 flipPos = vec2(0.0);\n  flipPos.x = 1.0 - vUv.x;\n  flipPos.y = vUv.y;\n  gl_FragColor = color + texture2D(uTex, flipPos);\n}";
 
     return MirrorPass;
@@ -703,6 +717,8 @@
     }
 
     ShroomPass.prototype.name = "Wobble";
+
+    ShroomPass.name = "Wobble";
 
     ShroomPass.prototype.uniformValues = [
       {
@@ -858,6 +874,141 @@
 
   })();
 
+  Passthrough = (function(_super) {
+    __extends(Passthrough, _super);
+
+    function Passthrough() {
+      return Passthrough.__super__.constructor.apply(this, arguments);
+    }
+
+    Passthrough.prototype.name = "Passthrough";
+
+    Passthrough.name = "Passthrough";
+
+    Passthrough.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform sampler2D uTex;\n\nvoid main (void)\n{\n    gl_FragColor = texture2D(uTex, vUv);\n}";
+
+    return Passthrough;
+
+  })(ShaderPassBase);
+
+  EffectsManager = (function(_super) {
+    __extends(EffectsManager, _super);
+
+    function EffectsManager(composer) {
+      this.composer = composer;
+      EffectsManager.__super__.constructor.call(this);
+      this.effectClasses = [];
+      this.stack = [];
+    }
+
+    EffectsManager.prototype.registerEffect = function(effectClass) {
+      this.effectClasses.push(effectClass);
+      return this.trigger("change");
+    };
+
+    EffectsManager.prototype.addEffectToStack = function(effect) {
+      this.stack.push(effect);
+      this.composer.insertPass(effect, this.composer.passes.length - 1);
+      return this.trigger("change");
+    };
+
+    return EffectsManager;
+
+  })(Backbone.Model);
+
+  EffectsPanel = (function(_super) {
+    __extends(EffectsPanel, _super);
+
+    function EffectsPanel() {
+      this.render = __bind(this.render, this);
+      this.addEffect = __bind(this.addEffect, this);
+      return EffectsPanel.__super__.constructor.apply(this, arguments);
+    }
+
+    EffectsPanel.prototype.el = ".effects";
+
+    EffectsPanel.prototype.events = {
+      "change .add-effect": "addEffect"
+    };
+
+    EffectsPanel.prototype.initialize = function() {
+      this.gui = new dat.gui.GUI({
+        autoPlace: false,
+        width: "100%"
+      });
+      this.addButton = document.createElement('select');
+      this.addButton.className = 'add-effect';
+      this.stack = document.createElement('div');
+      this.el.appendChild(this.gui.domElement);
+      this.el.appendChild(this.addButton);
+      this.listenTo(this.model, "change", this.render);
+      return this.render();
+    };
+
+    EffectsPanel.prototype.addEffect = function(e) {
+      if (e.target.value !== -1) {
+        this.model.addEffectToStack(new this.model.effectClasses[e.target.value]);
+        return e.target.selectedIndex = 0;
+      }
+    };
+
+    EffectsPanel.prototype.render = function() {
+      var effect, f, i, option, values, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
+      this.addButton.innerHTML = "<option value=-1>Add Effect</option>";
+      _ref = this.model.effectClasses;
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        effect = _ref[i];
+        option = document.createElement('option');
+        option.value = i;
+        option.textContent = effect.name;
+        this.addButton.appendChild(option);
+      }
+      this.stack.innerHTML = "";
+      _ref1 = this.model.stack;
+      _results = [];
+      for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
+        effect = _ref1[i];
+        if (effect.controls) {
+          continue;
+        }
+        f = this.gui.addFolder("" + i + " - " + effect.name);
+        f.open();
+        effect.controls = f;
+        if (effect.options) {
+          _ref2 = effect.options;
+          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+            values = _ref2[_k];
+            if (values["default"]) {
+              effect[values.property] = values["default"];
+            }
+            f.add(effect, values.property, values.start, values.end).name(values.name);
+          }
+        }
+        if (effect.uniformValues) {
+          _results.push((function() {
+            var _l, _len3, _ref3, _results1;
+            _ref3 = effect.uniformValues;
+            _results1 = [];
+            for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+              values = _ref3[_l];
+              if (values["default"]) {
+                effect.uniforms[values.uniform].value = values["default"];
+              }
+              _results1.push(f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name));
+            }
+            return _results1;
+          })());
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
+    return EffectsPanel;
+
+  })(Backbone.View);
+
   noise.seed(Math.random());
 
   $(function() {
@@ -870,17 +1021,18 @@
     function App() {
       this.startAudio = __bind(this.startAudio, this);
       this.animate = __bind(this.animate, this);
+      var outputWindow;
       this.renderer = new THREE.WebGLRenderer({
         antialias: true,
         alpha: true,
         clearAlpha: 1,
         transparent: true
       });
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      document.body.appendChild(this.renderer.domElement);
-      this.gui = new dat.gui.GUI;
+      outputWindow = document.querySelector(".output");
+      this.renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight);
+      outputWindow.appendChild(this.renderer.domElement);
       this.initCompositions();
-      this.initPostProcessing();
+      this.initEffects();
       this.initStats();
       this.initMicrophone();
       this.setComposition(new BlobbyComposition);
@@ -890,7 +1042,7 @@
       var _ref;
       if ((_ref = this.composition) != null) {
         _ref.update({
-          audio: this.audioVisualizer.level
+          audio: this.audioVisualizer.level || 0
         });
       }
       this.composer.render();
@@ -900,25 +1052,29 @@
 
     App.prototype.initCompositions = function() {
       this.compositionPicker = new CompositionPicker;
-      document.body.appendChild(this.compositionPicker.render());
       this.compositionPicker.addComposition(new CircleGrower);
       this.compositionPicker.addComposition(new SphereSphereComposition);
       return this.compositionPicker.addComposition(new BlobbyComposition);
     };
 
-    App.prototype.initPostProcessing = function() {
-      var p;
+    App.prototype.initEffects = function() {
+      var passthrough;
       this.composer = new THREE.EffectComposer(this.renderer);
       this.renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera);
-      this.renderModel.renderToScreen = true;
+      this.renderModel.enabled = true;
       this.composer.addPass(this.renderModel);
-      this.addEffect(new MirrorPass);
-      this.addEffect(new InvertPass);
-      this.addEffect(new ChromaticAberration);
-      this.addEffect(new BadTVPass);
-      this.addEffect(p = new ShroomPass);
-      p.enabled = true;
-      return p.renderToScreen = true;
+      passthrough = new Passthrough;
+      passthrough.enabled = true;
+      passthrough.renderToScreen = true;
+      this.composer.addPass(passthrough);
+      this.effectsManager = new EffectsManager(this.composer);
+      this.effectsManager.registerEffect(MirrorPass);
+      this.effectsManager.registerEffect(InvertPass);
+      this.effectsManager.registerEffect(ChromaticAberration);
+      this.effectsManager.registerEffect(MirrorPass);
+      return this.effectsPanel = new EffectsPanel({
+        model: this.effectsManager
+      });
     };
 
     App.prototype.initStats = function() {
@@ -930,8 +1086,7 @@
     };
 
     App.prototype.initMicrophone = function() {
-      this.audioVisualizer = new AudioVisualizer;
-      return document.body.appendChild(this.audioVisualizer.render());
+      return this.audioVisualizer = new AudioVisualizer;
     };
 
     App.prototype.startAudio = function(stream) {
@@ -946,36 +1101,6 @@
       this.renderModel.scene = this.composition.scene;
       this.renderModel.camera = this.composition.camera;
       return requestAnimationFrame(this.animate);
-    };
-
-    App.prototype.addEffect = function(effect) {
-      var f, values, _i, _j, _len, _len1, _ref, _ref1, _results;
-      effect.enabled = false;
-      this.composer.addPass(effect);
-      f = this.gui.addFolder(effect.name);
-      f.add(effect, "enabled");
-      if (effect.options) {
-        _ref = effect.options;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          values = _ref[_i];
-          if (values["default"]) {
-            effect[values.property] = values["default"];
-          }
-          f.add(effect, values.property, values.start, values.end).name(values.name);
-        }
-      }
-      if (effect.uniformValues) {
-        _ref1 = effect.uniformValues;
-        _results = [];
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          values = _ref1[_j];
-          if (values["default"]) {
-            effect.uniforms[values.uniform].value = values["default"];
-          }
-          _results.push(f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name));
-        }
-        return _results;
-      }
     };
 
     return App;
@@ -1168,7 +1293,7 @@
   CompositionPicker = (function(_super) {
     __extends(CompositionPicker, _super);
 
-    CompositionPicker.prototype.className = 'composition-picker';
+    CompositionPicker.prototype.el = ".composition-picker";
 
     CompositionPicker.prototype.events = {
       "dragover": "dragover",

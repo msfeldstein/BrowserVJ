@@ -147,12 +147,13 @@ class Composition extends Backbone.Model
     @generateThumbnail()
 
   generateThumbnail: () ->
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
     renderer.setSize(140, 90)
     @setup renderer
     renderer.render @scene, @camera
     @thumbnail = document.createElement('img')
     @thumbnail.src = renderer.domElement.toDataURL()
+    @thumbnail = renderer.domElement
     @trigger "thumbnail-available"
 
 
@@ -204,7 +205,7 @@ class GLSLComposition extends Composition
       when "sampler2D" then {type: "t", value: null}
 
 class AudioVisualizer extends Backbone.View
-  className: "audio-visualizer"
+  el: ".audio-analyzer"
 
   events:
     "mousemove canvas": "drag"
@@ -219,10 +220,11 @@ class AudioVisualizer extends Backbone.View
     @analyzer = @context.createAnalyser()
     @canvas = document.createElement 'canvas'
     @el.appendChild @canvas
-    @canvas.width = 500
-    @canvas.height = 300
+    @canvas.width = @el.offsetWidth
+    @canvas.height = 200
     @selectedFreq = 500
     @hoveredFreq = null
+    @update()
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)
@@ -233,16 +235,20 @@ class AudioVisualizer extends Backbone.View
     requestAnimationFrame @update
     @data = @data || new Uint8Array(@analyzer.frequencyBinCount)
     @analyzer.getByteFrequencyData(@data);
-    total = 0
+    @scale = @canvas.width / @data.length
+
     ctx = @canvas.getContext('2d')
+    ctx.save()
     ctx.fillStyle = "rgba(0,0,0,0.5)"
     ctx.fillRect(0, 0, @canvas.width, @canvas.height);
+    ctx.translate(0, @canvas.height)
+    ctx.scale @scale, @scale
+    ctx.translate(0, -@canvas.height)
     ctx.beginPath()
     ctx.strokeStyle = "#FF0000"
     ctx.moveTo 0, @canvas.height
     for amp, i in @data
-      total += amp
-      ctx.lineTo(i / 2, @canvas.height - amp)
+      ctx.lineTo(i, @canvas.height - amp)
     ctx.stroke()
     ctx.beginPath()
     ctx.strokeStyle = "#FF0000"
@@ -259,19 +265,21 @@ class AudioVisualizer extends Backbone.View
 
     ctx.fillStyle = "#FF0000"
     @level = @data[@selectedFreq]
+    ctx.restore()
     ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height
+    
 
   render: () =>
     @el
 
   drag: (e) =>
-    @hoveredFreq = e.offsetX
+    @hoveredFreq = parseInt(e.offsetX / @scale)
 
   mouseOut: (e) =>
     @hoveredFreq = null
 
   clickCanvas: (e) =>
-    @selectedFreq = e.offsetX
+    @selectedFreq = parseInt(e.offsetX / @scale)
 SPEED = 1 / 20000
 
 class BlobbyComposition extends Composition
@@ -279,7 +287,7 @@ class BlobbyComposition extends Composition
     @time = 0
     @scene = new THREE.Scene
     @scene.fog = new THREE.FogExp2( 0x000000, 0.0005 );
-    @camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+    @camera = new THREE.PerspectiveCamera(75, @renderer.domElement.width / @renderer.domElement.height, 1, 10000);
     @camera.position.z = 1000;
 
     sprite = new THREE.ImageUtils.loadTexture("assets/disc.png")
@@ -496,6 +504,7 @@ class BadTVPass extends ShaderPassBase
     }
   """
 class BlurPass extends ShaderPassBase
+  @name: "Blur"
   fragmentShader: """
     uniform float blurX;
     uniform vec2 uSize;
@@ -526,6 +535,7 @@ class BlurPass extends ShaderPassBase
 
 class ChromaticAberration extends ShaderPassBase
     name: "Chromatic Aberration"
+    @name: "Chromatic Aberration"
     uniformValues: [
       {uniform: "rShift", name: "Red Shift", start: -1, end: 1, default: -.2}
       {uniform: "gShift", name: "Green Shift", start: -1, end: 1, default: 0}
@@ -551,6 +561,7 @@ class ChromaticAberration extends ShaderPassBase
 
 class InvertPass extends ShaderPassBase
   name: "Invert"
+  @name: "Invert"
   uniformValues: [
     {uniform: "amount", name: "Invert Amount", start: 0, end: 1}
   ]
@@ -570,6 +581,7 @@ class InvertPass extends ShaderPassBase
 
 class MirrorPass extends ShaderPassBase
   name: "Mirror"
+  @name: "Mirror"
   fragmentShader: """
     uniform vec2 uSize;
     varying vec2 vUv;
@@ -590,6 +602,7 @@ class ShroomPass extends ShaderPassBase
     super amp: 0, StartRad: 0, freq: 10
 
   name: "Wobble"
+  @name: "Wobble"
   uniformValues: [
     {uniform: "amp", name: "Strength", start: 0, end: 0.01}
   ]
@@ -820,19 +833,76 @@ class @ShaderPassBase
       when "sampler2D" then {type: "t", value: null}
 
 
-# class EffectsManager extends Backbone.Model
-#   constructor: () ->
-#     super()
-#     @effectClasses = []
-#     @stack = []
+class Passthrough extends ShaderPassBase
+  name: "Passthrough"
+  @name: "Passthrough"
+  fragmentShader: """
+    uniform vec2 uSize;
+    varying vec2 vUv;
+    uniform sampler2D uTex;
 
-#   registerEffect: (effectClass) ->
-#     @effectClasses.push effectClass
+    void main (void)
+    {
+        gl_FragColor = texture2D(uTex, vUv);
+    }
+  """
 
-#   addEffectToStack: (effect) ->
-    
+class EffectsManager extends Backbone.Model
+  constructor: (@composer) ->
+    super()
+    @effectClasses = []
+    @stack = []
 
-# class EffectsPanel extends Backbone.View
+  registerEffect: (effectClass) ->
+    @effectClasses.push effectClass
+    @trigger "change"
+
+  addEffectToStack: (effect) ->
+    @stack.push effect
+    @composer.insertPass effect, @composer.passes.length - 1
+    @trigger "change"
+
+class EffectsPanel extends Backbone.View
+  el: ".effects"
+  events:
+    "change .add-effect": "addEffect"
+  initialize: () ->
+    @gui = new dat.gui.GUI { autoPlace: false, width: "100%"}
+    @addButton = document.createElement 'select'
+    @addButton.className = 'add-effect'
+    @stack = document.createElement 'div'
+    @el.appendChild @gui.domElement
+    @el.appendChild @addButton
+    @listenTo @model, "change", @render
+    @render()
+
+  addEffect: (e) =>
+    if e.target.value != -1
+      @model.addEffectToStack new @model.effectClasses[e.target.value]
+      e.target.selectedIndex = 0
+
+  render: () =>
+    @addButton.innerHTML = "<option value=-1>Add Effect</option>"
+    for effect, i in @model.effectClasses
+      option = document.createElement 'option'
+      option.value = i
+      option.textContent = effect.name
+      @addButton.appendChild option
+    @stack.innerHTML = ""
+    for effect, i in @model.stack
+      if effect.controls then continue
+      f = @gui.addFolder "#{i} - #{effect.name}"
+      f.open()
+      effect.controls = f
+      if effect.options
+        for values in effect.options
+          if values.default then effect[values.property] = values.default
+          f.add(effect, values.property, values.start, values.end).name(values.name) 
+      if effect.uniformValues
+        for values in effect.uniformValues
+          if values.default
+            effect.uniforms[values.uniform].value = values.default
+          f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
 
 noise.seed(Math.random())
 
@@ -842,43 +912,48 @@ $ ->
 class App extends Backbone.Model
   constructor: () ->
     @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
-    @renderer.setSize(window.innerWidth, window.innerHeight)
+    outputWindow = document.querySelector(".output")
+    @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
 
-    document.body.appendChild(@renderer.domElement);
-
-    @gui = new dat.gui.GUI
+    outputWindow.appendChild(@renderer.domElement);
 
     @initCompositions()
-    @initPostProcessing()
+    @initEffects()
     @initStats()
     @initMicrophone()
     @setComposition new BlobbyComposition
 
   animate: () =>
-    @composition?.update({audio: @audioVisualizer.level})
+    @composition?.update({audio: @audioVisualizer.level || 0})
     @composer.render()
     @stats.update()
     requestAnimationFrame @animate
 
   initCompositions: () ->
     @compositionPicker = new CompositionPicker
-    document.body.appendChild @compositionPicker.render()
     @compositionPicker.addComposition new CircleGrower
     @compositionPicker.addComposition new SphereSphereComposition
     @compositionPicker.addComposition new BlobbyComposition
   
-  initPostProcessing: () ->
+  initEffects: () ->
     @composer = new THREE.EffectComposer(@renderer)
     @renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera)
-    @renderModel.renderToScreen = true
+    @renderModel.enabled = true
     @composer.addPass @renderModel
-    @addEffect new MirrorPass
-    @addEffect new InvertPass
-    @addEffect new ChromaticAberration
-    @addEffect new BadTVPass
-    @addEffect p = new ShroomPass
-    p.enabled = true
-    p.renderToScreen = true
+
+    # Todo: Why can we render without this?
+    passthrough = new Passthrough
+    passthrough.enabled = true
+    passthrough.renderToScreen = true
+    @composer.addPass passthrough
+
+    @effectsManager = new EffectsManager @composer
+    @effectsManager.registerEffect MirrorPass
+    @effectsManager.registerEffect InvertPass
+    @effectsManager.registerEffect ChromaticAberration
+    @effectsManager.registerEffect MirrorPass
+
+    @effectsPanel = new EffectsPanel(model: @effectsManager)
 
   initStats: () ->
     @stats = new Stats
@@ -889,7 +964,6 @@ class App extends Backbone.Model
 
   initMicrophone: () ->
     @audioVisualizer = new AudioVisualizer
-    document.body.appendChild @audioVisualizer.render()
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)
@@ -901,21 +975,7 @@ class App extends Backbone.Model
     @renderModel.scene = @composition.scene
     @renderModel.camera = @composition.camera
     requestAnimationFrame @animate
-    
-  addEffect: (effect) ->
-    effect.enabled = false
-    @composer.addPass effect
-    f = @gui.addFolder effect.name
-    f.add(effect, "enabled")
-    if effect.options
-      for values in effect.options
-        if values.default then effect[values.property] = values.default
-        f.add(effect, values.property, values.start, values.end).name(values.name) 
-    if effect.uniformValues
-      for values in effect.uniformValues
-        if values.default
-          effect.uniforms[values.uniform].value = values.default
-        f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
+
 
 class Gamepad
   @FACE_1: 0
@@ -1043,7 +1103,7 @@ class RGBShiftShader
     }
   """
 class CompositionPicker extends Backbone.View
-  className: 'composition-picker'
+  el: ".composition-picker"
 
   events:
     "dragover": "dragover"
