@@ -1,9 +1,20 @@
-class @ShaderPassBase
+class EffectPassBase extends Backbone.Model
+  constructor: () ->
+    super()
+    @uniformValues = @uniformValues || []
+    @options = @options || []
+    @inputs = @inputs || []
+    @outputs = @outputs || []
+
+class ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->
+    super()
     @enabled = true
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
-    for key, value of initialValues
-      @uniforms[key].value = value
+    for uniformDesc in @uniformValues
+      @inputs.push {name: uniformDesc.name, type: "number", min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
+      @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
+      @set uniformDesc.name, uniformDesc.default
 
     @material = new THREE.ShaderMaterial {
       uniforms: @uniforms
@@ -20,6 +31,12 @@ class @ShaderPassBase
 
     @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
     @scene.add @quad
+
+  _uniformsChanged: (obj) ->
+    for name, value of obj.changed
+      uniformDesc = _.find(@uniformValues, ((u) -> u.name == name))
+      @uniforms[uniformDesc.uniform].value = value
+
 
   render: (renderer, writeBuffer, readBuffer, delta) ->
     @update?()

@@ -1,9 +1,84 @@
-class @ShaderPassBase
+class Composition extends Backbone.Model
+  constructor: () ->
+    super()
+    @generateThumbnail()
+
+  generateThumbnail: () ->
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
+    renderer.setSize(640, 480)
+    @setup renderer
+    renderer.setClearColor( 0xffffff, 0 )
+    renderer.render @scene, @camera
+
+    @thumbnail = document.createElement('img')
+    @thumbnail.src = renderer.domElement.toDataURL()
+    @trigger "thumbnail-available"
+
+
+class GLSLComposition extends Composition
+  setup: (@renderer) ->
+    @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
+    @material = new THREE.ShaderMaterial {
+      uniforms: @uniforms
+      vertexShader: @vertexShader
+      fragmentShader: @fragmentShader
+    }
+
+    @enabled = true
+    @renderToScreen = false
+    @needsSwap = true
+
+    @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+    @scene = new THREE.Scene
+
+    @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
+    @quad.material = @material
+    @scene.add @quad
+
+  vertexShader: """
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+  """
+
+  findUniforms: (shader) ->
+    lines = shader.split("\n")
+    uniforms = {}
+    for line in lines
+      if (line.indexOf("uniform") == 0)
+        tokens = line.split(" ")
+        name = tokens[2].substring(0, tokens[2].length - 1)
+        uniforms[name] = @typeToUniform tokens[1]
+    uniforms
+
+  typeToUniform: (type) ->
+    switch type
+      when "float" then {type: "f", value: 0}
+      when "vec2" then {type: "v2", value: new THREE.Vector2}
+      when "vec3" then {type: "v3", value: new THREE.Vector3}
+      when "vec4" then {type: "v4", value: new THREE.Vector4}
+      when "bool" then {type: "i", value: 0}
+      when "sampler2D" then {type: "t", value: null}
+
+class EffectPassBase extends Backbone.Model
+  constructor: () ->
+    super()
+    @uniformValues = @uniformValues || []
+    @options = @options || []
+    @inputs = @inputs || []
+    @outputs = @outputs || []
+
+class ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->
+    super()
     @enabled = true
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
-    for key, value of initialValues
-      @uniforms[key].value = value
+    for uniformDesc in @uniformValues
+      @inputs.push {name: uniformDesc.name, type: "number", min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
+      @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
+      @set uniformDesc.name, uniformDesc.default
 
     @material = new THREE.ShaderMaterial {
       uniforms: @uniforms
@@ -20,6 +95,12 @@ class @ShaderPassBase
 
     @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
     @scene.add @quad
+
+  _uniformsChanged: (obj) ->
+    for name, value of obj.changed
+      uniformDesc = _.find(@uniformValues, ((u) -> u.name == name))
+      @uniforms[uniformDesc.uniform].value = value
+
 
   render: (renderer, writeBuffer, readBuffer, delta) ->
     @update?()
@@ -141,71 +222,18 @@ class @ShaderPassBase
       when "sampler2D" then {type: "t", value: null}
 
 
-class Composition extends Backbone.Model
+class VJSSignal extends Backbone.Model
+  inputs: []
+  outputs: []
   constructor: () ->
     super()
-    @generateThumbnail()
+    for input in @inputs
+      @set input.name, input.default
 
-  generateThumbnail: () ->
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
-    renderer.setSize(640, 480)
-    @setup renderer
-    renderer.setClearColorHex( 0xffffff, 0 )
-    renderer.render @scene, @camera
-
-    @thumbnail = document.createElement('img')
-    @thumbnail.src = renderer.domElement.toDataURL()
-    @trigger "thumbnail-available"
-
-
-class GLSLComposition extends Composition
-  setup: (@renderer) ->
-    @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
-    @material = new THREE.ShaderMaterial {
-      uniforms: @uniforms
-      vertexShader: @vertexShader
-      fragmentShader: @fragmentShader
-    }
-
-    @enabled = true
-    @renderToScreen = false
-    @needsSwap = true
-
-    @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
-    @scene = new THREE.Scene
-
-    @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
-    @quad.material = @material
-    @scene.add @quad
-
-  vertexShader: """
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    }
-  """
-
-  findUniforms: (shader) ->
-    lines = shader.split("\n")
-    uniforms = {}
-    for line in lines
-      if (line.indexOf("uniform") == 0)
-        tokens = line.split(" ")
-        name = tokens[2].substring(0, tokens[2].length - 1)
-        uniforms[name] = @typeToUniform tokens[1]
-    uniforms
-
-  typeToUniform: (type) ->
-    switch type
-      when "float" then {type: "f", value: 0}
-      when "vec2" then {type: "v2", value: new THREE.Vector2}
-      when "vec3" then {type: "v3", value: new THREE.Vector3}
-      when "vec4" then {type: "v4", value: new THREE.Vector4}
-      when "bool" then {type: "i", value: 0}
-      when "sampler2D" then {type: "t", value: null}
-
+  update: (time) ->
+    # Override
 class AudioInputNode extends Backbone.Model
+  @MAX_AUDIO_LEVEL: 200
   constructor: () ->
     super()
     navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
@@ -225,7 +253,7 @@ class AudioInputNode extends Backbone.Model
       @data = new Uint8Array(@analyzer.frequencyBinCount)
       @set "data", @data
     @analyzer.getByteFrequencyData(@data);
-    @set "peak", @data[@get('selectedFreq')]
+    @set "peak", @data[@get('selectedFreq')] / AudioInputNode.MAX_AUDIO_LEVEL
     @trigger "change:data"
 
 SPEED = 1 / 20000
@@ -293,6 +321,170 @@ class CircleGrower extends GLSLComposition
       gl_FragColor = (sin(dist / 25.0) > 0.0) 
           ? vec4(.90, .90, .90, 1.0)
           : vec4(0.0);
+    }
+  """
+class FlameComposition extends GLSLComposition
+  
+  update: () ->
+    @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)
+    @uniforms['time'].value += .04
+  fragmentShader: """
+    const int _VolumeSteps = 32;
+    const float _StepSize = 0.1; 
+    const float _Density = 0.2;
+
+    const float _SphereRadius = 2.0;
+    const float _NoiseFreq = 1.0;
+    const float _NoiseAmp = 3.0;
+    const vec3 _NoiseAnim = vec3(0, -1.0, 0);
+    uniform vec2 uSize;
+    varying vec2 vUv;
+    uniform float time;
+
+
+    // iq's nice integer-less noise function
+
+    // matrix to rotate the noise octaves
+    mat3 m = mat3( 0.00,  0.80,  0.60,
+                  -0.80,  0.36, -0.48,
+                  -0.60, -0.48,  0.64 );
+
+    float hash( float n )
+    {
+        return fract(sin(n)*43758.5453);
+    }
+
+
+    float noise( in vec3 x )
+    {
+        vec3 p = floor(x);
+        vec3 f = fract(x);
+
+        f = f*f*(3.0-2.0*f);
+
+        float n = p.x + p.y*57.0 + 113.0*p.z;
+
+        float res = mix(mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),
+                            mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y),
+                        mix(mix( hash(n+113.0), hash(n+114.0),f.x),
+                            mix( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);
+        return res;
+    }
+
+    float fbm( vec3 p )
+    {
+        float f;
+        f = 0.5000*noise( p ); p = m*p*2.02;
+        f += 0.2500*noise( p ); p = m*p*2.03;
+        f += 0.1250*noise( p ); p = m*p*2.01;
+        f += 0.0625*noise( p );
+        //p = m*p*2.02; f += 0.03125*abs(noise( p )); 
+        return f;
+    }
+
+    // returns signed distance to surface
+    float distanceFunc(vec3 p)
+    { 
+      float d = length(p) - _SphereRadius;  // distance to sphere
+      
+      // offset distance with pyroclastic noise
+      //p = normalize(p) * _SphereRadius; // project noise point to sphere surface
+      d += fbm(p*_NoiseFreq + _NoiseAnim*time) * _NoiseAmp;
+      return d;
+    }
+
+    // color gradient 
+    // this should be in a 1D texture really
+    vec4 gradient(float x)
+    {
+      // no constant array initializers allowed in GLES SL!
+      const vec4 c0 = vec4(2, 2, 1, 1); // yellow
+      const vec4 c1 = vec4(1, 0, 0, 1); // red
+      const vec4 c2 = vec4(0, 0, 0, 0);   // black
+      const vec4 c3 = vec4(0, 0.5, 1, 0.5);   // blue
+      const vec4 c4 = vec4(0, 0, 0, 0);   // black
+      
+      x = clamp(x, 0.0, 0.999);
+      float t = fract(x*4.0);
+      vec4 c;
+      if (x < 0.25) {
+        c =  mix(c0, c1, t);
+      } else if (x < 0.5) {
+        c = mix(c1, c2, t);
+      } else if (x < 0.75) {
+        c = mix(c2, c3, t);
+      } else {
+        c = mix(c3, c4, t);   
+      }
+      //return vec4(x);
+      //return vec4(t);
+      return c;
+    }
+
+    // shade a point based on distance
+    vec4 shade(float d)
+    { 
+      // lookup in color gradient
+      return gradient(d);
+      //return mix(vec4(1, 1, 1, 1), vec4(0, 0, 0, 0), smoothstep(1.0, 1.1, d));
+    }
+
+    // procedural volume
+    // maps position to color
+    vec4 volumeFunc(vec3 p)
+    {
+      float d = distanceFunc(p);
+      return shade(d);
+    }
+
+    // ray march volume from front to back
+    // returns color
+    vec4 rayMarch(vec3 rayOrigin, vec3 rayStep, out vec3 pos)
+    {
+      vec4 sum = vec4(0, 0, 0, 0);
+      pos = rayOrigin;
+      for(int i=0; i<_VolumeSteps; i++) {
+        vec4 col = volumeFunc(pos);
+        col.a *= _Density;
+        //col.a = min(col.a, 1.0);
+        
+        // pre-multiply alpha
+        col.rgb *= col.a;
+        sum = sum + col*(1.0 - sum.a);  
+    #if 0
+        // exit early if opaque
+              if (sum.a > _OpacityThreshold)
+                    break;
+    #endif    
+        pos += rayStep;
+      }
+      return sum;
+    }
+
+    void main(void)
+    {
+        vec2 p = (vUv.xy)*2.0-1.0;
+      
+        float rotx = time * .05;
+        float roty = time * .04;
+
+        float zoom = 4.0;
+
+        // camera
+        vec3 ro = zoom*normalize(vec3(cos(roty), cos(rotx), sin(roty)));
+        vec3 ww = normalize(vec3(0.0,0.0,0.0) - ro);
+        vec3 uu = normalize(cross( vec3(0.0,1.0,0.0), ww ));
+        vec3 vv = normalize(cross(ww,uu));
+        vec3 rd = normalize( p.x*uu + p.y*vv + 1.5*ww );
+
+        ro += rd*2.0;
+      
+        // volume render
+        vec3 hitPos;
+        vec4 col = rayMarch(ro, rd*_StepSize, hitPos);
+        //vec4 col = gradient(p.x);
+          
+        gl_FragColor = col;
     }
   """
 class SphereSphereComposition extends Composition
@@ -485,9 +677,9 @@ class ChromaticAberration extends ShaderPassBase
     name: "Chromatic Aberration"
     @name: "Chromatic Aberration"
     uniformValues: [
-      {uniform: "rShift", name: "Red Shift", start: -1, end: 1, default: -.2}
-      {uniform: "gShift", name: "Green Shift", start: -1, end: 1, default: 0}
-      {uniform: "bShift", name: "Blue Shift", start: -1, end: 1, default: .21}
+      {uniform: "rShift", name: "Red Shift", min: -1, max: 1, default: -.2}
+      {uniform: "gShift", name: "Green Shift", min: -1, max: 1, default: -.2}
+      {uniform: "bShift", name: "Blue Shift", min: -1, max: 1, default: -.2}
     ]
     fragmentShader: """
       uniform float rShift;
@@ -511,7 +703,7 @@ class InvertPass extends ShaderPassBase
   name: "Invert"
   @name: "Invert"
   uniformValues: [
-    {uniform: "amount", name: "Invert Amount", start: 0, end: 1}
+    {uniform: "amount", name: "Invert Amount", min: 0, max: 1, default: 0}
   ]
   fragmentShader: """
     uniform float amount;
@@ -638,149 +830,6 @@ class WashoutPass extends ShaderPassBase
     }
   """
 
-class @ShaderPassBase
-  constructor: (initialValues) ->
-    @enabled = true
-    @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
-    for key, value of initialValues
-      @uniforms[key].value = value
-
-    @material = new THREE.ShaderMaterial {
-      uniforms: @uniforms
-      vertexShader: @vertexShader
-      fragmentShader: @fragmentShader
-    }
-
-    @enabled = true
-    @renderToScreen = false
-    @needsSwap = true
-
-    @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
-    @scene  = new THREE.Scene();
-
-    @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
-    @scene.add @quad
-
-  render: (renderer, writeBuffer, readBuffer, delta) ->
-    @update?()
-    if !@enabled
-      writeBuffer = readBuffer
-      return
-    @uniforms['uTex'].value = readBuffer
-    if @uniforms['uSize'] then @uniforms['uSize'].value.set(readBuffer.width, readBuffer.height)
-    @quad.material = @material
-    if @renderToScreen
-      renderer.render @scene, @camera
-    else
-      renderer.render @scene, @camera, writeBuffer, false
-
-  standardUniforms: {
-    uTex: {type: 't', value: null}
-    uSize: {type: 'v2', value: new THREE.Vector2( 256, 256 )}
-  }
-  
-  vertexShader: """
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    }
-  """
-
-  @ashimaNoiseFunctions: """
-    //
-    // Description : Array and textureless GLSL 2D simplex noise function.
-    //      Author : Ian McEwan, Ashima Arts.
-    //  Maintainer : ijm
-    //     Lastmod : 20110822 (ijm)
-    //     License : Copyright (C) 2011 Ashima Arts. All rights reserved.
-    //               Distributed under the MIT License. See LICENSE file.
-    //               https://github.com/ashima/webgl-noise
-    // 
-
-    vec3 mod289(vec3 x) {
-      return x - floor(x * (1.0 / 289.0)) * 289.0;
-    }
-
-    vec2 mod289(vec2 x) {
-      return x - floor(x * (1.0 / 289.0)) * 289.0;
-    }
-
-    vec3 permute(vec3 x) {
-      return mod289(((x*34.0)+1.0)*x);
-    }
-
-    float snoise(vec2 v)
-      {
-      const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
-                          0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
-                         -0.577350269189626,  // -1.0 + 2.0 * C.x
-                          0.024390243902439); // 1.0 / 41.0
-    // First corner
-      vec2 i  = floor(v + dot(v, C.yy) );
-      vec2 x0 = v -   i + dot(i, C.xx);
-
-    // Other corners
-      vec2 i1;
-      //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0
-      //i1.y = 1.0 - i1.x;
-      i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-      // x0 = x0 - 0.0 + 0.0 * C.xx ;
-      // x1 = x0 - i1 + 1.0 * C.xx ;
-      // x2 = x0 - 1.0 + 2.0 * C.xx ;
-      vec4 x12 = x0.xyxy + C.xxzz;
-      x12.xy -= i1;
-
-    // Permutations
-      i = mod289(i); // Avoid truncation effects in permutation
-      vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-        + i.x + vec3(0.0, i1.x, 1.0 ));
-
-      vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-      m = m*m ;
-      m = m*m ;
-
-    // Gradients: 41 points uniformly over a line, mapped onto a diamond.
-    // The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
-
-      vec3 x = 2.0 * fract(p * C.www) - 1.0;
-      vec3 h = abs(x) - 0.5;
-      vec3 ox = floor(x + 0.5);
-      vec3 a0 = x - ox;
-
-    // Normalise gradients implicitly by scaling m
-    // Approximation of: m *= inversesqrt( a0*a0 + h*h );
-      m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-
-    // Compute final noise value at P
-      vec3 g;
-      g.x  = a0.x  * x0.x  + h.x  * x0.y;
-      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-      return 130.0 * dot(m, g);
-    }
-
-  """
-
-  findUniforms: (shader) ->
-    lines = shader.split("\n")
-    uniforms = {}
-    for line in lines
-      if (line.indexOf("uniform") == 0)
-        tokens = line.split(" ")
-        name = tokens[2].substring(0, tokens[2].length - 1)
-        uniforms[name] = @typeToUniform tokens[1]
-    uniforms
-
-  typeToUniform: (type) ->
-    switch type
-      when "float" then {type: "f", value: 0}
-      when "vec2" then {type: "v2", value: new THREE.Vector2}
-      when "vec3" then {type: "v3", value: new THREE.Vector3}
-      when "vec4" then {type: "v4", value: new THREE.Vector4}
-      when "bool" then {type: "i", value: 0}
-      when "sampler2D" then {type: "t", value: null}
-
-
 class Passthrough extends ShaderPassBase
   name: "Passthrough"
   @name: "Passthrough"
@@ -808,25 +857,35 @@ class EffectsManager extends Backbone.Model
   addEffectToStack: (effect) ->
     @stack.push effect
     @composer.insertPass effect, @composer.passes.length - 1
-    @trigger "change"
+    @trigger "add-effect", effect
 
 class EffectParameter extends Backbone.Model
-  constructor: (target, property) ->
-    super()
+
+
+class EffectControl extends Backbone.View
+  className: "effect-control"
+  initialize: () ->
+
+  render: () ->
+    @el.textContent = @model.get("name")
 
 class EffectsPanel extends Backbone.View
   el: ".effects"
   events:
     "change .add-effect": "addEffect"
   initialize: () ->
-    @gui = new dat.gui.GUI { autoPlace: false, width: "100%"}
     @addButton = document.createElement 'select'
     @addButton.className = 'add-effect'
     @stack = document.createElement 'div'
-    @el.appendChild @gui.domElement
+    @el.appendChild @stack
     @el.appendChild @addButton
     @listenTo @model, "change", @render
+    @listenTo @model, "add-effect", @insertEffectPanel
     @render()
+
+  insertEffectPanel: (effect) =>
+    effectParameter = new SignalUIBase model: effect
+    @stack.appendChild effectParameter.render()
 
   addEffect: (e) =>
     if e.target.value != -1
@@ -840,34 +899,7 @@ class EffectsPanel extends Backbone.View
       option.value = i
       option.textContent = effect.name
       @addButton.appendChild option
-    @stack.innerHTML = ""
-    for effect, i in @model.stack
-      if effect.controls then continue
-      f = @gui.addFolder "#{i} - #{effect.name}"
-      f.open()
-      effect.controls = f
-      if effect.options
-        for values in effect.options
-          if values.default then effect[values.property] = values.default
-          val = f.add(effect, values.property, values.start, values.end).name(values.name) 
-          val.domElement.querySelector('.property-name').appendChild audio = document.createElement 'checkbox'
-          audio.className = 'audio-toggle'
-      if effect.uniformValues
-        for values in effect.uniformValues
-          if values.default
-            effect.uniforms[values.uniform].value = values.default
-          val = f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name)
-          val.domElement.previousSibling.appendChild audio = document.createElement 'input'
-          audio.type = 'checkbox'
-          audio.datgui = val
-          audio.target = effect.uniforms
-          audio.property = values.uniform
-          audio.className = 'audio-toggle'
-          audio.addEventListener 'change', (e) ->
-            e.target.datgui.listen()
-            application.audioVisualizer.addListener (params) ->
-              audio.target[audio.property].value = params.peak
-
+    
 
 class Node
   constructor: () ->
@@ -892,10 +924,13 @@ class App extends Backbone.Model
     @initEffects()
     @initStats()
     @initMicrophone()
+    @initSignals()
     @setComposition new SphereSphereComposition
     requestAnimationFrame @animate
 
   animate: () =>
+    time = Date.now()
+    @signalManager.update(time)
     @composition?.update({audio: @audioVisualizer.level || 0})
     @composer.render()
     @stats.update()
@@ -906,6 +941,7 @@ class App extends Backbone.Model
     @compositionPicker.addComposition new CircleGrower
     @compositionPicker.addComposition new SphereSphereComposition
     @compositionPicker.addComposition new BlobbyComposition
+    @compositionPicker.addComposition new FlameComposition
   
   initEffects: () ->
     @composer = new THREE.EffectComposer(@renderer)
@@ -926,18 +962,22 @@ class App extends Backbone.Model
     @effectsManager.registerEffect MirrorPass
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
-    @effectsManager.addEffectToStack new ChromaticAberration
 
   initStats: () ->
     @stats = new Stats
     @stats.domElement.style.position = 'absolute'
-    @stats.domElement.style.right = '0px'
+    @stats.domElement.style.right = '20px'
     @stats.domElement.style.top = '0px'
     document.body.appendChild @stats.domElement
 
   initMicrophone: () ->
     @audioInputNode = new AudioInputNode
     @audioVisualizer = new AudioVisualizer model: @audioInputNode
+
+  initSignals: () ->
+    @signalManager = new SignalManager
+    @signalManagerView = new SignalManagerView(model:@signalManager)
+    @signalManager.add new LFO
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)
@@ -1125,7 +1165,7 @@ class AudioVisualizer extends Backbone.View
       ctx.stroke()
 
     
-    @level = @model.get('peak')
+    @level = @model.get('peak') * @canvas.height
     ctx.restore()
     ctx.fillStyle = "#FF0000"
     ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height    
@@ -1193,5 +1233,130 @@ class CompositionSlot extends Backbone.View
     application.setComposition @model
 
 
+class LFO extends VJSSignal
+  inputs: [
+    {name: "period", type: "number", min: 0, max: 10, default: 2}
+    {name: "type", type: "select", options: ["Sin", "Square", "Triangle"], default: "Sin"}
+  ]
+  outputs: [
+    {name: "value", type: "number", min: 0, max: 1}
+  ]
+  name: "LFO"
+  initialize: () ->
+    super()
+    
+  update: (time) ->
+    time = time / 1000
+    period = @get("period")
+    value = 0
+    switch @get("type")
+      when "Sin"
+        value = Math.sin(Math.PI * time / (period)) * .5 + .5
+      when "Square"
+        value = Math.round(Math.sin(Math.PI * time / (period)) * .5 + .5)
+    @set "value", value
+
+class SignalManager extends Backbone.Collection
+  constructor: () ->
+    super([], {model: VJSSignal})
+
+  update: (time) ->
+    for signal in @models
+      signal.update(time)
+
+class SignalManagerView extends Backbone.View
+  el: ".signals"
+  initialize: () ->
+    @views = []
+    @listenTo @model, "add", @createSignalView
+
+  createSignalView: (signal) =>
+    @views.push view = new SignalUIBase(model: signal)
+    @el.appendChild view.render()
+class SignalUIBase extends Backbone.View
+  className: "signal-set"
+
+  initialize: () ->
+    @el.appendChild label = document.createElement 'div'
+    label.textContent = @model.name
+    label.className = 'label'
+    for input in @model.inputs
+      @el.appendChild div = document.createElement 'div'
+      div.className = "signal"
+      div.textContent = input.name
+      if input.type == "number"
+        div.appendChild @newSlider(@model, input).render()
+      else if input.type == "select"
+        div.appendChild @newSelect(@model, input).render()
+
+    if @model.outputs?.length > 0
+      @el.appendChild document.createElement 'hr'
+    for output in @model.outputs
+      @el.appendChild div = document.createElement 'div'
+      div.className = "signal"
+      div.textContent = output.name
+      if output.type == "number"
+        div.appendChild @newSlider(@model, output).render()
+
+  render: () ->
+    @el
+
+  newSlider: (model, input) ->
+    slider = new VJSSlider(model, input)
+
+  newSelect: (model, input) ->
+    new VJSSelect(model, input)
+class VJSSlider extends Backbone.View
+  events: 
+    "click .slider": "click"
+
+  constructor:(model, @property) ->
+    super(model: model)
+
+  initialize: () ->
+    div = document.createElement 'div'
+    div.className = 'slider'
+    div.appendChild @level = document.createElement 'div'
+    @level.className = 'level'
+    @el.appendChild div
+
+    @max = @property.max
+    @min = @property.min
+    @listenTo @model, "change:#{@property.name}", @render
+    @render()
+
+  click: (e) =>
+    if e.button then console.log e
+    x = e.offsetX
+    percent = x / @el.clientWidth
+    value = (@max - @min) * percent + @min
+    @model.set(@property.name, value)
+
+  render: () => 
+    if @model.name == "Invert" then console.log @
+    value = @model.get(@property.name)
+    percent = (value - @min) / (@max - @min) * 100
+    @level.style.width = "#{percent}%"
+    @el
+
+class VJSSelect extends Backbone.View
+  events: 
+    "change select": "change"
+  constructor: (model, @property) ->
+    super(model: model)
+
+  initialize: () ->
+    @el.appendChild div = document.createElement 'div'
+    div.appendChild select = document.createElement 'select'
+    for option in @property.options
+      select.appendChild opt = document.createElement 'option'
+      opt.value = option
+      opt.textContent = option
+
+  change: (e) =>
+    @model.set(@property.name, e.target.value)
+    
+  render: () =>
+    @el
 class SmoothValue
   

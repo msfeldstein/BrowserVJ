@@ -33,7 +33,7 @@ module.exports = function(grunt) {
                     sourceMap: true
                 },
                 files: {
-                    "dist/js/app.js": [base + "/js/effects/_shaderpass.coffee", base + '/js/Compositions/_glslComposition.coffee', base + '/js/**/*.coffee']
+                    "dist/js/app.js": [base + "/js/**/_*.coffee", base + '/js/**/*.coffee']
                 }
             }
         },

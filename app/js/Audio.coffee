@@ -1,4 +1,5 @@
 class AudioInputNode extends Backbone.Model
+  @MAX_AUDIO_LEVEL: 200
   constructor: () ->
     super()
     navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
@@ -18,5 +19,5 @@ class AudioInputNode extends Backbone.Model
       @data = new Uint8Array(@analyzer.frequencyBinCount)
       @set "data", @data
     @analyzer.getByteFrequencyData(@data);
-    @set "peak", @data[@get('selectedFreq')]
+    @set "peak", @data[@get('selectedFreq')] / AudioInputNode.MAX_AUDIO_LEVEL
     @trigger "change:data"

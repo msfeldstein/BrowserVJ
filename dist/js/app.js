@@ -1,120 +1,8 @@
 (function() {
-  var App, AudioInputNode, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, EffectParameter, EffectsManager, EffectsPanel, GLSLComposition, Gamepad, InvertPass, MirrorPass, Node, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShroomPass, SmoothValue, SphereSphereComposition, VideoComposition, WashoutPass,
+  var App, AudioInputNode, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, EffectControl, EffectParameter, EffectPassBase, EffectsManager, EffectsPanel, FlameComposition, GLSLComposition, Gamepad, InvertPass, LFO, MirrorPass, Node, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShaderPassBase, ShroomPass, SignalManager, SignalManagerView, SignalUIBase, SmoothValue, SphereSphereComposition, VJSSelect, VJSSignal, VJSSlider, VideoComposition, WashoutPass,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-  this.ShaderPassBase = (function() {
-    function ShaderPassBase(initialValues) {
-      var key, value;
-      this.enabled = true;
-      this.uniforms = THREE.UniformsUtils.clone(this.findUniforms(this.fragmentShader));
-      for (key in initialValues) {
-        value = initialValues[key];
-        this.uniforms[key].value = value;
-      }
-      this.material = new THREE.ShaderMaterial({
-        uniforms: this.uniforms,
-        vertexShader: this.vertexShader,
-        fragmentShader: this.fragmentShader
-      });
-      this.enabled = true;
-      this.renderToScreen = false;
-      this.needsSwap = true;
-      this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-      this.scene = new THREE.Scene();
-      this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
-      this.scene.add(this.quad);
-    }
-
-    ShaderPassBase.prototype.render = function(renderer, writeBuffer, readBuffer, delta) {
-      if (typeof this.update === "function") {
-        this.update();
-      }
-      if (!this.enabled) {
-        writeBuffer = readBuffer;
-        return;
-      }
-      this.uniforms['uTex'].value = readBuffer;
-      if (this.uniforms['uSize']) {
-        this.uniforms['uSize'].value.set(readBuffer.width, readBuffer.height);
-      }
-      this.quad.material = this.material;
-      if (this.renderToScreen) {
-        return renderer.render(this.scene, this.camera);
-      } else {
-        return renderer.render(this.scene, this.camera, writeBuffer, false);
-      }
-    };
-
-    ShaderPassBase.prototype.standardUniforms = {
-      uTex: {
-        type: 't',
-        value: null
-      },
-      uSize: {
-        type: 'v2',
-        value: new THREE.Vector2(256, 256)
-      }
-    };
-
-    ShaderPassBase.prototype.vertexShader = "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}";
-
-    ShaderPassBase.ashimaNoiseFunctions = "//\n// Description : Array and textureless GLSL 2D simplex noise function.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n// \n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec2 mod289(vec2 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec3 permute(vec3 x) {\n  return mod289(((x*34.0)+1.0)*x);\n}\n\nfloat snoise(vec2 v)\n  {\n  const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0\n                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)\n                     -0.577350269189626,  // -1.0 + 2.0 * C.x\n                      0.024390243902439); // 1.0 / 41.0\n// First corner\n  vec2 i  = floor(v + dot(v, C.yy) );\n  vec2 x0 = v -   i + dot(i, C.xx);\n\n// Other corners\n  vec2 i1;\n  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0\n  //i1.y = 1.0 - i1.x;\n  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n  // x0 = x0 - 0.0 + 0.0 * C.xx ;\n  // x1 = x0 - i1 + 1.0 * C.xx ;\n  // x2 = x0 - 1.0 + 2.0 * C.xx ;\n  vec4 x12 = x0.xyxy + C.xxzz;\n  x12.xy -= i1;\n\n// Permutations\n  i = mod289(i); // Avoid truncation effects in permutation\n  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))\n    + i.x + vec3(0.0, i1.x, 1.0 ));\n\n  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n  m = m*m ;\n  m = m*m ;\n\n// Gradients: 41 points uniformly over a line, mapped onto a diamond.\n// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)\n\n  vec3 x = 2.0 * fract(p * C.www) - 1.0;\n  vec3 h = abs(x) - 0.5;\n  vec3 ox = floor(x + 0.5);\n  vec3 a0 = x - ox;\n\n// Normalise gradients implicitly by scaling m\n// Approximation of: m *= inversesqrt( a0*a0 + h*h );\n  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\n// Compute final noise value at P\n  vec3 g;\n  g.x  = a0.x  * x0.x  + h.x  * x0.y;\n  g.yz = a0.yz * x12.xz + h.yz * x12.yw;\n  return 130.0 * dot(m, g);\n}\n";
-
-    ShaderPassBase.prototype.findUniforms = function(shader) {
-      var line, lines, name, tokens, uniforms, _i, _len;
-      lines = shader.split("\n");
-      uniforms = {};
-      for (_i = 0, _len = lines.length; _i < _len; _i++) {
-        line = lines[_i];
-        if (line.indexOf("uniform") === 0) {
-          tokens = line.split(" ");
-          name = tokens[2].substring(0, tokens[2].length - 1);
-          uniforms[name] = this.typeToUniform(tokens[1]);
-        }
-      }
-      return uniforms;
-    };
-
-    ShaderPassBase.prototype.typeToUniform = function(type) {
-      switch (type) {
-        case "float":
-          return {
-            type: "f",
-            value: 0
-          };
-        case "vec2":
-          return {
-            type: "v2",
-            value: new THREE.Vector2
-          };
-        case "vec3":
-          return {
-            type: "v3",
-            value: new THREE.Vector3
-          };
-        case "vec4":
-          return {
-            type: "v4",
-            value: new THREE.Vector4
-          };
-        case "bool":
-          return {
-            type: "i",
-            value: 0
-          };
-        case "sampler2D":
-          return {
-            type: "t",
-            value: null
-          };
-      }
-    };
-
-    return ShaderPassBase;
-
-  })();
 
   Composition = (function(_super) {
     __extends(Composition, _super);
@@ -134,7 +22,7 @@
       });
       renderer.setSize(640, 480);
       this.setup(renderer);
-      renderer.setClearColorHex(0xffffff, 0);
+      renderer.setClearColor(0xffffff, 0);
       renderer.render(this.scene, this.camera);
       this.thumbnail = document.createElement('img');
       this.thumbnail.src = renderer.domElement.toDataURL();
@@ -226,8 +114,186 @@
 
   })(Composition);
 
+  EffectPassBase = (function(_super) {
+    __extends(EffectPassBase, _super);
+
+    function EffectPassBase() {
+      EffectPassBase.__super__.constructor.call(this);
+      this.uniformValues = this.uniformValues || [];
+      this.options = this.options || [];
+      this.inputs = this.inputs || [];
+      this.outputs = this.outputs || [];
+    }
+
+    return EffectPassBase;
+
+  })(Backbone.Model);
+
+  ShaderPassBase = (function(_super) {
+    __extends(ShaderPassBase, _super);
+
+    function ShaderPassBase(initialValues) {
+      var uniformDesc, _i, _len, _ref;
+      ShaderPassBase.__super__.constructor.call(this);
+      this.enabled = true;
+      this.uniforms = THREE.UniformsUtils.clone(this.findUniforms(this.fragmentShader));
+      _ref = this.uniformValues;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        uniformDesc = _ref[_i];
+        this.inputs.push({
+          name: uniformDesc.name,
+          type: "number",
+          min: uniformDesc.min,
+          max: uniformDesc.max,
+          "default": uniformDesc["default"]
+        });
+        this.listenTo(this, "change:" + uniformDesc.name, this._uniformsChanged);
+        this.set(uniformDesc.name, uniformDesc["default"]);
+      }
+      this.material = new THREE.ShaderMaterial({
+        uniforms: this.uniforms,
+        vertexShader: this.vertexShader,
+        fragmentShader: this.fragmentShader
+      });
+      this.enabled = true;
+      this.renderToScreen = false;
+      this.needsSwap = true;
+      this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      this.scene = new THREE.Scene();
+      this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
+      this.scene.add(this.quad);
+    }
+
+    ShaderPassBase.prototype._uniformsChanged = function(obj) {
+      var name, uniformDesc, value, _ref, _results;
+      _ref = obj.changed;
+      _results = [];
+      for (name in _ref) {
+        value = _ref[name];
+        uniformDesc = _.find(this.uniformValues, (function(u) {
+          return u.name === name;
+        }));
+        _results.push(this.uniforms[uniformDesc.uniform].value = value);
+      }
+      return _results;
+    };
+
+    ShaderPassBase.prototype.render = function(renderer, writeBuffer, readBuffer, delta) {
+      if (typeof this.update === "function") {
+        this.update();
+      }
+      if (!this.enabled) {
+        writeBuffer = readBuffer;
+        return;
+      }
+      this.uniforms['uTex'].value = readBuffer;
+      if (this.uniforms['uSize']) {
+        this.uniforms['uSize'].value.set(readBuffer.width, readBuffer.height);
+      }
+      this.quad.material = this.material;
+      if (this.renderToScreen) {
+        return renderer.render(this.scene, this.camera);
+      } else {
+        return renderer.render(this.scene, this.camera, writeBuffer, false);
+      }
+    };
+
+    ShaderPassBase.prototype.standardUniforms = {
+      uTex: {
+        type: 't',
+        value: null
+      },
+      uSize: {
+        type: 'v2',
+        value: new THREE.Vector2(256, 256)
+      }
+    };
+
+    ShaderPassBase.prototype.vertexShader = "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}";
+
+    ShaderPassBase.ashimaNoiseFunctions = "//\n// Description : Array and textureless GLSL 2D simplex noise function.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n// \n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec2 mod289(vec2 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec3 permute(vec3 x) {\n  return mod289(((x*34.0)+1.0)*x);\n}\n\nfloat snoise(vec2 v)\n  {\n  const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0\n                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)\n                     -0.577350269189626,  // -1.0 + 2.0 * C.x\n                      0.024390243902439); // 1.0 / 41.0\n// First corner\n  vec2 i  = floor(v + dot(v, C.yy) );\n  vec2 x0 = v -   i + dot(i, C.xx);\n\n// Other corners\n  vec2 i1;\n  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0\n  //i1.y = 1.0 - i1.x;\n  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n  // x0 = x0 - 0.0 + 0.0 * C.xx ;\n  // x1 = x0 - i1 + 1.0 * C.xx ;\n  // x2 = x0 - 1.0 + 2.0 * C.xx ;\n  vec4 x12 = x0.xyxy + C.xxzz;\n  x12.xy -= i1;\n\n// Permutations\n  i = mod289(i); // Avoid truncation effects in permutation\n  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))\n    + i.x + vec3(0.0, i1.x, 1.0 ));\n\n  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n  m = m*m ;\n  m = m*m ;\n\n// Gradients: 41 points uniformly over a line, mapped onto a diamond.\n// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)\n\n  vec3 x = 2.0 * fract(p * C.www) - 1.0;\n  vec3 h = abs(x) - 0.5;\n  vec3 ox = floor(x + 0.5);\n  vec3 a0 = x - ox;\n\n// Normalise gradients implicitly by scaling m\n// Approximation of: m *= inversesqrt( a0*a0 + h*h );\n  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\n// Compute final noise value at P\n  vec3 g;\n  g.x  = a0.x  * x0.x  + h.x  * x0.y;\n  g.yz = a0.yz * x12.xz + h.yz * x12.yw;\n  return 130.0 * dot(m, g);\n}\n";
+
+    ShaderPassBase.prototype.findUniforms = function(shader) {
+      var line, lines, name, tokens, uniforms, _i, _len;
+      lines = shader.split("\n");
+      uniforms = {};
+      for (_i = 0, _len = lines.length; _i < _len; _i++) {
+        line = lines[_i];
+        if (line.indexOf("uniform") === 0) {
+          tokens = line.split(" ");
+          name = tokens[2].substring(0, tokens[2].length - 1);
+          uniforms[name] = this.typeToUniform(tokens[1]);
+        }
+      }
+      return uniforms;
+    };
+
+    ShaderPassBase.prototype.typeToUniform = function(type) {
+      switch (type) {
+        case "float":
+          return {
+            type: "f",
+            value: 0
+          };
+        case "vec2":
+          return {
+            type: "v2",
+            value: new THREE.Vector2
+          };
+        case "vec3":
+          return {
+            type: "v3",
+            value: new THREE.Vector3
+          };
+        case "vec4":
+          return {
+            type: "v4",
+            value: new THREE.Vector4
+          };
+        case "bool":
+          return {
+            type: "i",
+            value: 0
+          };
+        case "sampler2D":
+          return {
+            type: "t",
+            value: null
+          };
+      }
+    };
+
+    return ShaderPassBase;
+
+  })(EffectPassBase);
+
+  VJSSignal = (function(_super) {
+    __extends(VJSSignal, _super);
+
+    VJSSignal.prototype.inputs = [];
+
+    VJSSignal.prototype.outputs = [];
+
+    function VJSSignal() {
+      var input, _i, _len, _ref;
+      VJSSignal.__super__.constructor.call(this);
+      _ref = this.inputs;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        input = _ref[_i];
+        this.set(input.name, input["default"]);
+      }
+    }
+
+    VJSSignal.prototype.update = function(time) {};
+
+    return VJSSignal;
+
+  })(Backbone.Model);
+
   AudioInputNode = (function(_super) {
     __extends(AudioInputNode, _super);
+
+    AudioInputNode.MAX_AUDIO_LEVEL = 200;
 
     function AudioInputNode() {
       this.update = __bind(this.update, this);
@@ -256,7 +322,7 @@
         this.set("data", this.data);
       }
       this.analyzer.getByteFrequencyData(this.data);
-      this.set("peak", this.data[this.get('selectedFreq')]);
+      this.set("peak", this.data[this.get('selectedFreq')] / AudioInputNode.MAX_AUDIO_LEVEL);
       return this.trigger("change:data");
     };
 
@@ -349,6 +415,24 @@
     CircleGrower.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float circleSize;\nuniform float time;\nvoid main (void)\n{\n  vec2 pos = mod(gl_FragCoord.xy, vec2(circleSize)) - vec2(circleSize / 2.0);\n  float dist = sqrt(dot(pos, pos));\n  dist = mod(dist + time * -1.0, circleSize + 1.0) * 2.0;\n  \n  gl_FragColor = (sin(dist / 25.0) > 0.0) \n      ? vec4(.90, .90, .90, 1.0)\n      : vec4(0.0);\n}";
 
     return CircleGrower;
+
+  })(GLSLComposition);
+
+  FlameComposition = (function(_super) {
+    __extends(FlameComposition, _super);
+
+    function FlameComposition() {
+      return FlameComposition.__super__.constructor.apply(this, arguments);
+    }
+
+    FlameComposition.prototype.update = function() {
+      this.uniforms['uSize'].value.set(this.renderer.domElement.width, this.renderer.domElement.height);
+      return this.uniforms['time'].value += .04;
+    };
+
+    FlameComposition.prototype.fragmentShader = "const int _VolumeSteps = 32;\nconst float _StepSize = 0.1; \nconst float _Density = 0.2;\n\nconst float _SphereRadius = 2.0;\nconst float _NoiseFreq = 1.0;\nconst float _NoiseAmp = 3.0;\nconst vec3 _NoiseAnim = vec3(0, -1.0, 0);\nuniform vec2 uSize;\nvarying vec2 vUv;\nuniform float time;\n\n\n// iq's nice integer-less noise function\n\n// matrix to rotate the noise octaves\nmat3 m = mat3( 0.00,  0.80,  0.60,\n              -0.80,  0.36, -0.48,\n              -0.60, -0.48,  0.64 );\n\nfloat hash( float n )\n{\n    return fract(sin(n)*43758.5453);\n}\n\n\nfloat noise( in vec3 x )\n{\n    vec3 p = floor(x);\n    vec3 f = fract(x);\n\n    f = f*f*(3.0-2.0*f);\n\n    float n = p.x + p.y*57.0 + 113.0*p.z;\n\n    float res = mix(mix(mix( hash(n+  0.0), hash(n+  1.0),f.x),\n                        mix( hash(n+ 57.0), hash(n+ 58.0),f.x),f.y),\n                    mix(mix( hash(n+113.0), hash(n+114.0),f.x),\n                        mix( hash(n+170.0), hash(n+171.0),f.x),f.y),f.z);\n    return res;\n}\n\nfloat fbm( vec3 p )\n{\n    float f;\n    f = 0.5000*noise( p ); p = m*p*2.02;\n    f += 0.2500*noise( p ); p = m*p*2.03;\n    f += 0.1250*noise( p ); p = m*p*2.01;\n    f += 0.0625*noise( p );\n    //p = m*p*2.02; f += 0.03125*abs(noise( p )); \n    return f;\n}\n\n// returns signed distance to surface\nfloat distanceFunc(vec3 p)\n{ \n  float d = length(p) - _SphereRadius;  // distance to sphere\n  \n  // offset distance with pyroclastic noise\n  //p = normalize(p) * _SphereRadius; // project noise point to sphere surface\n  d += fbm(p*_NoiseFreq + _NoiseAnim*time) * _NoiseAmp;\n  return d;\n}\n\n// color gradient \n// this should be in a 1D texture really\nvec4 gradient(float x)\n{\n  // no constant array initializers allowed in GLES SL!\n  const vec4 c0 = vec4(2, 2, 1, 1); // yellow\n  const vec4 c1 = vec4(1, 0, 0, 1); // red\n  const vec4 c2 = vec4(0, 0, 0, 0);   // black\n  const vec4 c3 = vec4(0, 0.5, 1, 0.5);   // blue\n  const vec4 c4 = vec4(0, 0, 0, 0);   // black\n  \n  x = clamp(x, 0.0, 0.999);\n  float t = fract(x*4.0);\n  vec4 c;\n  if (x < 0.25) {\n    c =  mix(c0, c1, t);\n  } else if (x < 0.5) {\n    c = mix(c1, c2, t);\n  } else if (x < 0.75) {\n    c = mix(c2, c3, t);\n  } else {\n    c = mix(c3, c4, t);   \n  }\n  //return vec4(x);\n  //return vec4(t);\n  return c;\n}\n\n// shade a point based on distance\nvec4 shade(float d)\n{ \n  // lookup in color gradient\n  return gradient(d);\n  //return mix(vec4(1, 1, 1, 1), vec4(0, 0, 0, 0), smoothstep(1.0, 1.1, d));\n}\n\n// procedural volume\n// maps position to color\nvec4 volumeFunc(vec3 p)\n{\n  float d = distanceFunc(p);\n  return shade(d);\n}\n\n// ray march volume from front to back\n// returns color\nvec4 rayMarch(vec3 rayOrigin, vec3 rayStep, out vec3 pos)\n{\n  vec4 sum = vec4(0, 0, 0, 0);\n  pos = rayOrigin;\n  for(int i=0; i<_VolumeSteps; i++) {\n    vec4 col = volumeFunc(pos);\n    col.a *= _Density;\n    //col.a = min(col.a, 1.0);\n    \n    // pre-multiply alpha\n    col.rgb *= col.a;\n    sum = sum + col*(1.0 - sum.a);  \n#if 0\n    // exit early if opaque\n          if (sum.a > _OpacityThreshold)\n                break;\n#endif    \n    pos += rayStep;\n  }\n  return sum;\n}\n\nvoid main(void)\n{\n    vec2 p = (vUv.xy)*2.0-1.0;\n  \n    float rotx = time * .05;\n    float roty = time * .04;\n\n    float zoom = 4.0;\n\n    // camera\n    vec3 ro = zoom*normalize(vec3(cos(roty), cos(rotx), sin(roty)));\n    vec3 ww = normalize(vec3(0.0,0.0,0.0) - ro);\n    vec3 uu = normalize(cross( vec3(0.0,1.0,0.0), ww ));\n    vec3 vv = normalize(cross(ww,uu));\n    vec3 rd = normalize( p.x*uu + p.y*vv + 1.5*ww );\n\n    ro += rd*2.0;\n  \n    // volume render\n    vec3 hitPos;\n    vec4 col = rayMarch(ro, rd*_StepSize, hitPos);\n    //vec4 col = gradient(p.x);\n      \n    gl_FragColor = col;\n}";
+
+    return FlameComposition;
 
   })(GLSLComposition);
 
@@ -575,21 +659,21 @@
       {
         uniform: "rShift",
         name: "Red Shift",
-        start: -1,
-        end: 1,
+        min: -1,
+        max: 1,
         "default": -.2
       }, {
         uniform: "gShift",
         name: "Green Shift",
-        start: -1,
-        end: 1,
-        "default": 0
+        min: -1,
+        max: 1,
+        "default": -.2
       }, {
         uniform: "bShift",
         name: "Blue Shift",
-        start: -1,
-        end: 1,
-        "default": .21
+        min: -1,
+        max: 1,
+        "default": -.2
       }
     ];
 
@@ -614,8 +698,9 @@
       {
         uniform: "amount",
         name: "Invert Amount",
-        start: 0,
-        end: 1
+        min: 0,
+        max: 1,
+        "default": 0
       }
     ];
 
@@ -699,118 +784,6 @@
 
   })(ShaderPassBase);
 
-  this.ShaderPassBase = (function() {
-    function ShaderPassBase(initialValues) {
-      var key, value;
-      this.enabled = true;
-      this.uniforms = THREE.UniformsUtils.clone(this.findUniforms(this.fragmentShader));
-      for (key in initialValues) {
-        value = initialValues[key];
-        this.uniforms[key].value = value;
-      }
-      this.material = new THREE.ShaderMaterial({
-        uniforms: this.uniforms,
-        vertexShader: this.vertexShader,
-        fragmentShader: this.fragmentShader
-      });
-      this.enabled = true;
-      this.renderToScreen = false;
-      this.needsSwap = true;
-      this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-      this.scene = new THREE.Scene();
-      this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
-      this.scene.add(this.quad);
-    }
-
-    ShaderPassBase.prototype.render = function(renderer, writeBuffer, readBuffer, delta) {
-      if (typeof this.update === "function") {
-        this.update();
-      }
-      if (!this.enabled) {
-        writeBuffer = readBuffer;
-        return;
-      }
-      this.uniforms['uTex'].value = readBuffer;
-      if (this.uniforms['uSize']) {
-        this.uniforms['uSize'].value.set(readBuffer.width, readBuffer.height);
-      }
-      this.quad.material = this.material;
-      if (this.renderToScreen) {
-        return renderer.render(this.scene, this.camera);
-      } else {
-        return renderer.render(this.scene, this.camera, writeBuffer, false);
-      }
-    };
-
-    ShaderPassBase.prototype.standardUniforms = {
-      uTex: {
-        type: 't',
-        value: null
-      },
-      uSize: {
-        type: 'v2',
-        value: new THREE.Vector2(256, 256)
-      }
-    };
-
-    ShaderPassBase.prototype.vertexShader = "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}";
-
-    ShaderPassBase.ashimaNoiseFunctions = "//\n// Description : Array and textureless GLSL 2D simplex noise function.\n//      Author : Ian McEwan, Ashima Arts.\n//  Maintainer : ijm\n//     Lastmod : 20110822 (ijm)\n//     License : Copyright (C) 2011 Ashima Arts. All rights reserved.\n//               Distributed under the MIT License. See LICENSE file.\n//               https://github.com/ashima/webgl-noise\n// \n\nvec3 mod289(vec3 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec2 mod289(vec2 x) {\n  return x - floor(x * (1.0 / 289.0)) * 289.0;\n}\n\nvec3 permute(vec3 x) {\n  return mod289(((x*34.0)+1.0)*x);\n}\n\nfloat snoise(vec2 v)\n  {\n  const vec4 C = vec4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0\n                      0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)\n                     -0.577350269189626,  // -1.0 + 2.0 * C.x\n                      0.024390243902439); // 1.0 / 41.0\n// First corner\n  vec2 i  = floor(v + dot(v, C.yy) );\n  vec2 x0 = v -   i + dot(i, C.xx);\n\n// Other corners\n  vec2 i1;\n  //i1.x = step( x0.y, x0.x ); // x0.x > x0.y ? 1.0 : 0.0\n  //i1.y = 1.0 - i1.x;\n  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);\n  // x0 = x0 - 0.0 + 0.0 * C.xx ;\n  // x1 = x0 - i1 + 1.0 * C.xx ;\n  // x2 = x0 - 1.0 + 2.0 * C.xx ;\n  vec4 x12 = x0.xyxy + C.xxzz;\n  x12.xy -= i1;\n\n// Permutations\n  i = mod289(i); // Avoid truncation effects in permutation\n  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))\n    + i.x + vec3(0.0, i1.x, 1.0 ));\n\n  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);\n  m = m*m ;\n  m = m*m ;\n\n// Gradients: 41 points uniformly over a line, mapped onto a diamond.\n// The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)\n\n  vec3 x = 2.0 * fract(p * C.www) - 1.0;\n  vec3 h = abs(x) - 0.5;\n  vec3 ox = floor(x + 0.5);\n  vec3 a0 = x - ox;\n\n// Normalise gradients implicitly by scaling m\n// Approximation of: m *= inversesqrt( a0*a0 + h*h );\n  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );\n\n// Compute final noise value at P\n  vec3 g;\n  g.x  = a0.x  * x0.x  + h.x  * x0.y;\n  g.yz = a0.yz * x12.xz + h.yz * x12.yw;\n  return 130.0 * dot(m, g);\n}\n";
-
-    ShaderPassBase.prototype.findUniforms = function(shader) {
-      var line, lines, name, tokens, uniforms, _i, _len;
-      lines = shader.split("\n");
-      uniforms = {};
-      for (_i = 0, _len = lines.length; _i < _len; _i++) {
-        line = lines[_i];
-        if (line.indexOf("uniform") === 0) {
-          tokens = line.split(" ");
-          name = tokens[2].substring(0, tokens[2].length - 1);
-          uniforms[name] = this.typeToUniform(tokens[1]);
-        }
-      }
-      return uniforms;
-    };
-
-    ShaderPassBase.prototype.typeToUniform = function(type) {
-      switch (type) {
-        case "float":
-          return {
-            type: "f",
-            value: 0
-          };
-        case "vec2":
-          return {
-            type: "v2",
-            value: new THREE.Vector2
-          };
-        case "vec3":
-          return {
-            type: "v3",
-            value: new THREE.Vector3
-          };
-        case "vec4":
-          return {
-            type: "v4",
-            value: new THREE.Vector4
-          };
-        case "bool":
-          return {
-            type: "i",
-            value: 0
-          };
-        case "sampler2D":
-          return {
-            type: "t",
-            value: null
-          };
-      }
-    };
-
-    return ShaderPassBase;
-
-  })();
-
   Passthrough = (function(_super) {
     __extends(Passthrough, _super);
 
@@ -846,7 +819,7 @@
     EffectsManager.prototype.addEffectToStack = function(effect) {
       this.stack.push(effect);
       this.composer.insertPass(effect, this.composer.passes.length - 1);
-      return this.trigger("change");
+      return this.trigger("add-effect", effect);
     };
 
     return EffectsManager;
@@ -856,13 +829,32 @@
   EffectParameter = (function(_super) {
     __extends(EffectParameter, _super);
 
-    function EffectParameter(target, property) {
-      EffectParameter.__super__.constructor.call(this);
+    function EffectParameter() {
+      return EffectParameter.__super__.constructor.apply(this, arguments);
     }
 
     return EffectParameter;
 
   })(Backbone.Model);
+
+  EffectControl = (function(_super) {
+    __extends(EffectControl, _super);
+
+    function EffectControl() {
+      return EffectControl.__super__.constructor.apply(this, arguments);
+    }
+
+    EffectControl.prototype.className = "effect-control";
+
+    EffectControl.prototype.initialize = function() {};
+
+    EffectControl.prototype.render = function() {
+      return this.el.textContent = this.model.get("name");
+    };
+
+    return EffectControl;
+
+  })(Backbone.View);
 
   EffectsPanel = (function(_super) {
     __extends(EffectsPanel, _super);
@@ -870,6 +862,7 @@
     function EffectsPanel() {
       this.render = __bind(this.render, this);
       this.addEffect = __bind(this.addEffect, this);
+      this.insertEffectPanel = __bind(this.insertEffectPanel, this);
       return EffectsPanel.__super__.constructor.apply(this, arguments);
     }
 
@@ -880,17 +873,22 @@
     };
 
     EffectsPanel.prototype.initialize = function() {
-      this.gui = new dat.gui.GUI({
-        autoPlace: false,
-        width: "100%"
-      });
       this.addButton = document.createElement('select');
       this.addButton.className = 'add-effect';
       this.stack = document.createElement('div');
-      this.el.appendChild(this.gui.domElement);
+      this.el.appendChild(this.stack);
       this.el.appendChild(this.addButton);
       this.listenTo(this.model, "change", this.render);
+      this.listenTo(this.model, "add-effect", this.insertEffectPanel);
       return this.render();
+    };
+
+    EffectsPanel.prototype.insertEffectPanel = function(effect) {
+      var effectParameter;
+      effectParameter = new SignalUIBase({
+        model: effect
+      });
+      return this.stack.appendChild(effectParameter.render());
     };
 
     EffectsPanel.prototype.addEffect = function(e) {
@@ -901,68 +899,16 @@
     };
 
     EffectsPanel.prototype.render = function() {
-      var audio, effect, f, i, option, val, values, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
+      var effect, i, option, _i, _len, _ref, _results;
       this.addButton.innerHTML = "<option value=-1>Add Effect</option>";
       _ref = this.model.effectClasses;
+      _results = [];
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         effect = _ref[i];
         option = document.createElement('option');
         option.value = i;
         option.textContent = effect.name;
-        this.addButton.appendChild(option);
-      }
-      this.stack.innerHTML = "";
-      _ref1 = this.model.stack;
-      _results = [];
-      for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
-        effect = _ref1[i];
-        if (effect.controls) {
-          continue;
-        }
-        f = this.gui.addFolder("" + i + " - " + effect.name);
-        f.open();
-        effect.controls = f;
-        if (effect.options) {
-          _ref2 = effect.options;
-          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-            values = _ref2[_k];
-            if (values["default"]) {
-              effect[values.property] = values["default"];
-            }
-            val = f.add(effect, values.property, values.start, values.end).name(values.name);
-            val.domElement.querySelector('.property-name').appendChild(audio = document.createElement('checkbox'));
-            audio.className = 'audio-toggle';
-          }
-        }
-        if (effect.uniformValues) {
-          _results.push((function() {
-            var _l, _len3, _ref3, _results1;
-            _ref3 = effect.uniformValues;
-            _results1 = [];
-            for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
-              values = _ref3[_l];
-              if (values["default"]) {
-                effect.uniforms[values.uniform].value = values["default"];
-              }
-              val = f.add(effect.uniforms[values.uniform], "value", values.start, values.end).name(values.name);
-              val.domElement.previousSibling.appendChild(audio = document.createElement('input'));
-              audio.type = 'checkbox';
-              audio.datgui = val;
-              audio.target = effect.uniforms;
-              audio.property = values.uniform;
-              audio.className = 'audio-toggle';
-              _results1.push(audio.addEventListener('change', function(e) {
-                e.target.datgui.listen();
-                return application.audioVisualizer.addListener(function(params) {
-                  return audio.target[audio.property].value = params.peak;
-                });
-              }));
-            }
-            return _results1;
-          })());
-        } else {
-          _results.push(void 0);
-        }
+        _results.push(this.addButton.appendChild(option));
       }
       return _results;
     };
@@ -1007,12 +953,15 @@
       this.initEffects();
       this.initStats();
       this.initMicrophone();
+      this.initSignals();
       this.setComposition(new SphereSphereComposition);
       requestAnimationFrame(this.animate);
     }
 
     App.prototype.animate = function() {
-      var _ref;
+      var time, _ref;
+      time = Date.now();
+      this.signalManager.update(time);
       if ((_ref = this.composition) != null) {
         _ref.update({
           audio: this.audioVisualizer.level || 0
@@ -1027,7 +976,8 @@
       this.compositionPicker = new CompositionPicker;
       this.compositionPicker.addComposition(new CircleGrower);
       this.compositionPicker.addComposition(new SphereSphereComposition);
-      return this.compositionPicker.addComposition(new BlobbyComposition);
+      this.compositionPicker.addComposition(new BlobbyComposition);
+      return this.compositionPicker.addComposition(new FlameComposition);
     };
 
     App.prototype.initEffects = function() {
@@ -1045,16 +995,15 @@
       this.effectsManager.registerEffect(InvertPass);
       this.effectsManager.registerEffect(ChromaticAberration);
       this.effectsManager.registerEffect(MirrorPass);
-      this.effectsPanel = new EffectsPanel({
+      return this.effectsPanel = new EffectsPanel({
         model: this.effectsManager
       });
-      return this.effectsManager.addEffectToStack(new ChromaticAberration);
     };
 
     App.prototype.initStats = function() {
       this.stats = new Stats;
       this.stats.domElement.style.position = 'absolute';
-      this.stats.domElement.style.right = '0px';
+      this.stats.domElement.style.right = '20px';
       this.stats.domElement.style.top = '0px';
       return document.body.appendChild(this.stats.domElement);
     };
@@ -1064,6 +1013,14 @@
       return this.audioVisualizer = new AudioVisualizer({
         model: this.audioInputNode
       });
+    };
+
+    App.prototype.initSignals = function() {
+      this.signalManager = new SignalManager;
+      this.signalManagerView = new SignalManagerView({
+        model: this.signalManager
+      });
+      return this.signalManager.add(new LFO);
     };
 
     App.prototype.startAudio = function(stream) {
@@ -1330,7 +1287,7 @@
         ctx.lineTo(this.hoveredFreq, this.canvas.height);
         ctx.stroke();
       }
-      this.level = this.model.get('peak');
+      this.level = this.model.get('peak') * this.canvas.height;
       ctx.restore();
       ctx.fillStyle = "#FF0000";
       return ctx.fillRect(this.canvas.width - 10, this.canvas.height - this.level, 10, this.canvas.height);
@@ -1442,6 +1399,273 @@
     };
 
     return CompositionSlot;
+
+  })(Backbone.View);
+
+  LFO = (function(_super) {
+    __extends(LFO, _super);
+
+    function LFO() {
+      return LFO.__super__.constructor.apply(this, arguments);
+    }
+
+    LFO.prototype.inputs = [
+      {
+        name: "period",
+        type: "number",
+        min: 0,
+        max: 10,
+        "default": 2
+      }, {
+        name: "type",
+        type: "select",
+        options: ["Sin", "Square", "Triangle"],
+        "default": "Sin"
+      }
+    ];
+
+    LFO.prototype.outputs = [
+      {
+        name: "value",
+        type: "number",
+        min: 0,
+        max: 1
+      }
+    ];
+
+    LFO.prototype.name = "LFO";
+
+    LFO.prototype.initialize = function() {
+      return LFO.__super__.initialize.call(this);
+    };
+
+    LFO.prototype.update = function(time) {
+      var period, value;
+      time = time / 1000;
+      period = this.get("period");
+      value = 0;
+      switch (this.get("type")) {
+        case "Sin":
+          value = Math.sin(Math.PI * time / period) * .5 + .5;
+          break;
+        case "Square":
+          value = Math.round(Math.sin(Math.PI * time / period) * .5 + .5);
+      }
+      return this.set("value", value);
+    };
+
+    return LFO;
+
+  })(VJSSignal);
+
+  SignalManager = (function(_super) {
+    __extends(SignalManager, _super);
+
+    function SignalManager() {
+      SignalManager.__super__.constructor.call(this, [], {
+        model: VJSSignal
+      });
+    }
+
+    SignalManager.prototype.update = function(time) {
+      var signal, _i, _len, _ref, _results;
+      _ref = this.models;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        signal = _ref[_i];
+        _results.push(signal.update(time));
+      }
+      return _results;
+    };
+
+    return SignalManager;
+
+  })(Backbone.Collection);
+
+  SignalManagerView = (function(_super) {
+    __extends(SignalManagerView, _super);
+
+    function SignalManagerView() {
+      this.createSignalView = __bind(this.createSignalView, this);
+      return SignalManagerView.__super__.constructor.apply(this, arguments);
+    }
+
+    SignalManagerView.prototype.el = ".signals";
+
+    SignalManagerView.prototype.initialize = function() {
+      this.views = [];
+      return this.listenTo(this.model, "add", this.createSignalView);
+    };
+
+    SignalManagerView.prototype.createSignalView = function(signal) {
+      var view;
+      this.views.push(view = new SignalUIBase({
+        model: signal
+      }));
+      return this.el.appendChild(view.render());
+    };
+
+    return SignalManagerView;
+
+  })(Backbone.View);
+
+  SignalUIBase = (function(_super) {
+    __extends(SignalUIBase, _super);
+
+    function SignalUIBase() {
+      return SignalUIBase.__super__.constructor.apply(this, arguments);
+    }
+
+    SignalUIBase.prototype.className = "signal-set";
+
+    SignalUIBase.prototype.initialize = function() {
+      var div, input, label, output, _i, _j, _len, _len1, _ref, _ref1, _ref2, _results;
+      this.el.appendChild(label = document.createElement('div'));
+      label.textContent = this.model.name;
+      label.className = 'label';
+      _ref = this.model.inputs;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        input = _ref[_i];
+        this.el.appendChild(div = document.createElement('div'));
+        div.className = "signal";
+        div.textContent = input.name;
+        if (input.type === "number") {
+          div.appendChild(this.newSlider(this.model, input).render());
+        } else if (input.type === "select") {
+          div.appendChild(this.newSelect(this.model, input).render());
+        }
+      }
+      if (((_ref1 = this.model.outputs) != null ? _ref1.length : void 0) > 0) {
+        this.el.appendChild(document.createElement('hr'));
+      }
+      _ref2 = this.model.outputs;
+      _results = [];
+      for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+        output = _ref2[_j];
+        this.el.appendChild(div = document.createElement('div'));
+        div.className = "signal";
+        div.textContent = output.name;
+        if (output.type === "number") {
+          _results.push(div.appendChild(this.newSlider(this.model, output).render()));
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
+    SignalUIBase.prototype.render = function() {
+      return this.el;
+    };
+
+    SignalUIBase.prototype.newSlider = function(model, input) {
+      var slider;
+      return slider = new VJSSlider(model, input);
+    };
+
+    SignalUIBase.prototype.newSelect = function(model, input) {
+      return new VJSSelect(model, input);
+    };
+
+    return SignalUIBase;
+
+  })(Backbone.View);
+
+  VJSSlider = (function(_super) {
+    __extends(VJSSlider, _super);
+
+    VJSSlider.prototype.events = {
+      "click .slider": "click"
+    };
+
+    function VJSSlider(model, property) {
+      this.property = property;
+      this.render = __bind(this.render, this);
+      this.click = __bind(this.click, this);
+      VJSSlider.__super__.constructor.call(this, {
+        model: model
+      });
+    }
+
+    VJSSlider.prototype.initialize = function() {
+      var div;
+      div = document.createElement('div');
+      div.className = 'slider';
+      div.appendChild(this.level = document.createElement('div'));
+      this.level.className = 'level';
+      this.el.appendChild(div);
+      this.max = this.property.max;
+      this.min = this.property.min;
+      this.listenTo(this.model, "change:" + this.property.name, this.render);
+      return this.render();
+    };
+
+    VJSSlider.prototype.click = function(e) {
+      var percent, value, x;
+      if (e.button) {
+        console.log(e);
+      }
+      x = e.offsetX;
+      percent = x / this.el.clientWidth;
+      value = (this.max - this.min) * percent + this.min;
+      return this.model.set(this.property.name, value);
+    };
+
+    VJSSlider.prototype.render = function() {
+      var percent, value;
+      if (this.model.name === "Invert") {
+        console.log(this);
+      }
+      value = this.model.get(this.property.name);
+      percent = (value - this.min) / (this.max - this.min) * 100;
+      this.level.style.width = "" + percent + "%";
+      return this.el;
+    };
+
+    return VJSSlider;
+
+  })(Backbone.View);
+
+  VJSSelect = (function(_super) {
+    __extends(VJSSelect, _super);
+
+    VJSSelect.prototype.events = {
+      "change select": "change"
+    };
+
+    function VJSSelect(model, property) {
+      this.property = property;
+      this.render = __bind(this.render, this);
+      this.change = __bind(this.change, this);
+      VJSSelect.__super__.constructor.call(this, {
+        model: model
+      });
+    }
+
+    VJSSelect.prototype.initialize = function() {
+      var div, opt, option, select, _i, _len, _ref, _results;
+      this.el.appendChild(div = document.createElement('div'));
+      div.appendChild(select = document.createElement('select'));
+      _ref = this.property.options;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        option = _ref[_i];
+        select.appendChild(opt = document.createElement('option'));
+        opt.value = option;
+        _results.push(opt.textContent = option);
+      }
+      return _results;
+    };
+
+    VJSSelect.prototype.change = function(e) {
+      return this.model.set(this.property.name, e.target.value);
+    };
+
+    VJSSelect.prototype.render = function() {
+      return this.el;
+    };
+
+    return VJSSelect;
 
   })(Backbone.View);
 

@@ -2,7 +2,7 @@ class InvertPass extends ShaderPassBase
   name: "Invert"
   @name: "Invert"
   uniformValues: [
-    {uniform: "amount", name: "Invert Amount", start: 0, end: 1}
+    {uniform: "amount", name: "Invert Amount", min: 0, max: 1, default: 0}
   ]
   fragmentShader: """
     uniform float amount;

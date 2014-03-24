@@ -15,10 +15,13 @@ class App extends Backbone.Model
     @initEffects()
     @initStats()
     @initMicrophone()
+    @initSignals()
     @setComposition new SphereSphereComposition
     requestAnimationFrame @animate
 
   animate: () =>
+    time = Date.now()
+    @signalManager.update(time)
     @composition?.update({audio: @audioVisualizer.level || 0})
     @composer.render()
     @stats.update()
@@ -29,6 +32,7 @@ class App extends Backbone.Model
     @compositionPicker.addComposition new CircleGrower
     @compositionPicker.addComposition new SphereSphereComposition
     @compositionPicker.addComposition new BlobbyComposition
+    @compositionPicker.addComposition new FlameComposition
   
   initEffects: () ->
     @composer = new THREE.EffectComposer(@renderer)
@@ -49,18 +53,22 @@ class App extends Backbone.Model
     @effectsManager.registerEffect MirrorPass
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
-    @effectsManager.addEffectToStack new ChromaticAberration
 
   initStats: () ->
     @stats = new Stats
     @stats.domElement.style.position = 'absolute'
-    @stats.domElement.style.right = '0px'
+    @stats.domElement.style.right = '20px'
     @stats.domElement.style.top = '0px'
     document.body.appendChild @stats.domElement
 
   initMicrophone: () ->
     @audioInputNode = new AudioInputNode
     @audioVisualizer = new AudioVisualizer model: @audioInputNode
+
+  initSignals: () ->
+    @signalManager = new SignalManager
+    @signalManagerView = new SignalManagerView(model:@signalManager)
+    @signalManager.add new LFO
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)

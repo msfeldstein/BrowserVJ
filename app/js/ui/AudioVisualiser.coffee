@@ -48,7 +48,7 @@ class AudioVisualizer extends Backbone.View
       ctx.stroke()
 
     
-    @level = @model.get('peak')
+    @level = @model.get('peak') * @canvas.height
     ctx.restore()
     ctx.fillStyle = "#FF0000"
     ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height    
