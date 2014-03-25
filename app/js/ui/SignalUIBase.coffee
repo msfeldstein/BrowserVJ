@@ -1,5 +1,5 @@
 class SignalUIBase extends Backbone.View
-  className: "signal-set"
+  className: "signal-set hidden"
 
   initialize: () ->
     @el.appendChild arrow = document.createElement 'div'

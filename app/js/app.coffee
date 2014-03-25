@@ -16,7 +16,6 @@ class App extends Backbone.Model
     @initStats()
     @initMicrophone()
     @initSignals()
-    @setComposition new CircleGrower
     requestAnimationFrame @animate
 
     $(window).resize () =>
@@ -58,7 +57,6 @@ class App extends Backbone.Model
     @effectsManager.registerEffect MirrorPass
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
-    @effectsManager.addEffectToStack new ChromaticAberration
 
   initStats: () ->
     @stats = new Stats
@@ -75,7 +73,6 @@ class App extends Backbone.Model
     @signalManager = new SignalManager
     @signalManager.registerSignal LFO
     @signalManagerView = new SignalManagerView(model:@signalManager)
-    @signalManager.add new LFO
     @valueBinder = new ValueBinder(model: @signalManager)
 
   startAudio: (stream) =>
