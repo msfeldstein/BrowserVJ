@@ -3,7 +3,6 @@ class Composition extends Backbone.Model
     super()
     @inputs = @inputs || []
     @outputs = @outputs || []
-    @generateThumbnail()
     for input in @inputs
       @set input.name, input.default
 
@@ -353,7 +352,7 @@ class CircleGrower extends GLSLComposition
     super(@renderer)
 
   uniformValues: [
-    {uniform: "circleSize", name: "Number Of Circles", min: 1, max: 10, default: 4}
+    {uniform: "circleSize", name: "Number Of Circles", min: 0, max: 1, default: .2}
   ]
 
   update: () ->
@@ -367,10 +366,11 @@ class CircleGrower extends GLSLComposition
     uniform float time;
     void main (void)
     {
-      float cSize = 1.0 / circleSize;
-      vec2 pos = mod(vUv.xy * 2.0 - 1.0, vec2(cSize)) * circleSize - vec2(cSize * circleSize / 2.0);
+      float numCircles = circleSize * 10.0;
+      float cSize = 1.0 / numCircles;
+      vec2 pos = mod(vUv.xy * 2.0 - 1.0, vec2(cSize)) * numCircles - vec2(cSize * numCircles / 2.0);
       float dist = sqrt(dot(pos, pos));
-      dist = dist * circleSize + time * -.050;
+      dist = dist * numCircles + time * -.050;
 
       gl_FragColor = sin(dist * 2.0) > 0.0 ? vec4(1.0) : vec4(0.0);
 
@@ -592,7 +592,7 @@ class SphereSphereComposition extends Composition
     mesh.lookAt @origin
     @group.add mesh
 
-class VideoComposition extends Backbone.Model
+class VideoComposition extends Composition
   name: "Video"
   constructor: (@videoFile) ->
     super()
@@ -1233,6 +1233,7 @@ class CompositionPicker extends Backbone.View
 
   addComposition: (comp) ->
     slot = new CompositionSlot(model: comp)
+    if !comp.thumbnail then comp.generateThumbnail()
     @el.appendChild slot.render()
 
   render: () =>
@@ -1391,15 +1392,16 @@ class SignalUIBase extends Backbone.View
   className: "signal-set"
 
   initialize: () ->
-    console.log @model
     @el.appendChild arrow = document.createElement 'div'
     arrow.className = "arrow"
     @el.appendChild label = document.createElement 'div'
     label.textContent = @model.name
     label.className = 'label'
     arrow.addEventListener 'click', @clickLabel
+    @el.appendChild @stack = document.createElement 'div'
+    @stack.className = 'stack'
     for input in @model.inputs
-      @el.appendChild div = document.createElement 'div'
+      @stack.appendChild div = document.createElement 'div'
       div.className = "signal"
       div.textContent = input.name
       if input.type == "number"
@@ -1408,9 +1410,9 @@ class SignalUIBase extends Backbone.View
         div.appendChild @newSelect(@model, input).render()
 
     if @model.outputs?.length > 0
-      @el.appendChild document.createElement 'hr'
+      @stack.appendChild document.createElement 'hr'
     for output in @model.outputs
-      @el.appendChild div = document.createElement 'div'
+      @stack.appendChild div = document.createElement 'div'
       div.className = "signal"
       div.textContent = output.name
       if output.type == "number"

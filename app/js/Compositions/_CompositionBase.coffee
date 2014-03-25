@@ -3,7 +3,6 @@ class Composition extends Backbone.Model
     super()
     @inputs = @inputs || []
     @outputs = @outputs || []
-    @generateThumbnail()
     for input in @inputs
       @set input.name, input.default
 

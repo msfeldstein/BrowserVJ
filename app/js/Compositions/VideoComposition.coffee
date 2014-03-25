@@ -1,4 +1,4 @@
-class VideoComposition extends Backbone.Model
+class VideoComposition extends Composition
   name: "Video"
   constructor: (@videoFile) ->
     super()

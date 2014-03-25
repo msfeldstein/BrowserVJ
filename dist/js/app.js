@@ -12,7 +12,6 @@
       Composition.__super__.constructor.call(this);
       this.inputs = this.inputs || [];
       this.outputs = this.outputs || [];
-      this.generateThumbnail();
       _ref = this.inputs;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         input = _ref[_i];
@@ -505,9 +504,9 @@
       {
         uniform: "circleSize",
         name: "Number Of Circles",
-        min: 1,
-        max: 10,
-        "default": 4
+        min: 0,
+        max: 1,
+        "default": .2
       }
     ];
 
@@ -516,7 +515,7 @@
       return this.uniforms['time'].value += 1;
     };
 
-    CircleGrower.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float circleSize;\nuniform float time;\nvoid main (void)\n{\n  float cSize = 1.0 / circleSize;\n  vec2 pos = mod(vUv.xy * 2.0 - 1.0, vec2(cSize)) * circleSize - vec2(cSize * circleSize / 2.0);\n  float dist = sqrt(dot(pos, pos));\n  dist = dist * circleSize + time * -.050;\n\n  gl_FragColor = sin(dist * 2.0) > 0.0 ? vec4(1.0) : vec4(0.0);\n\n}";
+    CircleGrower.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float circleSize;\nuniform float time;\nvoid main (void)\n{\n  float numCircles = circleSize * 10.0;\n  float cSize = 1.0 / numCircles;\n  vec2 pos = mod(vUv.xy * 2.0 - 1.0, vec2(cSize)) * numCircles - vec2(cSize * numCircles / 2.0);\n  float dist = sqrt(dot(pos, pos));\n  dist = dist * numCircles + time * -.050;\n\n  gl_FragColor = sin(dist * 2.0) > 0.0 ? vec4(1.0) : vec4(0.0);\n\n}";
 
     return CircleGrower;
 
@@ -699,7 +698,7 @@
 
     return VideoComposition;
 
-  })(Backbone.Model);
+  })(Composition);
 
   BadTVPass = (function(_super) {
     __extends(BadTVPass, _super);
@@ -1394,6 +1393,9 @@
       slot = new CompositionSlot({
         model: comp
       });
+      if (!comp.thumbnail) {
+        comp.generateThumbnail();
+      }
       return this.el.appendChild(slot.render());
     };
 
@@ -1723,17 +1725,18 @@
 
     SignalUIBase.prototype.initialize = function() {
       var arrow, div, input, label, output, _i, _j, _len, _len1, _ref, _ref1, _ref2, _results;
-      console.log(this.model);
       this.el.appendChild(arrow = document.createElement('div'));
       arrow.className = "arrow";
       this.el.appendChild(label = document.createElement('div'));
       label.textContent = this.model.name;
       label.className = 'label';
       arrow.addEventListener('click', this.clickLabel);
+      this.el.appendChild(this.stack = document.createElement('div'));
+      this.stack.className = 'stack';
       _ref = this.model.inputs;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         input = _ref[_i];
-        this.el.appendChild(div = document.createElement('div'));
+        this.stack.appendChild(div = document.createElement('div'));
         div.className = "signal";
         div.textContent = input.name;
         if (input.type === "number") {
@@ -1743,13 +1746,13 @@
         }
       }
       if (((_ref1 = this.model.outputs) != null ? _ref1.length : void 0) > 0) {
-        this.el.appendChild(document.createElement('hr'));
+        this.stack.appendChild(document.createElement('hr'));
       }
       _ref2 = this.model.outputs;
       _results = [];
       for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
         output = _ref2[_j];
-        this.el.appendChild(div = document.createElement('div'));
+        this.stack.appendChild(div = document.createElement('div'));
         div.className = "signal";
         div.textContent = output.name;
         if (output.type === "number") {

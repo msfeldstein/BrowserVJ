@@ -4,7 +4,7 @@ class CircleGrower extends GLSLComposition
     super(@renderer)
 
   uniformValues: [
-    {uniform: "circleSize", name: "Number Of Circles", min: 1, max: 10, default: 4}
+    {uniform: "circleSize", name: "Number Of Circles", min: 0, max: 1, default: .2}
   ]
 
   update: () ->
@@ -18,10 +18,11 @@ class CircleGrower extends GLSLComposition
     uniform float time;
     void main (void)
     {
-      float cSize = 1.0 / circleSize;
-      vec2 pos = mod(vUv.xy * 2.0 - 1.0, vec2(cSize)) * circleSize - vec2(cSize * circleSize / 2.0);
+      float numCircles = circleSize * 10.0;
+      float cSize = 1.0 / numCircles;
+      vec2 pos = mod(vUv.xy * 2.0 - 1.0, vec2(cSize)) * numCircles - vec2(cSize * numCircles / 2.0);
       float dist = sqrt(dot(pos, pos));
-      dist = dist * circleSize + time * -.050;
+      dist = dist * numCircles + time * -.050;
 
       gl_FragColor = sin(dist * 2.0) > 0.0 ? vec4(1.0) : vec4(0.0);
 

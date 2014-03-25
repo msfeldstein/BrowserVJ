@@ -26,6 +26,7 @@ class CompositionPicker extends Backbone.View
 
   addComposition: (comp) ->
     slot = new CompositionSlot(model: comp)
+    if !comp.thumbnail then comp.generateThumbnail()
     @el.appendChild slot.render()
 
   render: () =>
