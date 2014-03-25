@@ -927,6 +927,9 @@ class App extends Backbone.Model
     @setComposition new CircleGrower
     requestAnimationFrame @animate
 
+    $(window).resize () =>
+        @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
+
   animate: () =>
     time = Date.now()
     @signalManager.update(time)

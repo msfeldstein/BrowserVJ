@@ -951,6 +951,11 @@
       this.initSignals();
       this.setComposition(new CircleGrower);
       requestAnimationFrame(this.animate);
+      $(window).resize((function(_this) {
+        return function() {
+          return _this.renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight);
+        };
+      })(this));
     }
 
     App.prototype.animate = function() {
