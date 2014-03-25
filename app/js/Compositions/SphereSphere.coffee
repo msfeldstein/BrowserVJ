@@ -1,4 +1,5 @@
 class SphereSphereComposition extends Composition
+  name: "Spherize"
   setup: (@renderer) ->
     @scene = new THREE.Scene
     @camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);

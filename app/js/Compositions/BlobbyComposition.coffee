@@ -1,6 +1,11 @@
 SPEED = 1 / 20000
 
 class BlobbyComposition extends Composition
+  name: "Blobby"
+
+  inputs: [
+    {name: "Level", type: "number", min: 0, max: 1, default: 0}
+  ]
   setup: (@renderer) ->
     @time = 0
     @scene = new THREE.Scene
@@ -27,11 +32,11 @@ class BlobbyComposition extends Composition
     @particles.sortParticles = true
     @scene.add @particles
 
-  update: (params) ->
+  update: () ->
     @time += .004
     @particles.rotation.y += 0.01
 
-    a = params.audio * 5
+    a = @get("Level") * 500
     a = a + 1
     a = Math.max a, 60
     for vertex in @particles.geometry.vertices

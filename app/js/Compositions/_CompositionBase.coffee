@@ -1,7 +1,15 @@
 class Composition extends Backbone.Model
   constructor: () ->
     super()
+    @inputs = @inputs || []
+    @outputs = @outputs || []
     @generateThumbnail()
+    for input in @inputs
+      @set input.name, input.default
+
+  bindToKey: (property, target, targetProperty) ->
+    @listenTo target, "change:#{targetProperty}", () =>
+      @set property.name, target.get(targetProperty)
 
   generateThumbnail: () ->
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
@@ -16,8 +24,18 @@ class Composition extends Backbone.Model
 
 
 class GLSLComposition extends Composition
-  setup: (@renderer) ->
+  uniformValues: []
+  constructor: () ->
+    super()
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
+    for uniformDesc in @uniformValues
+      @inputs.push {name: uniformDesc.name, type: "number", min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
+      @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
+      @set uniformDesc.name, uniformDesc.default
+      # TODO shouldn't need to do this here, but since it is setup multiple times
+      # the change isn't triggered
+      @uniforms[uniformDesc.uniform].value = uniformDesc.default 
+
     @material = new THREE.ShaderMaterial {
       uniforms: @uniforms
       vertexShader: @vertexShader
@@ -34,6 +52,22 @@ class GLSLComposition extends Composition
     @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
     @quad.material = @material
     @scene.add @quad
+
+  setup: (renderer) ->
+    @renderer = renderer
+
+  bindToKey: (property, target, targetProperty) ->
+    @listenTo target, "change:#{targetProperty}", @createBinding(property)
+
+
+  createBinding: (property) =>
+    (signal, value) =>
+      @set property.name, value
+
+  _uniformsChanged: (obj) =>
+    for name, value of obj.changed
+      uniformDesc = _.find(@uniformValues, ((u) -> u.name == name))
+      @uniforms[uniformDesc.uniform].value = value
 
   vertexShader: """
     varying vec2 vUv;

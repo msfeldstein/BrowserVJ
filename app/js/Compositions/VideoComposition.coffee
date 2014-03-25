@@ -1,7 +1,9 @@
 class VideoComposition extends Backbone.Model
+  name: "Video"
   constructor: (@videoFile) ->
     super()
     if @videoFile
+      @name = @videoFile.name
       videoTag = document.createElement('video')
       videoTag.src = URL.createObjectURL(@videoFile)
       videoTag.addEventListener 'loadeddata', (e) =>

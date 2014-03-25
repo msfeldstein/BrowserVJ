@@ -8,7 +8,7 @@ class EffectPassBase extends Backbone.Model
 
     @bindings = {}
 
-  bind: (property, target, targetProperty) ->
+  bindToKey: (property, target, targetProperty) ->
     @listenTo target, "change:#{targetProperty}", @createBinding(property)
 
   createBinding: (property) =>

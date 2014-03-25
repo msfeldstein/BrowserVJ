@@ -33,6 +33,8 @@ class App extends Backbone.Model
     @compositionPicker.addComposition new SphereSphereComposition
     @compositionPicker.addComposition new BlobbyComposition
     @compositionPicker.addComposition new FlameComposition
+
+    @inspector = new CompositionInspector
   
   initEffects: () ->
     @composer = new THREE.EffectComposer(@renderer)
@@ -80,6 +82,7 @@ class App extends Backbone.Model
   setComposition: (comp) ->
     @composition = comp
     @composition.setup(@renderer)
+    @inspector.setComposition @composition
     @renderModel.scene = @composition.scene
     @renderModel.camera = @composition.camera
 

@@ -1,5 +1,5 @@
 (function() {
-  var App, AudioInputNode, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, EffectControl, EffectParameter, EffectPassBase, EffectsManager, EffectsPanel, FlameComposition, GLSLComposition, Gamepad, InvertPass, LFO, MirrorPass, Node, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShaderPassBase, ShroomPass, SignalManager, SignalManagerView, SignalUIBase, SphereSphereComposition, VJSSelect, VJSSignal, VJSSlider, ValueBinder, VideoComposition, WashoutPass,
+  var App, AudioInputNode, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionInspector, CompositionPicker, CompositionSlot, EffectControl, EffectParameter, EffectPassBase, EffectsManager, EffectsPanel, FlameComposition, GLSLComposition, Gamepad, InvertPass, LFO, MirrorPass, Node, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShaderPassBase, ShroomPass, SignalManager, SignalManagerView, SignalUIBase, SphereSphereComposition, VJSSelect, VJSSignal, VJSSlider, ValueBinder, VideoComposition, WashoutPass,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -8,9 +8,25 @@
     __extends(Composition, _super);
 
     function Composition() {
+      var input, _i, _len, _ref;
       Composition.__super__.constructor.call(this);
+      this.inputs = this.inputs || [];
+      this.outputs = this.outputs || [];
       this.generateThumbnail();
+      _ref = this.inputs;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        input = _ref[_i];
+        this.set(input.name, input["default"]);
+      }
     }
+
+    Composition.prototype.bindToKey = function(property, target, targetProperty) {
+      return this.listenTo(target, "change:" + targetProperty, (function(_this) {
+        return function() {
+          return _this.set(property.name, target.get(targetProperty));
+        };
+      })(this));
+    };
 
     Composition.prototype.generateThumbnail = function() {
       var renderer;
@@ -36,13 +52,28 @@
   GLSLComposition = (function(_super) {
     __extends(GLSLComposition, _super);
 
-    function GLSLComposition() {
-      return GLSLComposition.__super__.constructor.apply(this, arguments);
-    }
+    GLSLComposition.prototype.uniformValues = [];
 
-    GLSLComposition.prototype.setup = function(renderer) {
-      this.renderer = renderer;
+    function GLSLComposition() {
+      this._uniformsChanged = __bind(this._uniformsChanged, this);
+      this.createBinding = __bind(this.createBinding, this);
+      var uniformDesc, _i, _len, _ref;
+      GLSLComposition.__super__.constructor.call(this);
       this.uniforms = THREE.UniformsUtils.clone(this.findUniforms(this.fragmentShader));
+      _ref = this.uniformValues;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        uniformDesc = _ref[_i];
+        this.inputs.push({
+          name: uniformDesc.name,
+          type: "number",
+          min: uniformDesc.min,
+          max: uniformDesc.max,
+          "default": uniformDesc["default"]
+        });
+        this.listenTo(this, "change:" + uniformDesc.name, this._uniformsChanged);
+        this.set(uniformDesc.name, uniformDesc["default"]);
+        this.uniforms[uniformDesc.uniform].value = uniformDesc["default"];
+      }
       this.material = new THREE.ShaderMaterial({
         uniforms: this.uniforms,
         vertexShader: this.vertexShader,
@@ -55,7 +86,37 @@
       this.scene = new THREE.Scene;
       this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
       this.quad.material = this.material;
-      return this.scene.add(this.quad);
+      this.scene.add(this.quad);
+    }
+
+    GLSLComposition.prototype.setup = function(renderer) {
+      return this.renderer = renderer;
+    };
+
+    GLSLComposition.prototype.bindToKey = function(property, target, targetProperty) {
+      return this.listenTo(target, "change:" + targetProperty, this.createBinding(property));
+    };
+
+    GLSLComposition.prototype.createBinding = function(property) {
+      return (function(_this) {
+        return function(signal, value) {
+          return _this.set(property.name, value);
+        };
+      })(this);
+    };
+
+    GLSLComposition.prototype._uniformsChanged = function(obj) {
+      var name, uniformDesc, value, _ref, _results;
+      _ref = obj.changed;
+      _results = [];
+      for (name in _ref) {
+        value = _ref[name];
+        uniformDesc = _.find(this.uniformValues, (function(u) {
+          return u.name === name;
+        }));
+        _results.push(this.uniforms[uniformDesc.uniform].value = value);
+      }
+      return _results;
     };
 
     GLSLComposition.prototype.vertexShader = "varying vec2 vUv;\nvoid main() {\n  vUv = uv;\n  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );\n}";
@@ -127,7 +188,7 @@
       this.bindings = {};
     }
 
-    EffectPassBase.prototype.bind = function(property, target, targetProperty) {
+    EffectPassBase.prototype.bindToKey = function(property, target, targetProperty) {
       return this.listenTo(target, "change:" + targetProperty, this.createBinding(property));
     };
 
@@ -353,6 +414,18 @@
       return BlobbyComposition.__super__.constructor.apply(this, arguments);
     }
 
+    BlobbyComposition.prototype.name = "Blobby";
+
+    BlobbyComposition.prototype.inputs = [
+      {
+        name: "Level",
+        type: "number",
+        min: 0,
+        max: 1,
+        "default": 0
+      }
+    ];
+
     BlobbyComposition.prototype.setup = function(renderer) {
       var geometry, i, material, sprite, vtx, _i;
       this.renderer = renderer;
@@ -386,11 +459,11 @@
       return this.scene.add(this.particles);
     };
 
-    BlobbyComposition.prototype.update = function(params) {
+    BlobbyComposition.prototype.update = function() {
       var a, vertex, _i, _len, _ref, _results;
       this.time += .004;
       this.particles.rotation.y += 0.01;
-      a = params.audio * 5;
+      a = this.get("Level") * 500;
       a = a + 1;
       a = Math.max(a, 60);
       _ref = this.particles.geometry.vertices;
@@ -415,18 +488,29 @@
       return CircleGrower.__super__.constructor.apply(this, arguments);
     }
 
+    CircleGrower.prototype.name = "Circles";
+
     CircleGrower.prototype.setup = function(renderer) {
       this.renderer = renderer;
-      CircleGrower.__super__.setup.call(this, this.renderer);
-      return this.uniforms.circleSize.value = 300;
+      return CircleGrower.__super__.setup.call(this, this.renderer);
     };
+
+    CircleGrower.prototype.uniformValues = [
+      {
+        uniform: "circleSize",
+        name: "Number Of Circles",
+        min: 1,
+        max: 10,
+        "default": 4
+      }
+    ];
 
     CircleGrower.prototype.update = function() {
       this.uniforms['uSize'].value.set(this.renderer.domElement.width, this.renderer.domElement.height);
       return this.uniforms['time'].value += 1;
     };
 
-    CircleGrower.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float circleSize;\nuniform float time;\nvoid main (void)\n{\n  vec2 pos = mod(gl_FragCoord.xy, vec2(circleSize)) - vec2(circleSize / 2.0);\n  float dist = sqrt(dot(pos, pos));\n  dist = mod(dist + time * -1.0, circleSize + 1.0) * 2.0;\n  \n  gl_FragColor = (sin(dist / 25.0) > 0.0) \n      ? vec4(.90, .90, .90, 1.0)\n      : vec4(0.0);\n}";
+    CircleGrower.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float circleSize;\nuniform float time;\nvoid main (void)\n{\n  float cSize = uSize.x / circleSize;\n  vec2 pos = mod(gl_FragCoord.xy, vec2(cSize)) - vec2(cSize / 2.0);\n  float dist = sqrt(dot(pos, pos));\n  dist = mod(dist + time * -1.0, cSize + 1.0) * 2.0;\n  \n  gl_FragColor = (sin(dist / 25.0) > 0.0) \n      ? vec4(.90, .90, .90, 1.0)\n      : vec4(0.0);\n}";
 
     return CircleGrower;
 
@@ -438,6 +522,8 @@
     function FlameComposition() {
       return FlameComposition.__super__.constructor.apply(this, arguments);
     }
+
+    FlameComposition.prototype.name = "Flame";
 
     FlameComposition.prototype.update = function() {
       this.uniforms['uSize'].value.set(this.renderer.domElement.width, this.renderer.domElement.height);
@@ -456,6 +542,8 @@
     function SphereSphereComposition() {
       return SphereSphereComposition.__super__.constructor.apply(this, arguments);
     }
+
+    SphereSphereComposition.prototype.name = "Spherize";
 
     SphereSphereComposition.prototype.setup = function(renderer) {
       var ambient, geometry, light, material, res, size, skeleton, sprite, vertex, _i, _j, _len, _len1, _ref, _ref1;
@@ -525,11 +613,14 @@
   VideoComposition = (function(_super) {
     __extends(VideoComposition, _super);
 
+    VideoComposition.prototype.name = "Video";
+
     function VideoComposition(videoFile) {
       var videoTag;
       this.videoFile = videoFile;
       VideoComposition.__super__.constructor.call(this);
       if (this.videoFile) {
+        this.name = this.videoFile.name;
         videoTag = document.createElement('video');
         videoTag.src = URL.createObjectURL(this.videoFile);
         videoTag.addEventListener('loadeddata', (function(_this) {
@@ -875,7 +966,8 @@
       this.compositionPicker.addComposition(new CircleGrower);
       this.compositionPicker.addComposition(new SphereSphereComposition);
       this.compositionPicker.addComposition(new BlobbyComposition);
-      return this.compositionPicker.addComposition(new FlameComposition);
+      this.compositionPicker.addComposition(new FlameComposition);
+      return this.inspector = new CompositionInspector;
     };
 
     App.prototype.initEffects = function() {
@@ -935,6 +1027,7 @@
     App.prototype.setComposition = function(comp) {
       this.composition = comp;
       this.composition.setup(this.renderer);
+      this.inspector.setComposition(this.composition);
       this.renderModel.scene = this.composition.scene;
       return this.renderModel.camera = this.composition.camera;
     };
@@ -1213,6 +1306,36 @@
     };
 
     return AudioVisualizer;
+
+  })(Backbone.View);
+
+  CompositionInspector = (function(_super) {
+    __extends(CompositionInspector, _super);
+
+    function CompositionInspector() {
+      this.render = __bind(this.render, this);
+      return CompositionInspector.__super__.constructor.apply(this, arguments);
+    }
+
+    CompositionInspector.prototype.el = ".inspector";
+
+    CompositionInspector.prototype.initialize = function() {
+      this.label = this.el.querySelector('.label');
+      return this.stack = this.el.querySelector('.stack');
+    };
+
+    CompositionInspector.prototype.setComposition = function(composition) {
+      var view;
+      view = new SignalUIBase({
+        model: composition
+      });
+      this.stack.innerHTML = '';
+      return this.stack.appendChild(view.render());
+    };
+
+    CompositionInspector.prototype.render = function() {};
+
+    return CompositionInspector;
 
   })(Backbone.View);
 
@@ -1588,11 +1711,14 @@
     SignalUIBase.prototype.className = "signal-set";
 
     SignalUIBase.prototype.initialize = function() {
-      var div, input, label, output, _i, _j, _len, _len1, _ref, _ref1, _ref2, _results;
+      var arrow, div, input, label, output, _i, _j, _len, _len1, _ref, _ref1, _ref2, _results;
+      console.log(this.model);
+      this.el.appendChild(arrow = document.createElement('div'));
+      arrow.className = "arrow";
       this.el.appendChild(label = document.createElement('div'));
       label.textContent = this.model.name;
       label.className = 'label';
-      label.addEventListener('click', this.clickLabel);
+      arrow.addEventListener('click', this.clickLabel);
       _ref = this.model.inputs;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         input = _ref[_i];
@@ -1809,7 +1935,8 @@
       signal = target.signal;
       property = target.property;
       observer = this.currentModel;
-      observer.bind(this.currentProperty, signal, property);
+      console.log(observer, observer.bind);
+      observer.bindToKey(this.currentProperty, signal, property);
       return this.hide();
     };
 

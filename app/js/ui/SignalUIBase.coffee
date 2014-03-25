@@ -2,10 +2,13 @@ class SignalUIBase extends Backbone.View
   className: "signal-set"
 
   initialize: () ->
+    console.log @model
+    @el.appendChild arrow = document.createElement 'div'
+    arrow.className = "arrow"
     @el.appendChild label = document.createElement 'div'
     label.textContent = @model.name
     label.className = 'label'
-    label.addEventListener 'click', @clickLabel
+    arrow.addEventListener 'click', @clickLabel
     for input in @model.inputs
       @el.appendChild div = document.createElement 'div'
       div.className = "signal"

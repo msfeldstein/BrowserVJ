@@ -137,3 +137,28 @@ select {
 .popup .binding-row:hover {
     background: rgba(0,0,0,0.3);
 }
+
+.arrow {
+    margin: 8px;
+    margin-top: 18px;
+    float:left;
+    width: 0; 
+    height: 0; 
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    
+    border-top: 15px solid rgba(255,255,255,0.4);
+    -webkit-transition: -webkit-transform .2s;
+}
+
+
+.hidden .arrow {
+    margin-right: 3px;
+    margin-top: 12px;
+    width: 0;
+    height: 0; 
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    
+    border-left: 15px solid rgba(255,255,255,0.4);
+}

@@ -1,5 +1,5 @@
 class FlameComposition extends GLSLComposition
-  
+  name: "Flame"
   update: () ->
     @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)
     @uniforms['time'].value += .04

@@ -1,7 +1,15 @@
 class Composition extends Backbone.Model
   constructor: () ->
     super()
+    @inputs = @inputs || []
+    @outputs = @outputs || []
     @generateThumbnail()
+    for input in @inputs
+      @set input.name, input.default
+
+  bindToKey: (property, target, targetProperty) ->
+    @listenTo target, "change:#{targetProperty}", () =>
+      @set property.name, target.get(targetProperty)
 
   generateThumbnail: () ->
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
@@ -16,8 +24,18 @@ class Composition extends Backbone.Model
 
 
 class GLSLComposition extends Composition
-  setup: (@renderer) ->
+  uniformValues: []
+  constructor: () ->
+    super()
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
+    for uniformDesc in @uniformValues
+      @inputs.push {name: uniformDesc.name, type: "number", min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
+      @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
+      @set uniformDesc.name, uniformDesc.default
+      # TODO shouldn't need to do this here, but since it is setup multiple times
+      # the change isn't triggered
+      @uniforms[uniformDesc.uniform].value = uniformDesc.default 
+
     @material = new THREE.ShaderMaterial {
       uniforms: @uniforms
       vertexShader: @vertexShader
@@ -34,6 +52,22 @@ class GLSLComposition extends Composition
     @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
     @quad.material = @material
     @scene.add @quad
+
+  setup: (renderer) ->
+    @renderer = renderer
+
+  bindToKey: (property, target, targetProperty) ->
+    @listenTo target, "change:#{targetProperty}", @createBinding(property)
+
+
+  createBinding: (property) =>
+    (signal, value) =>
+      @set property.name, value
+
+  _uniformsChanged: (obj) =>
+    for name, value of obj.changed
+      uniformDesc = _.find(@uniformValues, ((u) -> u.name == name))
+      @uniforms[uniformDesc.uniform].value = value
 
   vertexShader: """
     varying vec2 vUv;
@@ -72,7 +106,7 @@ class EffectPassBase extends Backbone.Model
 
     @bindings = {}
 
-  bind: (property, target, targetProperty) ->
+  bindToKey: (property, target, targetProperty) ->
     @listenTo target, "change:#{targetProperty}", @createBinding(property)
 
   createBinding: (property) =>
@@ -268,6 +302,11 @@ class AudioInputNode extends Backbone.Model
 SPEED = 1 / 20000
 
 class BlobbyComposition extends Composition
+  name: "Blobby"
+
+  inputs: [
+    {name: "Level", type: "number", min: 0, max: 1, default: 0}
+  ]
   setup: (@renderer) ->
     @time = 0
     @scene = new THREE.Scene
@@ -294,11 +333,11 @@ class BlobbyComposition extends Composition
     @particles.sortParticles = true
     @scene.add @particles
 
-  update: (params) ->
+  update: () ->
     @time += .004
     @particles.rotation.y += 0.01
 
-    a = params.audio * 5
+    a = @get("Level") * 500
     a = a + 1
     a = Math.max a, 60
     for vertex in @particles.geometry.vertices
@@ -308,9 +347,13 @@ class BlobbyComposition extends Composition
 
 
 class CircleGrower extends GLSLComposition
+  name: "Circles"
   setup: (@renderer) ->
     super(@renderer)
-    @uniforms.circleSize.value = 300
+
+  uniformValues: [
+    {uniform: "circleSize", name: "Number Of Circles", min: 1, max: 10, default: 4}
+  ]
 
   update: () ->
     @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)
@@ -323,9 +366,10 @@ class CircleGrower extends GLSLComposition
     uniform float time;
     void main (void)
     {
-      vec2 pos = mod(gl_FragCoord.xy, vec2(circleSize)) - vec2(circleSize / 2.0);
+      float cSize = uSize.x / circleSize;
+      vec2 pos = mod(gl_FragCoord.xy, vec2(cSize)) - vec2(cSize / 2.0);
       float dist = sqrt(dot(pos, pos));
-      dist = mod(dist + time * -1.0, circleSize + 1.0) * 2.0;
+      dist = mod(dist + time * -1.0, cSize + 1.0) * 2.0;
       
       gl_FragColor = (sin(dist / 25.0) > 0.0) 
           ? vec4(.90, .90, .90, 1.0)
@@ -333,7 +377,7 @@ class CircleGrower extends GLSLComposition
     }
   """
 class FlameComposition extends GLSLComposition
-  
+  name: "Flame"
   update: () ->
     @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)
     @uniforms['time'].value += .04
@@ -497,6 +541,7 @@ class FlameComposition extends GLSLComposition
     }
   """
 class SphereSphereComposition extends Composition
+  name: "Spherize"
   setup: (@renderer) ->
     @scene = new THREE.Scene
     @camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
@@ -548,9 +593,11 @@ class SphereSphereComposition extends Composition
     @group.add mesh
 
 class VideoComposition extends Backbone.Model
+  name: "Video"
   constructor: (@videoFile) ->
     super()
     if @videoFile
+      @name = @videoFile.name
       videoTag = document.createElement('video')
       videoTag.src = URL.createObjectURL(@videoFile)
       videoTag.addEventListener 'loadeddata', (e) =>
@@ -894,6 +941,8 @@ class App extends Backbone.Model
     @compositionPicker.addComposition new SphereSphereComposition
     @compositionPicker.addComposition new BlobbyComposition
     @compositionPicker.addComposition new FlameComposition
+
+    @inspector = new CompositionInspector
   
   initEffects: () ->
     @composer = new THREE.EffectComposer(@renderer)
@@ -941,6 +990,7 @@ class App extends Backbone.Model
   setComposition: (comp) ->
     @composition = comp
     @composition.setup(@renderer)
+    @inspector.setComposition @composition
     @renderModel.scene = @composition.scene
     @renderModel.camera = @composition.camera
 
@@ -1138,6 +1188,20 @@ class AudioVisualizer extends Backbone.View
     @model.set "selectedFreq", parseInt(e.offsetX / @scale)
 
 
+class CompositionInspector extends Backbone.View
+  el: ".inspector"
+  initialize: () ->
+    @label = @el.querySelector('.label')
+    @stack = @el.querySelector('.stack')
+  
+  setComposition: (composition) ->
+    view = new SignalUIBase(model: composition)
+    @stack.innerHTML = ''
+    @stack.appendChild view.render()
+
+  render: () =>
+
+
 class CompositionPicker extends Backbone.View
   el: ".composition-picker"
 
@@ -1324,10 +1388,13 @@ class SignalUIBase extends Backbone.View
   className: "signal-set"
 
   initialize: () ->
+    console.log @model
+    @el.appendChild arrow = document.createElement 'div'
+    arrow.className = "arrow"
     @el.appendChild label = document.createElement 'div'
     label.textContent = @model.name
     label.className = 'label'
-    label.addEventListener 'click', @clickLabel
+    arrow.addEventListener 'click', @clickLabel
     for input in @model.inputs
       @el.appendChild div = document.createElement 'div'
       div.className = "signal"
@@ -1449,7 +1516,8 @@ class ValueBinder extends Backbone.View
     signal = target.signal
     property = target.property
     observer = @currentModel
-    observer.bind @currentProperty, signal, property
+    console.log observer, observer.bind
+    observer.bindToKey @currentProperty, signal, property
     @hide()
 
   show: (model, property) =>
