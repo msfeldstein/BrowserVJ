@@ -815,122 +815,6 @@
 
   })(ShaderPassBase);
 
-  EffectsManager = (function(_super) {
-    __extends(EffectsManager, _super);
-
-    function EffectsManager(composer) {
-      this.composer = composer;
-      EffectsManager.__super__.constructor.call(this);
-      this.effectClasses = [];
-      this.stack = [];
-    }
-
-    EffectsManager.prototype.registerEffect = function(effectClass) {
-      this.effectClasses.push(effectClass);
-      return this.trigger("change");
-    };
-
-    EffectsManager.prototype.addEffectToStack = function(effect) {
-      this.stack.push(effect);
-      this.composer.insertPass(effect, this.composer.passes.length - 1);
-      return this.trigger("add-effect", effect);
-    };
-
-    return EffectsManager;
-
-  })(Backbone.Model);
-
-  EffectParameter = (function(_super) {
-    __extends(EffectParameter, _super);
-
-    function EffectParameter() {
-      return EffectParameter.__super__.constructor.apply(this, arguments);
-    }
-
-    return EffectParameter;
-
-  })(Backbone.Model);
-
-  EffectControl = (function(_super) {
-    __extends(EffectControl, _super);
-
-    function EffectControl() {
-      return EffectControl.__super__.constructor.apply(this, arguments);
-    }
-
-    EffectControl.prototype.className = "effect-control";
-
-    EffectControl.prototype.initialize = function() {};
-
-    EffectControl.prototype.render = function() {
-      return this.el.textContent = this.model.get("name");
-    };
-
-    return EffectControl;
-
-  })(Backbone.View);
-
-  EffectsPanel = (function(_super) {
-    __extends(EffectsPanel, _super);
-
-    function EffectsPanel() {
-      this.render = __bind(this.render, this);
-      this.addEffect = __bind(this.addEffect, this);
-      this.insertEffectPanel = __bind(this.insertEffectPanel, this);
-      return EffectsPanel.__super__.constructor.apply(this, arguments);
-    }
-
-    EffectsPanel.prototype.el = ".effects";
-
-    EffectsPanel.prototype.events = {
-      "change .add-effect": "addEffect"
-    };
-
-    EffectsPanel.prototype.initialize = function() {
-      this.addButton = document.createElement('select');
-      this.addButton.className = 'add-effect';
-      this.stack = document.createElement('div');
-      this.el.appendChild(this.stack);
-      this.el.appendChild(this.addButton);
-      this.listenTo(this.model, "change", this.render);
-      this.listenTo(this.model, "add-effect", this.insertEffectPanel);
-      return this.render();
-    };
-
-    EffectsPanel.prototype.insertEffectPanel = function(effect) {
-      var effectParameter;
-      effectParameter = new SignalUIBase({
-        model: effect
-      });
-      return this.stack.appendChild(effectParameter.render());
-    };
-
-    EffectsPanel.prototype.addEffect = function(e) {
-      if (e.target.value !== -1) {
-        this.model.addEffectToStack(new this.model.effectClasses[e.target.value]);
-        return e.target.selectedIndex = 0;
-      }
-    };
-
-    EffectsPanel.prototype.render = function() {
-      var effect, i, option, _i, _len, _ref, _results;
-      this.addButton.innerHTML = "<option value=-1>Add Effect</option>";
-      _ref = this.model.effectClasses;
-      _results = [];
-      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
-        effect = _ref[i];
-        option = document.createElement('option');
-        option.value = i;
-        option.textContent = effect.name;
-        _results.push(this.addButton.appendChild(option));
-      }
-      return _results;
-    };
-
-    return EffectsPanel;
-
-  })(Backbone.View);
-
   Node = (function() {
     function Node() {
       this.inputs = [];
@@ -1418,6 +1302,122 @@
     };
 
     return CompositionSlot;
+
+  })(Backbone.View);
+
+  EffectsManager = (function(_super) {
+    __extends(EffectsManager, _super);
+
+    function EffectsManager(composer) {
+      this.composer = composer;
+      EffectsManager.__super__.constructor.call(this);
+      this.effectClasses = [];
+      this.stack = [];
+    }
+
+    EffectsManager.prototype.registerEffect = function(effectClass) {
+      this.effectClasses.push(effectClass);
+      return this.trigger("change");
+    };
+
+    EffectsManager.prototype.addEffectToStack = function(effect) {
+      this.stack.push(effect);
+      this.composer.insertPass(effect, this.composer.passes.length - 1);
+      return this.trigger("add-effect", effect);
+    };
+
+    return EffectsManager;
+
+  })(Backbone.Model);
+
+  EffectParameter = (function(_super) {
+    __extends(EffectParameter, _super);
+
+    function EffectParameter() {
+      return EffectParameter.__super__.constructor.apply(this, arguments);
+    }
+
+    return EffectParameter;
+
+  })(Backbone.Model);
+
+  EffectControl = (function(_super) {
+    __extends(EffectControl, _super);
+
+    function EffectControl() {
+      return EffectControl.__super__.constructor.apply(this, arguments);
+    }
+
+    EffectControl.prototype.className = "effect-control";
+
+    EffectControl.prototype.initialize = function() {};
+
+    EffectControl.prototype.render = function() {
+      return this.el.textContent = this.model.get("name");
+    };
+
+    return EffectControl;
+
+  })(Backbone.View);
+
+  EffectsPanel = (function(_super) {
+    __extends(EffectsPanel, _super);
+
+    function EffectsPanel() {
+      this.render = __bind(this.render, this);
+      this.addEffect = __bind(this.addEffect, this);
+      this.insertEffectPanel = __bind(this.insertEffectPanel, this);
+      return EffectsPanel.__super__.constructor.apply(this, arguments);
+    }
+
+    EffectsPanel.prototype.el = ".effects";
+
+    EffectsPanel.prototype.events = {
+      "change .add-effect": "addEffect"
+    };
+
+    EffectsPanel.prototype.initialize = function() {
+      this.addButton = document.createElement('select');
+      this.addButton.className = 'add-effect';
+      this.stack = document.createElement('div');
+      this.el.appendChild(this.stack);
+      this.el.appendChild(this.addButton);
+      this.listenTo(this.model, "change", this.render);
+      this.listenTo(this.model, "add-effect", this.insertEffectPanel);
+      return this.render();
+    };
+
+    EffectsPanel.prototype.insertEffectPanel = function(effect) {
+      var effectParameter;
+      effectParameter = new SignalUIBase({
+        model: effect
+      });
+      return this.stack.appendChild(effectParameter.render());
+    };
+
+    EffectsPanel.prototype.addEffect = function(e) {
+      if (e.target.value !== -1) {
+        this.model.addEffectToStack(new this.model.effectClasses[e.target.value]);
+        return e.target.selectedIndex = 0;
+      }
+    };
+
+    EffectsPanel.prototype.render = function() {
+      var effect, i, option, _i, _len, _ref, _results;
+      this.addButton.innerHTML = "<option value=-1>Add Effect</option>";
+      _ref = this.model.effectClasses;
+      _results = [];
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        effect = _ref[i];
+        option = document.createElement('option');
+        option.value = i;
+        option.textContent = effect.name;
+        _results.push(this.addButton.appendChild(option));
+      }
+      return _results;
+    };
+
+    return EffectsPanel;
 
   })(Backbone.View);
 
