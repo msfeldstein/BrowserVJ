@@ -81,14 +81,15 @@ module.exports = function(grunt) {
                 files: [
                     base + '/**/*.css'
                 ],
-                tasks: ['copy:css']
+                tasks: ['copy']
             },
             concat: {
                 files: ['app/js/lib/**/*.js'],
                 tasks: ['concat']
             },
             js: {
-                files: ['app/js/lib/**/*.js']
+                files: ['app/js/**/*.js'],
+                tasks: ['copy']
             },
             json: {
                 files: [
@@ -97,7 +98,7 @@ module.exports = function(grunt) {
                 tasks: ['jsonlint']
             },
             html: {
-                files: ['app/**/*.html'],
+                files: [base + '/**/*.html'],
                 tasks: ['copy:dist']
             },
             // Live reload
@@ -110,22 +111,11 @@ module.exports = function(grunt) {
                     '<%= watch.json.files %>',
                     '<%= watch.coffee.files %>',
                     base + '/css/**/*.css',
-                    '**/*.html'
+                    base + '/**/*.html'
                 ]
             }
         },
         copy: {
-            css: {
-                files: [{
-                    expand: true,
-                    dot: true,
-                    cwd: base,
-                    dest: out,
-                    src: [
-                        '**/*.css',
-                    ]
-                }]
-            },
             dist: {
                 files: [{
                     expand: true,
