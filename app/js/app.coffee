@@ -16,7 +16,7 @@ class App extends Backbone.Model
     @initStats()
     @initMicrophone()
     @initSignals()
-    @setComposition new SphereSphereComposition
+    @setComposition new CircleGrower
     requestAnimationFrame @animate
 
   animate: () =>

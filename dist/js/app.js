@@ -516,7 +516,7 @@
       return this.uniforms['time'].value += 1;
     };
 
-    CircleGrower.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float circleSize;\nuniform float time;\nvoid main (void)\n{\n  float cSize = uSize.x / circleSize;\n  vec2 pos = mod(gl_FragCoord.xy, vec2(cSize)) - vec2(cSize / 2.0);\n  float dist = sqrt(dot(pos, pos));\n  dist = mod(dist + time * -1.0, cSize + 1.0) * 2.0;\n  \n  gl_FragColor = (sin(dist / 25.0) > 0.0) \n      ? vec4(.90, .90, .90, 1.0)\n      : vec4(0.0);\n}";
+    CircleGrower.prototype.fragmentShader = "uniform vec2 uSize;\nvarying vec2 vUv;\nuniform float circleSize;\nuniform float time;\nvoid main (void)\n{\n  float cSize = 1.0 / circleSize;\n  vec2 pos = mod(vUv.xy * 2.0 - 1.0, vec2(cSize)) * circleSize - vec2(cSize * circleSize / 2.0);\n  float dist = sqrt(dot(pos, pos));\n  dist = dist * circleSize + time * -.050;\n\n  gl_FragColor = sin(dist * 2.0) > 0.0 ? vec4(1.0) : vec4(0.0);\n\n}";
 
     return CircleGrower;
 
@@ -949,7 +949,7 @@
       this.initStats();
       this.initMicrophone();
       this.initSignals();
-      this.setComposition(new SphereSphereComposition);
+      this.setComposition(new CircleGrower);
       requestAnimationFrame(this.animate);
     }
 

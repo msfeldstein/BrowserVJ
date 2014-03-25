@@ -18,13 +18,12 @@ class CircleGrower extends GLSLComposition
     uniform float time;
     void main (void)
     {
-      float cSize = uSize.x / circleSize;
-      vec2 pos = mod(gl_FragCoord.xy, vec2(cSize)) - vec2(cSize / 2.0);
+      float cSize = 1.0 / circleSize;
+      vec2 pos = mod(vUv.xy * 2.0 - 1.0, vec2(cSize)) * circleSize - vec2(cSize * circleSize / 2.0);
       float dist = sqrt(dot(pos, pos));
-      dist = mod(dist + time * -1.0, cSize + 1.0) * 2.0;
-      
-      gl_FragColor = (sin(dist / 25.0) > 0.0) 
-          ? vec4(.90, .90, .90, 1.0)
-          : vec4(0.0);
+      dist = dist * circleSize + time * -.050;
+
+      gl_FragColor = sin(dist * 2.0) > 0.0 ? vec4(1.0) : vec4(0.0);
+
     }
   """
