@@ -97,7 +97,12 @@ hr {
 .slider .level {
     width: 50%;
     height: 100%;
+    opacity: 0.6;
     background: white;
+}
+
+.slider:hover .level {
+    opacity: 1;
 }
 
 .label {

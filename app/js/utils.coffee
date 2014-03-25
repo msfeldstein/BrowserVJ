@@ -1,8 +1,4 @@
-$ ->
-  mouseCount = 0
-  $(document.body).on "mousedown", () ->
-    window.mouseIsDown = true
+Math.clamp = (val, min, max) ->
+  Math.min(max, Math.max(val, min))
 
-  $(document.body).on "mouseup", () ->
-    window.mouseIsDown = false
 

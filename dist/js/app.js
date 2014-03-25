@@ -423,6 +423,12 @@
         min: 0,
         max: 1,
         "default": 0
+      }, {
+        name: "Speed",
+        type: "number",
+        min: 0,
+        max: 1,
+        "default": .1
       }
     ];
 
@@ -461,7 +467,7 @@
 
     BlobbyComposition.prototype.update = function() {
       var a, vertex, _i, _len, _ref, _results;
-      this.time += .004;
+      this.time += .01 * this.get("Speed");
       this.particles.rotation.y += 0.01;
       a = this.get("Level") * 500;
       a = a + 1;
@@ -1776,7 +1782,7 @@
 
     VJSSlider.prototype.events = {
       "click .slider": "click",
-      "mousemove .slider": "move"
+      "mousedown .slider": "dragBegin"
     };
 
     function VJSSlider(model, property) {
@@ -1784,7 +1790,9 @@
       this.showBindings = __bind(this.showBindings, this);
       this.render = __bind(this.render, this);
       this.click = __bind(this.click, this);
-      this.move = __bind(this.move, this);
+      this.dragEnd = __bind(this.dragEnd, this);
+      this.dragMove = __bind(this.dragMove, this);
+      this.dragBegin = __bind(this.dragBegin, this);
       VJSSlider.__super__.constructor.call(this, {
         model: model
       });
@@ -1804,17 +1812,31 @@
       return this.render();
     };
 
-    VJSSlider.prototype.move = function(e) {
-      if (window.mouseIsDown) {
-        return this.click(e);
-      }
+    VJSSlider.prototype.dragBegin = function(e) {
+      $(document).on({
+        'mousemove': this.dragMove,
+        'mouseup': this.dragEnd
+      });
+      return this.click(e);
+    };
+
+    VJSSlider.prototype.dragMove = function(e) {
+      return this.click(e);
+    };
+
+    VJSSlider.prototype.dragEnd = function(e) {
+      return $(document).off({
+        'mousemove': this.dragMove,
+        'mouseup': this.dragEnd
+      });
     };
 
     VJSSlider.prototype.click = function(e) {
       var percent, value, x;
-      x = e.offsetX;
+      x = e.pageX - this.el.offsetLeft;
       percent = x / this.el.clientWidth;
       value = (this.max - this.min) * percent + this.min;
+      value = Math.clamp(value, this.min, this.max);
       return this.model.set(this.property.name, value);
     };
 
@@ -1970,16 +1992,9 @@
 
   })(Backbone.View);
 
-  $(function() {
-    var mouseCount;
-    mouseCount = 0;
-    $(document.body).on("mousedown", function() {
-      return window.mouseIsDown = true;
-    });
-    return $(document.body).on("mouseup", function() {
-      return window.mouseIsDown = false;
-    });
-  });
+  Math.clamp = function(val, min, max) {
+    return Math.min(max, Math.max(val, min));
+  };
 
 }).call(this);
 

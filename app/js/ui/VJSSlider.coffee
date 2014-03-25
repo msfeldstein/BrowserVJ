@@ -2,7 +2,7 @@
 class VJSSlider extends Backbone.View
   events: 
     "click .slider": "click"
-    "mousemove .slider": "move"
+    "mousedown .slider": "dragBegin"
 
   constructor:(model, @property) ->
     super(model: model)
@@ -20,13 +20,25 @@ class VJSSlider extends Backbone.View
     @listenTo @model, "change:#{@property.name}", @render
     @render()
 
-  move: (e) =>
-    if window.mouseIsDown then @click(e)
+  dragBegin: (e) =>
+    $(document).on 
+      'mousemove': @dragMove
+      'mouseup': @dragEnd
+    @click(e)
+
+  dragMove: (e) =>
+    @click(e)
+
+  dragEnd: (e) =>
+    $(document).off
+      'mousemove': @dragMove
+      'mouseup': @dragEnd
 
   click: (e) =>
-    x = e.offsetX
+    x = e.pageX - @el.offsetLeft
     percent = x / @el.clientWidth
     value = (@max - @min) * percent + @min
+    value = Math.clamp(value, @min, @max)
     @model.set(@property.name, value)
 
   render: () => 

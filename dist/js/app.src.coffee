@@ -306,6 +306,7 @@ class BlobbyComposition extends Composition
 
   inputs: [
     {name: "Level", type: "number", min: 0, max: 1, default: 0}
+    {name: "Speed", type: "number", min: 0, max: 1, default: .1}
   ]
   setup: (@renderer) ->
     @time = 0
@@ -334,7 +335,7 @@ class BlobbyComposition extends Composition
     @scene.add @particles
 
   update: () ->
-    @time += .004
+    @time += .01 * @get("Speed")
     @particles.rotation.y += 0.01
 
     a = @get("Level") * 500
@@ -1428,7 +1429,7 @@ class SignalUIBase extends Backbone.View
 class VJSSlider extends Backbone.View
   events: 
     "click .slider": "click"
-    "mousemove .slider": "move"
+    "mousedown .slider": "dragBegin"
 
   constructor:(model, @property) ->
     super(model: model)
@@ -1446,13 +1447,25 @@ class VJSSlider extends Backbone.View
     @listenTo @model, "change:#{@property.name}", @render
     @render()
 
-  move: (e) =>
-    if window.mouseIsDown then @click(e)
+  dragBegin: (e) =>
+    $(document).on 
+      'mousemove': @dragMove
+      'mouseup': @dragEnd
+    @click(e)
+
+  dragMove: (e) =>
+    @click(e)
+
+  dragEnd: (e) =>
+    $(document).off
+      'mousemove': @dragMove
+      'mouseup': @dragEnd
 
   click: (e) =>
-    x = e.offsetX
+    x = e.pageX - @el.offsetLeft
     percent = x / @el.clientWidth
     value = (@max - @min) * percent + @min
+    value = Math.clamp(value, @min, @max)
     @model.set(@property.name, value)
 
   render: () => 
@@ -1542,11 +1555,7 @@ class ValueBinder extends Backbone.View
 
 
 
-$ ->
-  mouseCount = 0
-  $(document.body).on "mousedown", () ->
-    window.mouseIsDown = true
+Math.clamp = (val, min, max) ->
+  Math.min(max, Math.max(val, min))
 
-  $(document.body).on "mouseup", () ->
-    window.mouseIsDown = false
 

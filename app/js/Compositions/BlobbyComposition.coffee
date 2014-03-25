@@ -5,6 +5,7 @@ class BlobbyComposition extends Composition
 
   inputs: [
     {name: "Level", type: "number", min: 0, max: 1, default: 0}
+    {name: "Speed", type: "number", min: 0, max: 1, default: .1}
   ]
   setup: (@renderer) ->
     @time = 0
@@ -33,7 +34,7 @@ class BlobbyComposition extends Composition
     @scene.add @particles
 
   update: () ->
-    @time += .004
+    @time += .01 * @get("Speed")
     @particles.rotation.y += 0.01
 
     a = @get("Level") * 500
