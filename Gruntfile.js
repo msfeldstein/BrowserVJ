@@ -79,7 +79,7 @@ module.exports = function(grunt) {
             },
             css: {
                 files: [
-                    '**/*.css'
+                    base + '/**/*.css'
                 ],
                 tasks: ['copy:css']
             },
@@ -87,11 +87,18 @@ module.exports = function(grunt) {
                 files: ['app/js/lib/**/*.js'],
                 tasks: ['concat']
             },
+            js: {
+                files: ['app/js/lib/**/*.js']
+            },
             json: {
                 files: [
                     '{package,bower}.json'
                 ],
                 tasks: ['jsonlint']
+            },
+            html: {
+                files: ['app/**/*.html'],
+                tasks: ['copy:dist']
             },
             // Live reload
             reload: {
