@@ -1438,7 +1438,7 @@
       }, {
         name: "type",
         type: "select",
-        options: ["Sin", "Square", "Triangle"],
+        options: ["Sin", "Square", "Triangle", "Sawtooth Up", "Sawtooth Down"],
         "default": "Sin"
       }
     ];
@@ -1469,6 +1469,14 @@
           break;
         case "Square":
           value = Math.round(Math.sin(Math.PI * time / period) * .5 + .5);
+          break;
+        case "Sawtooth Up":
+          value = time / period;
+          value = value - Math.floor(value);
+          break;
+        case "Sawtooth Down":
+          value = time / period;
+          value = 1 - (value - Math.floor(value));
       }
       return this.set("value", value);
     };

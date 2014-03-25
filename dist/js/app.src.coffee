@@ -1248,7 +1248,7 @@ class EffectsPanel extends Backbone.View
 class LFO extends VJSSignal
   inputs: [
     {name: "period", type: "number", min: 0, max: 10, default: 2}
-    {name: "type", type: "select", options: ["Sin", "Square", "Triangle"], default: "Sin"}
+    {name: "type", type: "select", options: ["Sin", "Square", "Triangle", "Sawtooth Up", "Sawtooth Down"], default: "Sin"}
   ]
   outputs: [
     {name: "value", type: "number", min: 0, max: 1}
@@ -1266,6 +1266,13 @@ class LFO extends VJSSignal
         value = Math.sin(Math.PI * time / (period)) * .5 + .5
       when "Square"
         value = Math.round(Math.sin(Math.PI * time / (period)) * .5 + .5)
+      when "Sawtooth Up"
+        value = (time / period)
+        value = value - Math.floor(value)
+      when "Sawtooth Down"
+        value = (time / period)
+        value = 1 - (value - Math.floor(value))
+
     @set "value", value
 
 class SignalManager extends Backbone.Collection
