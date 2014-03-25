@@ -31,10 +31,9 @@ class GLSLComposition extends Composition
       @inputs.push {name: uniformDesc.name, type: "number", min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
       @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
       @set uniformDesc.name, uniformDesc.default
-      # TODO shouldn't need to do this here, but since it is setup multiple times
-      # the change isn't triggered
-      @uniforms[uniformDesc.uniform].value = uniformDesc.default 
 
+  setup: (renderer) ->
+    @renderer = renderer
     @material = new THREE.ShaderMaterial {
       uniforms: @uniforms
       vertexShader: @vertexShader
@@ -51,9 +50,6 @@ class GLSLComposition extends Composition
     @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
     @quad.material = @material
     @scene.add @quad
-
-  setup: (renderer) ->
-    @renderer = renderer
 
   bindToKey: (property, target, targetProperty) ->
     @listenTo target, "change:#{targetProperty}", @createBinding(property)
