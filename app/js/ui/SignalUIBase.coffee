@@ -5,6 +5,7 @@ class SignalUIBase extends Backbone.View
     @el.appendChild label = document.createElement 'div'
     label.textContent = @model.name
     label.className = 'label'
+    label.addEventListener 'click', @clickLabel
     for input in @model.inputs
       @el.appendChild div = document.createElement 'div'
       div.className = "signal"
@@ -22,6 +23,9 @@ class SignalUIBase extends Backbone.View
       div.textContent = output.name
       if output.type == "number"
         div.appendChild @newSlider(@model, output).render()
+
+  clickLabel: () =>
+    @$el.toggleClass 'hidden'
 
   render: () ->
     @el

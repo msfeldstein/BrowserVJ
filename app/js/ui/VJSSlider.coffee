@@ -1,6 +1,8 @@
+# Model is a module, being an effect or a signal patch
 class VJSSlider extends Backbone.View
   events: 
     "click .slider": "click"
+    "mousemove .slider": "move"
 
   constructor:(model, @property) ->
     super(model: model)
@@ -11,25 +13,34 @@ class VJSSlider extends Backbone.View
     div.appendChild @level = document.createElement 'div'
     @level.className = 'level'
     @el.appendChild div
+    @$el.on "contextmenu", @showBindings
 
     @max = @property.max
     @min = @property.min
     @listenTo @model, "change:#{@property.name}", @render
     @render()
 
+  move: (e) =>
+    if window.mouseIsDown then @click(e)
+
   click: (e) =>
-    if e.button then console.log e
     x = e.offsetX
     percent = x / @el.clientWidth
     value = (@max - @min) * percent + @min
     @model.set(@property.name, value)
 
   render: () => 
-    if @model.name == "Invert" then console.log @
     value = @model.get(@property.name)
     percent = (value - @min) / (@max - @min) * 100
     @level.style.width = "#{percent}%"
     @el
+
+  showBindings: (e) =>
+    e.preventDefault()
+    el = window.application.valueBinder.render()
+    window.application.valueBinder.show(@model, @property)
+    el.style.top = e.pageY + "px"
+    el.style.left = e.pageX + "px"
 
 class VJSSelect extends Backbone.View
   events: 

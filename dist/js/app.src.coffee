@@ -70,6 +70,15 @@ class EffectPassBase extends Backbone.Model
     @inputs = @inputs || []
     @outputs = @outputs || []
 
+    @bindings = {}
+
+  bind: (property, target, targetProperty) ->
+    @listenTo target, "change:#{targetProperty}", @createBinding(property)
+
+  createBinding: (property) =>
+    (signal, value) =>
+      @set property.name, value
+
 class ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->
     super()
@@ -962,6 +971,7 @@ class App extends Backbone.Model
     @effectsManager.registerEffect MirrorPass
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
+    @effectsManager.addEffectToStack new ChromaticAberration
 
   initStats: () ->
     @stats = new Stats
@@ -976,8 +986,10 @@ class App extends Backbone.Model
 
   initSignals: () ->
     @signalManager = new SignalManager
+    @signalManager.registerSignal LFO
     @signalManagerView = new SignalManagerView(model:@signalManager)
     @signalManager.add new LFO
+    @valueBinder = new ValueBinder(model: @signalManager)
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)
@@ -1259,6 +1271,11 @@ class LFO extends VJSSignal
 class SignalManager extends Backbone.Collection
   constructor: () ->
     super([], {model: VJSSignal})
+    @signalClasses = []
+
+  registerSignal: (signalClass) ->
+    @signalClasses.push signalClass
+    @trigger 'change:registration'
 
   update: (time) ->
     for signal in @models
@@ -1266,13 +1283,36 @@ class SignalManager extends Backbone.Collection
 
 class SignalManagerView extends Backbone.View
   el: ".signals"
+  events:
+    "change .add-signal": "addSignal"
+
   initialize: () ->
     @views = []
     @listenTo @model, "add", @createSignalView
+    @listenTo @model, "change:registration", @render
+    @addButton = document.createElement 'select'
+    @addButton.className = 'add-signal'
+    @stack = document.createElement 'div'
+    @el.appendChild @stack
+    @el.appendChild @addButton
+    @render()
+
+  addSignal: (e) =>
+    if e.target.value != -1
+      @model.add new @model.signalClasses[e.target.value]
+      e.target.selectedIndex = 0
+
+  render: () =>
+    @addButton.innerHTML = "<option value=-1>Add Signal</option>"
+    for signal, i in @model.signalClasses
+      option = document.createElement 'option'
+      option.value = i
+      option.textContent = signal.name
+      @addButton.appendChild option
 
   createSignalView: (signal) =>
     @views.push view = new SignalUIBase(model: signal)
-    @el.appendChild view.render()
+    @stack.appendChild view.render()
 class SignalUIBase extends Backbone.View
   className: "signal-set"
 
@@ -1280,6 +1320,7 @@ class SignalUIBase extends Backbone.View
     @el.appendChild label = document.createElement 'div'
     label.textContent = @model.name
     label.className = 'label'
+    label.addEventListener 'click', @clickLabel
     for input in @model.inputs
       @el.appendChild div = document.createElement 'div'
       div.className = "signal"
@@ -1298,6 +1339,9 @@ class SignalUIBase extends Backbone.View
       if output.type == "number"
         div.appendChild @newSlider(@model, output).render()
 
+  clickLabel: () =>
+    @$el.toggleClass 'hidden'
+
   render: () ->
     @el
 
@@ -1306,9 +1350,11 @@ class SignalUIBase extends Backbone.View
 
   newSelect: (model, input) ->
     new VJSSelect(model, input)
+# Model is a module, being an effect or a signal patch
 class VJSSlider extends Backbone.View
   events: 
     "click .slider": "click"
+    "mousemove .slider": "move"
 
   constructor:(model, @property) ->
     super(model: model)
@@ -1319,25 +1365,34 @@ class VJSSlider extends Backbone.View
     div.appendChild @level = document.createElement 'div'
     @level.className = 'level'
     @el.appendChild div
+    @$el.on "contextmenu", @showBindings
 
     @max = @property.max
     @min = @property.min
     @listenTo @model, "change:#{@property.name}", @render
     @render()
 
+  move: (e) =>
+    if window.mouseIsDown then @click(e)
+
   click: (e) =>
-    if e.button then console.log e
     x = e.offsetX
     percent = x / @el.clientWidth
     value = (@max - @min) * percent + @min
     @model.set(@property.name, value)
 
   render: () => 
-    if @model.name == "Invert" then console.log @
     value = @model.get(@property.name)
     percent = (value - @min) / (@max - @min) * 100
     @level.style.width = "#{percent}%"
     @el
+
+  showBindings: (e) =>
+    e.preventDefault()
+    el = window.application.valueBinder.render()
+    window.application.valueBinder.show(@model, @property)
+    el.style.top = e.pageY + "px"
+    el.style.left = e.pageX + "px"
 
 class VJSSelect extends Backbone.View
   events: 
@@ -1358,5 +1413,65 @@ class VJSSelect extends Backbone.View
     
   render: () =>
     @el
-class SmoothValue
+class ValueBinder extends Backbone.View
+  className: "popup"
+  events: 
+    "click .binding-row": "clickRow"
+
+  initialize: () ->
+    document.body.appendChild @el
+
+  render: () =>
+    @el.textContent = "Bindings"
+    @el.appendChild document.createElement 'hr'
+    for signal in @model.models
+      row = document.createElement 'div'
+      row.className = 'binding-label'
+      row.textContent = signal.name
+      @el.appendChild row
+      for output in signal.outputs
+        @el.appendChild outputRow = document.createElement 'div'
+        outputRow.className = 'binding-row'
+        outputRow.textContent = output.name
+        outputRow.signal = signal
+        outputRow.property = output.name
+    @el
+
+  clickRow: (e) =>
+    target = e.target
+    signal = target.signal
+    property = target.property
+    observer = @currentModel
+    observer.bind @currentProperty, signal, property
+    @hide()
+
+  show: (model, property) =>
+    @currentModel = model
+    @currentProperty = property
+    $(document).on "keydown", @keydown
+    $(document).on "mousedown", @mousedown
+    @$el.show()
   
+  hide: () =>
+    $(document).off "keydown", @keydown
+    $(document).off "mousedown", @mousedown
+    @$el.hide()
+
+  mousedown: (e) =>
+    if $(e.target).closest(".popup").length == 0
+      @hide()
+
+  keydown: (e) =>
+    if e.keyCode == 27
+      @hide()
+
+
+
+$ ->
+  mouseCount = 0
+  $(document.body).on "mousedown", () ->
+    window.mouseIsDown = true
+
+  $(document.body).on "mouseup", () ->
+    window.mouseIsDown = false
+

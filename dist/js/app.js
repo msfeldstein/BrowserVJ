@@ -1,5 +1,5 @@
 (function() {
-  var App, AudioInputNode, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, EffectControl, EffectParameter, EffectPassBase, EffectsManager, EffectsPanel, FlameComposition, GLSLComposition, Gamepad, InvertPass, LFO, MirrorPass, Node, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShaderPassBase, ShroomPass, SignalManager, SignalManagerView, SignalUIBase, SmoothValue, SphereSphereComposition, VJSSelect, VJSSignal, VJSSlider, VideoComposition, WashoutPass,
+  var App, AudioInputNode, AudioVisualizer, BadTVPass, BlobbyComposition, BlurPass, ChromaticAberration, CircleGrower, Composition, CompositionPicker, CompositionSlot, EffectControl, EffectParameter, EffectPassBase, EffectsManager, EffectsPanel, FlameComposition, GLSLComposition, Gamepad, InvertPass, LFO, MirrorPass, Node, Passthrough, RGBShiftPass, RGBShiftShader, SPEED, ShaderPassBase, ShroomPass, SignalManager, SignalManagerView, SignalUIBase, SphereSphereComposition, VJSSelect, VJSSignal, VJSSlider, ValueBinder, VideoComposition, WashoutPass,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -118,12 +118,26 @@
     __extends(EffectPassBase, _super);
 
     function EffectPassBase() {
+      this.createBinding = __bind(this.createBinding, this);
       EffectPassBase.__super__.constructor.call(this);
       this.uniformValues = this.uniformValues || [];
       this.options = this.options || [];
       this.inputs = this.inputs || [];
       this.outputs = this.outputs || [];
+      this.bindings = {};
     }
+
+    EffectPassBase.prototype.bind = function(property, target, targetProperty) {
+      return this.listenTo(target, "change:" + targetProperty, this.createBinding(property));
+    };
+
+    EffectPassBase.prototype.createBinding = function(property) {
+      return (function(_this) {
+        return function(signal, value) {
+          return _this.set(property.name, value);
+        };
+      })(this);
+    };
 
     return EffectPassBase;
 
@@ -995,9 +1009,10 @@
       this.effectsManager.registerEffect(InvertPass);
       this.effectsManager.registerEffect(ChromaticAberration);
       this.effectsManager.registerEffect(MirrorPass);
-      return this.effectsPanel = new EffectsPanel({
+      this.effectsPanel = new EffectsPanel({
         model: this.effectsManager
       });
+      return this.effectsManager.addEffectToStack(new ChromaticAberration);
     };
 
     App.prototype.initStats = function() {
@@ -1017,10 +1032,14 @@
 
     App.prototype.initSignals = function() {
       this.signalManager = new SignalManager;
+      this.signalManager.registerSignal(LFO);
       this.signalManagerView = new SignalManagerView({
         model: this.signalManager
       });
-      return this.signalManager.add(new LFO);
+      this.signalManager.add(new LFO);
+      return this.valueBinder = new ValueBinder({
+        model: this.signalManager
+      });
     };
 
     App.prototype.startAudio = function(stream) {
@@ -1465,7 +1484,13 @@
       SignalManager.__super__.constructor.call(this, [], {
         model: VJSSignal
       });
+      this.signalClasses = [];
     }
+
+    SignalManager.prototype.registerSignal = function(signalClass) {
+      this.signalClasses.push(signalClass);
+      return this.trigger('change:registration');
+    };
 
     SignalManager.prototype.update = function(time) {
       var signal, _i, _len, _ref, _results;
@@ -1487,14 +1512,49 @@
 
     function SignalManagerView() {
       this.createSignalView = __bind(this.createSignalView, this);
+      this.render = __bind(this.render, this);
+      this.addSignal = __bind(this.addSignal, this);
       return SignalManagerView.__super__.constructor.apply(this, arguments);
     }
 
     SignalManagerView.prototype.el = ".signals";
 
+    SignalManagerView.prototype.events = {
+      "change .add-signal": "addSignal"
+    };
+
     SignalManagerView.prototype.initialize = function() {
       this.views = [];
-      return this.listenTo(this.model, "add", this.createSignalView);
+      this.listenTo(this.model, "add", this.createSignalView);
+      this.listenTo(this.model, "change:registration", this.render);
+      this.addButton = document.createElement('select');
+      this.addButton.className = 'add-signal';
+      this.stack = document.createElement('div');
+      this.el.appendChild(this.stack);
+      this.el.appendChild(this.addButton);
+      return this.render();
+    };
+
+    SignalManagerView.prototype.addSignal = function(e) {
+      if (e.target.value !== -1) {
+        this.model.add(new this.model.signalClasses[e.target.value]);
+        return e.target.selectedIndex = 0;
+      }
+    };
+
+    SignalManagerView.prototype.render = function() {
+      var i, option, signal, _i, _len, _ref, _results;
+      this.addButton.innerHTML = "<option value=-1>Add Signal</option>";
+      _ref = this.model.signalClasses;
+      _results = [];
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        signal = _ref[i];
+        option = document.createElement('option');
+        option.value = i;
+        option.textContent = signal.name;
+        _results.push(this.addButton.appendChild(option));
+      }
+      return _results;
     };
 
     SignalManagerView.prototype.createSignalView = function(signal) {
@@ -1502,7 +1562,7 @@
       this.views.push(view = new SignalUIBase({
         model: signal
       }));
-      return this.el.appendChild(view.render());
+      return this.stack.appendChild(view.render());
     };
 
     return SignalManagerView;
@@ -1513,6 +1573,7 @@
     __extends(SignalUIBase, _super);
 
     function SignalUIBase() {
+      this.clickLabel = __bind(this.clickLabel, this);
       return SignalUIBase.__super__.constructor.apply(this, arguments);
     }
 
@@ -1523,6 +1584,7 @@
       this.el.appendChild(label = document.createElement('div'));
       label.textContent = this.model.name;
       label.className = 'label';
+      label.addEventListener('click', this.clickLabel);
       _ref = this.model.inputs;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         input = _ref[_i];
@@ -1554,6 +1616,10 @@
       return _results;
     };
 
+    SignalUIBase.prototype.clickLabel = function() {
+      return this.$el.toggleClass('hidden');
+    };
+
     SignalUIBase.prototype.render = function() {
       return this.el;
     };
@@ -1575,13 +1641,16 @@
     __extends(VJSSlider, _super);
 
     VJSSlider.prototype.events = {
-      "click .slider": "click"
+      "click .slider": "click",
+      "mousemove .slider": "move"
     };
 
     function VJSSlider(model, property) {
       this.property = property;
+      this.showBindings = __bind(this.showBindings, this);
       this.render = __bind(this.render, this);
       this.click = __bind(this.click, this);
+      this.move = __bind(this.move, this);
       VJSSlider.__super__.constructor.call(this, {
         model: model
       });
@@ -1594,17 +1663,21 @@
       div.appendChild(this.level = document.createElement('div'));
       this.level.className = 'level';
       this.el.appendChild(div);
+      this.$el.on("contextmenu", this.showBindings);
       this.max = this.property.max;
       this.min = this.property.min;
       this.listenTo(this.model, "change:" + this.property.name, this.render);
       return this.render();
     };
 
+    VJSSlider.prototype.move = function(e) {
+      if (window.mouseIsDown) {
+        return this.click(e);
+      }
+    };
+
     VJSSlider.prototype.click = function(e) {
       var percent, value, x;
-      if (e.button) {
-        console.log(e);
-      }
       x = e.offsetX;
       percent = x / this.el.clientWidth;
       value = (this.max - this.min) * percent + this.min;
@@ -1613,13 +1686,19 @@
 
     VJSSlider.prototype.render = function() {
       var percent, value;
-      if (this.model.name === "Invert") {
-        console.log(this);
-      }
       value = this.model.get(this.property.name);
       percent = (value - this.min) / (this.max - this.min) * 100;
       this.level.style.width = "" + percent + "%";
       return this.el;
+    };
+
+    VJSSlider.prototype.showBindings = function(e) {
+      var el;
+      e.preventDefault();
+      el = window.application.valueBinder.render();
+      window.application.valueBinder.show(this.model, this.property);
+      el.style.top = e.pageY + "px";
+      return el.style.left = e.pageX + "px";
     };
 
     return VJSSlider;
@@ -1669,12 +1748,103 @@
 
   })(Backbone.View);
 
-  SmoothValue = (function() {
-    function SmoothValue() {}
+  ValueBinder = (function(_super) {
+    __extends(ValueBinder, _super);
 
-    return SmoothValue;
+    function ValueBinder() {
+      this.keydown = __bind(this.keydown, this);
+      this.mousedown = __bind(this.mousedown, this);
+      this.hide = __bind(this.hide, this);
+      this.show = __bind(this.show, this);
+      this.clickRow = __bind(this.clickRow, this);
+      this.render = __bind(this.render, this);
+      return ValueBinder.__super__.constructor.apply(this, arguments);
+    }
 
-  })();
+    ValueBinder.prototype.className = "popup";
+
+    ValueBinder.prototype.events = {
+      "click .binding-row": "clickRow"
+    };
+
+    ValueBinder.prototype.initialize = function() {
+      return document.body.appendChild(this.el);
+    };
+
+    ValueBinder.prototype.render = function() {
+      var output, outputRow, row, signal, _i, _j, _len, _len1, _ref, _ref1;
+      this.el.textContent = "Bindings";
+      this.el.appendChild(document.createElement('hr'));
+      _ref = this.model.models;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        signal = _ref[_i];
+        row = document.createElement('div');
+        row.className = 'binding-label';
+        row.textContent = signal.name;
+        this.el.appendChild(row);
+        _ref1 = signal.outputs;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          output = _ref1[_j];
+          this.el.appendChild(outputRow = document.createElement('div'));
+          outputRow.className = 'binding-row';
+          outputRow.textContent = output.name;
+          outputRow.signal = signal;
+          outputRow.property = output.name;
+        }
+      }
+      return this.el;
+    };
+
+    ValueBinder.prototype.clickRow = function(e) {
+      var observer, property, signal, target;
+      target = e.target;
+      signal = target.signal;
+      property = target.property;
+      observer = this.currentModel;
+      observer.bind(this.currentProperty, signal, property);
+      return this.hide();
+    };
+
+    ValueBinder.prototype.show = function(model, property) {
+      this.currentModel = model;
+      this.currentProperty = property;
+      $(document).on("keydown", this.keydown);
+      $(document).on("mousedown", this.mousedown);
+      return this.$el.show();
+    };
+
+    ValueBinder.prototype.hide = function() {
+      $(document).off("keydown", this.keydown);
+      $(document).off("mousedown", this.mousedown);
+      return this.$el.hide();
+    };
+
+    ValueBinder.prototype.mousedown = function(e) {
+      if ($(e.target).closest(".popup").length === 0) {
+        return this.hide();
+      }
+    };
+
+    ValueBinder.prototype.keydown = function(e) {
+      if (e.keyCode === 27) {
+        return this.hide();
+      }
+    };
+
+    return ValueBinder;
+
+  })(Backbone.View);
+
+  $(function() {
+    var mouseCount;
+    mouseCount = 0;
+    $(document.body).on("mousedown", function() {
+      return window.mouseIsDown = true;
+    });
+    return $(document.body).on("mouseup", function() {
+      return window.mouseIsDown = false;
+    });
+  });
 
 }).call(this);
 

@@ -6,6 +6,15 @@ class EffectPassBase extends Backbone.Model
     @inputs = @inputs || []
     @outputs = @outputs || []
 
+    @bindings = {}
+
+  bind: (property, target, targetProperty) ->
+    @listenTo target, "change:#{targetProperty}", @createBinding(property)
+
+  createBinding: (property) =>
+    (signal, value) =>
+      @set property.name, value
+
 class ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->
     super()
