@@ -13,15 +13,13 @@ class Clock extends VJSSignal
   
   initialize: () ->
     super()
-    @listenTo @, "change:BPMTap", @tap
-    @listenTo @, "change:DownBeat", @downBeat
     @downTime = 0
     @taps = []
 
-  downBeat: (model, down) =>
+  "change:DownBeat": (model, down) =>
     if down then @downTime = Date.now()
 
-  tap: (model, down) =>
+  "change:BPMTap": (model, down) =>
     if !down then return
     t = Date.now()
     if @taps.length == 0
