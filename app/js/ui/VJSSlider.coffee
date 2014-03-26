@@ -18,6 +18,7 @@ class VJSSlider extends VJSControl
     @render()
 
   dragBegin: (e) =>
+    if e.button != 0 then return
     $(document).on 
       'mousemove': @dragMove
       'mouseup': @dragEnd

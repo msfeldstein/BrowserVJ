@@ -8,13 +8,20 @@ class Composition extends Backbone.Model
       @set input.name, input.default
       if @["change:#{input.name}"] then @listenTo @, "change:#{input.name}", @["change:#{input.name}"]
 
-  bindToKey: (property, target, targetProperty) ->
+  clearBinding: (property) =>
     if @bindings[property]
-      console.log "Should unbind"
-    f = () =>
-      @set property.name, target.get(targetProperty)
-    @bindings[property] = f
-    @listenTo target, "change:#{targetProperty}", f
+      binding = @bindings[property]
+      binding.target.off("change:#{binding.targetProperty}", binding.callback)
+
+  bindToKey: (property, target, targetProperty) ->
+    @clearBinding(property)
+    f = @createBinding(property)
+    @bindings[property] = {callback: f, target: target, targetProperty: targetProperty}
+    target.on("change:#{targetProperty}", f)
+
+  createBinding: (property) =>
+    (signal, value) =>
+      @set property.name, value
 
   generateThumbnail: () ->
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})

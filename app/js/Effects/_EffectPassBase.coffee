@@ -8,12 +8,16 @@ class EffectPassBase extends Backbone.Model
 
     @bindings = {}
 
-  bindToKey: (property, target, targetProperty) ->
+  clearBinding: (property) =>
     if @bindings[property]
-      console.log "Should unbind"
+      binding = @bindings[property]
+      binding.target.off("change:#{binding.targetProperty}", binding.callback)
+
+  bindToKey: (property, target, targetProperty) ->
+    @clearBinding(property)
     f = @createBinding(property)
-    @bindings[property] = f
-    @listenTo target, "change:#{targetProperty}", f
+    @bindings[property] = {callback: f, target: target, targetProperty: targetProperty}
+    target.on("change:#{targetProperty}", f)
 
   createBinding: (property) =>
     (signal, value) =>

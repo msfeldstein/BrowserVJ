@@ -7,7 +7,13 @@ class ValueBinder extends Backbone.View
     document.body.appendChild @el
 
   render: () =>
-    @el.textContent = "Bindings"
+    @el.innerHTML = ''
+    row = document.createElement 'div'
+    row.className = 'binding-row'
+    row.textContent = "Clear Binding"
+    row.signal = null
+    row.property = null
+    @el.appendChild row
     @el.appendChild document.createElement 'hr'
     for signal in @model.models
       row = document.createElement 'div'
@@ -27,7 +33,10 @@ class ValueBinder extends Backbone.View
     signal = target.signal
     property = target.property
     observer = @currentModel
-    observer.bindToKey @currentProperty, signal, property
+    if signal
+      observer.bindToKey @currentProperty, signal, property
+    else
+      observer.clearBinding @currentProperty
     @hide()
 
   show: (model, property) =>
