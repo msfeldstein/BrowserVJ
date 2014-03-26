@@ -13,9 +13,10 @@ class VJSButton extends VJSControl
     @listenTo @model, "change:#{@property.name}", @render
     @render()
 
-  down: () =>
-    @model.set @property.name, true
-    $(document).one "mouseup", @up
+  down: (e) =>
+    if e.button == 0
+      @model.set @property.name, true
+      $(document).one "mouseup", @up
 
   up: () =>
     @model.set @property.name, false

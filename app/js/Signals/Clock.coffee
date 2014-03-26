@@ -2,6 +2,7 @@ class Clock extends VJSSignal
   inputs: [
     {name: "BPM", type: "number", min: 1, max: 300, default: 120}
     {name: "BPMTap", type: "boolean"}
+    {name: "DownBeat", type: "boolean"}
   ]
   outputs: [
     {name: "beat", type: "boolean"}
@@ -11,8 +12,12 @@ class Clock extends VJSSignal
   initialize: () ->
     super()
     @listenTo @, "change:BPMTap", @tap
+    @listenTo @, "change:DownBeat", @downBeat
     @downTime = 0
     @taps = []
+
+  downBeat: (model, down) =>
+    if down then @downTime = Date.now()
 
   tap: (model, down) =>
     if !down then return
@@ -28,7 +33,6 @@ class Clock extends VJSSignal
         dt = next - tap
         totalDelta += dt
       periodMS = totalDelta / (@taps.length - 1)
-      console.log periodMS
       @set("BPM", 60000 / periodMS)
 
     if @clearTimer then clearTimeout @clearTimer
@@ -43,4 +47,6 @@ class Clock extends VJSSignal
     timeSinceDown = time - @downTime
     timeInBeat = timeSinceDown % periodMS
     percentInBeat = timeInBeat / periodMS
+    @set "beat", percentInBeat < @lastPercent
+    @lastPercent = percentInBeat
     @set("smoothbeat", percentInBeat)
