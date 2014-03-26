@@ -1,5 +1,5 @@
 class SignalUIBase extends Backbone.View
-  className: "signal-set hidden"
+  className: "signal-set"
 
   initialize: () ->
     @el.appendChild arrow = document.createElement 'div'
@@ -14,10 +14,7 @@ class SignalUIBase extends Backbone.View
       @stack.appendChild div = document.createElement 'div'
       div.className = "signal"
       div.textContent = input.name
-      if input.type == "number"
-        div.appendChild @newSlider(@model, input).render()
-      else if input.type == "select"
-        div.appendChild @newSelect(@model, input).render()
+      div.appendChild @newControl(input).render()
 
     if @model.outputs?.length > 0
       @stack.appendChild document.createElement 'hr'
@@ -25,8 +22,7 @@ class SignalUIBase extends Backbone.View
       @stack.appendChild div = document.createElement 'div'
       div.className = "signal"
       div.textContent = output.name
-      if output.type == "number"
-        div.appendChild @newSlider(@model, output).render()
+      div.appendChild @newControl(output).render()
 
   clickLabel: () =>
     @$el.toggleClass 'hidden'
@@ -34,8 +30,10 @@ class SignalUIBase extends Backbone.View
   render: () ->
     @el
 
-  newSlider: (model, input) ->
-    slider = new VJSSlider(model, input)
-
-  newSelect: (model, input) ->
-    new VJSSelect(model, input)
+  newControl: (input) ->
+    if input.type == "number"
+      new VJSSlider(@model, input)
+    else if input.type == "select"
+      new VJSSelect(@model, input)
+    else if input.type == "boolean"
+      new VJSButton(@model, input)

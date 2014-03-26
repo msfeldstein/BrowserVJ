@@ -72,8 +72,12 @@ class App extends Backbone.Model
   initSignals: () ->
     @signalManager = new SignalManager
     @signalManager.registerSignal LFO
+    @signalManager.registerSignal Clock
     @signalManagerView = new SignalManagerView(model:@signalManager)
+    @signalManager.add clock = new Clock
+
     @valueBinder = new ValueBinder(model: @signalManager)
+
 
   startAudio: (stream) =>
     mediaStreamSource = @context.createMediaStreamSource(stream)

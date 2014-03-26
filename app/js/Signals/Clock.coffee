@@ -1,29 +1,24 @@
 class Clock extends VJSSignal
   inputs: [
     {name: "BPM", type: "number", min: 1, max: 300, default: 120}
-    {name: "type", type: "select", options: ["Sin", "Square", "Triangle", "Sawtooth Up", "Sawtooth Down"], default: "Sin"}
+    {name: "BPM Tap", type: "boolean"}
   ]
   outputs: [
-    {name: "value", type: "number", min: 0, max: 1}
+    {name: "beat", type: "boolean"}
+    {name: "smoothbeat", type: "number", min: 0, max: 1}
   ]
-  name: "LFO"
+  name: "Clock"
   initialize: () ->
     super()
+    @listenTo @, "change:BPM Tap", @tap
+    @downTime = 0
+
+  tap: (model, options) =>
+    
     
   update: (time) ->
-    time = time / 1000
-    period = @get("period")
-    value = 0
-    switch @get("type")
-      when "Sin"
-        value = Math.sin(Math.PI * time / (period)) * .5 + .5
-      when "Square"
-        value = Math.round(Math.sin(Math.PI * time / (period)) * .5 + .5)
-      when "Sawtooth Up"
-        value = (time / period)
-        value = value - Math.floor(value)
-      when "Sawtooth Down"
-        value = (time / period)
-        value = 1 - (value - Math.floor(value))
-
-    @set "value", value
+    periodMS = 60 / @get("BPM") * 1000
+    timeSinceDown = time - @downTime
+    timeInBeat = timeSinceDown % periodMS
+    percentInBeat = timeInBeat / periodMS
+    @set("smoothbeat", percentInBeat)

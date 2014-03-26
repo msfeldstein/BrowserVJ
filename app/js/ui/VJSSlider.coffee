@@ -1,19 +1,16 @@
 # Model is a module, being an effect or a signal patch
-class VJSSlider extends Backbone.View
+class VJSSlider extends VJSControl
   events: 
     "click .slider": "click"
     "mousedown .slider": "dragBegin"
 
-  constructor:(model, @property) ->
-    super(model: model)
-
   initialize: () ->
+    super()
     div = document.createElement 'div'
     div.className = 'slider'
     div.appendChild @level = document.createElement 'div'
     @level.className = 'level'
     @el.appendChild div
-    @$el.on "contextmenu", @showBindings
 
     @max = @property.max
     @min = @property.min
@@ -45,14 +42,8 @@ class VJSSlider extends Backbone.View
     value = @model.get(@property.name)
     percent = (value - @min) / (@max - @min) * 100
     @level.style.width = "#{percent}%"
+    @level.textContent = Math.roundTo value, 2
     @el
-
-  showBindings: (e) =>
-    e.preventDefault()
-    el = window.application.valueBinder.render()
-    window.application.valueBinder.show(@model, @property)
-    el.style.top = e.pageY + "px"
-    el.style.left = e.pageX + "px"
 
 class VJSSelect extends Backbone.View
   events: 
