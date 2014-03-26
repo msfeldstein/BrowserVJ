@@ -1,5 +1,5 @@
 class SignalUIBase extends Backbone.View
-  className: "signal-set"
+  className: "signal-set hidden"
 
   initialize: () ->
     @el.appendChild arrow = document.createElement 'div'
@@ -13,16 +13,18 @@ class SignalUIBase extends Backbone.View
     for input in @model.inputs
       @stack.appendChild div = document.createElement 'div'
       div.className = "signal"
-      if input.type == "boolean" then div.classList.add 'inline'
+      div.setAttribute("data-ui-type", input.type)
       div.textContent = input.name
       div.appendChild @newControl(input).render()
 
     if @model.outputs?.length > 0
       @stack.appendChild document.createElement 'hr'
     for output in @model.outputs
+      if output.hidden then continue
       @stack.appendChild div = document.createElement 'div'
       div.className = "signal"
       div.textContent = output.name
+      div.setAttribute("data-ui-type", output.type)
       if output.type == "boolean" then div.classList.add 'inline'
       div.appendChild @newControl(output).render()
 
@@ -39,3 +41,5 @@ class SignalUIBase extends Backbone.View
       new VJSSelect(@model, input)
     else if input.type == "boolean"
       new VJSButton(@model, input)
+    else if input.type == "color"
+      new VJSColorPicker(@model, input)

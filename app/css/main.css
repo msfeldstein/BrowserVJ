@@ -87,7 +87,7 @@ hr {
     margin: 10px;
 }
 
-.signal.inline {
+.signal[data-ui-type=boolean], .signal[data-ui-type=color] {
     display: inline-block;
     width: 25%;
 }

@@ -73,8 +73,9 @@ class App extends Backbone.Model
     @signalManager = new SignalManager
     @signalManager.registerSignal LFO
     @signalManager.registerSignal Clock
+    @signalManager.registerSignal Palette
     @signalManagerView = new SignalManagerView(model:@signalManager)
-    @signalManager.add clock = new Clock
+    @signalManager.add @clock = new Clock
 
     @valueBinder = new ValueBinder(model: @signalManager)
 
