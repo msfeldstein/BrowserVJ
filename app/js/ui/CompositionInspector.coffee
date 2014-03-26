@@ -1,7 +1,6 @@
 class CompositionInspector extends Backbone.View
   el: ".inspector"
   initialize: () ->
-    @label = @el.querySelector('.label')
     @stack = @el.querySelector('.stack')
   
   setComposition: (composition) ->

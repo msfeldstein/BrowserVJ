@@ -13,6 +13,7 @@ class SignalUIBase extends Backbone.View
     for input in @model.inputs
       @stack.appendChild div = document.createElement 'div'
       div.className = "signal"
+      if input.type == "boolean" then div.classList.add 'inline'
       div.textContent = input.name
       div.appendChild @newControl(input).render()
 
@@ -22,6 +23,7 @@ class SignalUIBase extends Backbone.View
       @stack.appendChild div = document.createElement 'div'
       div.className = "signal"
       div.textContent = output.name
+      if output.type == "boolean" then div.classList.add 'inline'
       div.appendChild @newControl(output).render()
 
   clickLabel: () =>

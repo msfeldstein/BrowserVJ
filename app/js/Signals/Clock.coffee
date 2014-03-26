@@ -1,14 +1,16 @@
 class Clock extends VJSSignal
+  name: "Clock"
   inputs: [
     {name: "BPM", type: "number", min: 1, max: 300, default: 120}
     {name: "BPMTap", type: "boolean"}
     {name: "DownBeat", type: "boolean"}
   ]
   outputs: [
-    {name: "beat", type: "boolean"}
-    {name: "smoothbeat", type: "number", min: 0, max: 1}
+    {name: "Beat", type: "boolean"}
+    {name: "Downbeat", type: "boolean"}
+    {name: "Smoothbeat", type: "number", min: 0, max: 1}
   ]
-  name: "Clock"
+  
   initialize: () ->
     super()
     @listenTo @, "change:BPMTap", @tap
@@ -45,8 +47,14 @@ class Clock extends VJSSignal
   update: (time) ->
     periodMS = 60 / @get("BPM") * 1000
     timeSinceDown = time - @downTime
+    beatNumber = Math.floor(timeSinceDown / periodMS)
     timeInBeat = timeSinceDown % periodMS
     percentInBeat = timeInBeat / periodMS
-    @set "beat", percentInBeat < @lastPercent
+    if percentInBeat < @lastPercent
+      @set("Beat", true)
+      if beatNumber % 4 == 0 then @set("Downbeat", true)
+    else
+      @set("Beat", false)
+      @set("Downbeat", false)
     @lastPercent = percentInBeat
-    @set("smoothbeat", percentInBeat)
+    @set("Smoothbeat", percentInBeat)

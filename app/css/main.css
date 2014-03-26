@@ -87,6 +87,11 @@ hr {
     margin: 10px;
 }
 
+.signal.inline {
+    display: inline-block;
+    width: 25%;
+}
+
 .slider {
     color: black;
     box-sizing: border-box;
