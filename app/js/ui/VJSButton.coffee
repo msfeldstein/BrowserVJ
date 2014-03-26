@@ -15,8 +15,12 @@ class VJSButton extends VJSControl
 
   down: (e) =>
     if e.button == 0
-      @model.set @property.name, true
-      $(document).one "mouseup", @up
+      if @property.toggle
+        @model.set(@property.name, !@model.get(@property.name)) 
+        console.log @property, @model 
+      else
+        @model.set @property.name, true
+        $(document).one "mouseup", @up
 
   up: () =>
     @model.set @property.name, false

@@ -3,12 +3,18 @@ class Composition extends Backbone.Model
     super()
     @inputs = @inputs || []
     @outputs = @outputs || []
+    @bindings = {}
     for input in @inputs
       @set input.name, input.default
+      if @["change:#{input.name}"] then @listenTo @, "change:#{input.name}", @["change:#{input.name}"]
 
   bindToKey: (property, target, targetProperty) ->
-    @listenTo target, "change:#{targetProperty}", () =>
+    if @bindings[property]
+      console.log "Should unbind"
+    f = () =>
       @set property.name, target.get(targetProperty)
+    @bindings[property] = f
+    @listenTo target, "change:#{targetProperty}", f
 
   generateThumbnail: () ->
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})

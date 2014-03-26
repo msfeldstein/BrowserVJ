@@ -27,7 +27,6 @@ class ValueBinder extends Backbone.View
     signal = target.signal
     property = target.property
     observer = @currentModel
-    console.log observer, observer.bind
     observer.bindToKey @currentProperty, signal, property
     @hide()
 

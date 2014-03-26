@@ -1,5 +1,10 @@
 class VideoComposition extends Composition
   name: "Video"
+
+  inputs: [
+    {name: "Playing", type: "boolean", toggle: true, default: true}
+  ]
+
   constructor: (@videoFile) ->
     super()
     if @videoFile
@@ -23,7 +28,6 @@ class VideoComposition extends Composition
           videoTag = null
           @trigger "thumbnail-available"
         setTimeout f, 100
-
 
   setup: (@renderer) ->
     @enabled = true
@@ -56,6 +60,10 @@ class VideoComposition extends Composition
 
       @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), @material)
       @scene.add @quad
+
+  "change:Playing": (model, playing) =>
+    if playing then @video.play()
+    else @video.pause()
 
   update: () ->
     if @videoTexture
