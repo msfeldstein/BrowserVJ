@@ -76,6 +76,7 @@ class App extends Backbone.Model
     @signalManagerView = new SignalManagerView(model:@signalManager)
     @signalManager.add @midi = new MIDI
     @signalManager.add @clock = new Clock
+    @signalManager.add @gamepad = new Gamepad
 
     @valueBinder = new ValueBinder(model: @signalManager)
 

@@ -2,6 +2,7 @@ class SignalManager extends Backbone.Collection
   constructor: () ->
     super([], {model: VJSSignal})
     @signalClasses = []
+    @on "destroy", @remove
 
   registerSignal: (signalClass) ->
     @signalClasses.push signalClass
@@ -17,8 +18,9 @@ class SignalManagerView extends Backbone.View
     "change .add-signal": "addSignal"
 
   initialize: () ->
-    @views = []
+    @views = {}
     @listenTo @model, "add", @createSignalView
+    @listenTo @model, "remove", @removeSignalView
     @listenTo @model, "change:registration", @render
     @addButton = document.createElement 'select'
     @addButton.className = 'add-signal'
@@ -41,5 +43,8 @@ class SignalManagerView extends Backbone.View
       @addButton.appendChild option
 
   createSignalView: (signal) =>
-    @views.push view = new SignalUIBase(model: signal)
+    @views[signal.cid] = view = new SignalUIBase(model: signal)
     @stack.appendChild view.render()
+
+  removeSignalView: (signal) =>
+    @views[signal.cid].remove()
