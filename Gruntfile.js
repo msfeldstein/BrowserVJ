@@ -1,17 +1,9 @@
-/**
- * Gruntfile.js
- *
- * Copyright (c) 2012 quickcue
- */
-
-
 module.exports = function(grunt) {
     // Load dev dependencies
     require('load-grunt-tasks')(grunt);
     grunt.loadNpmTasks('grunt-contrib-coffee');
     grunt.loadNpmTasks('grunt-contrib-concat');
 
-    // Time how long tasks take for build time optimizations
     require('time-grunt')(grunt);
 
     // Configure the app path
@@ -19,13 +11,6 @@ module.exports = function(grunt) {
     var out = 'dist';
 
     grunt.initConfig({
-
-        paths: {
-            base: 'app',
-            out: 'dist'
-        },
-        pkg: grunt.file.readJSON('package.json'),
-        bowercopy: grunt.file.readJSON('bowercopy.json'),
         coffee: {
             compile: {
                 options: {
@@ -60,16 +45,6 @@ module.exports = function(grunt) {
                 }
             }
         },
-        jshint: {
-            options: {
-                jshintrc: '.jshintrc'
-            },
-            all: [ base + '/js/*.js' ]
-        },
-        jsonlint: {
-            pkg: [ 'package.json' ],
-            bower: [ '{bower,bowercopy}.json' ]
-        },
         watch: {
             coffee: {
                 files: [
@@ -81,7 +56,7 @@ module.exports = function(grunt) {
                 files: [
                     base + '/**/*.css'
                 ],
-                tasks: ['copy']
+                tasks: ['copy:css']
             },
             concat: {
                 files: ['app/js/lib/**/*.js'],
@@ -89,17 +64,11 @@ module.exports = function(grunt) {
             },
             js: {
                 files: ['app/js/**/*.js'],
-                tasks: ['copy']
-            },
-            json: {
-                files: [
-                    '{package,bower}.json'
-                ],
-                tasks: ['jsonlint']
+                tasks: ['copy:js']
             },
             html: {
                 files: [base + '/**/*.html'],
-                tasks: ['copy:dist']
+                tasks: ['copy:html']
             },
             // Live reload
             reload: {
@@ -108,18 +77,45 @@ module.exports = function(grunt) {
                 },
                 files: [
                     '<%= watch.js.files %>',
-                    '<%= watch.json.files %>',
-                    '<%= watch.coffee.files %>',
                     base + '/css/**/*.css',
                     base + '/**/*.html'
                 ]
             }
         },
         copy: {
+            html: {
+                files: [{
+                    expand: true,
+                    cwd: base,
+                    dest: out,
+                    src: [
+                        '{,*/}*.html'
+                    ]
+                }]                
+            },
+            css: {
+                files: [{
+                    expand: true,
+                    cwd: base,
+                    dest: out,
+                    src: [
+                        '**/*.css',
+                    ]
+                }]                
+            },
+            js: {
+                files: [{
+                    expand: true,
+                    cwd: base,
+                    dest: out,
+                    src: [
+                        '**/*.js',
+                    ]
+                }]                
+            },
             dist: {
                 files: [{
                     expand: true,
-                    dot: true,
                     cwd: base,
                     dest: out,
                     src: [
@@ -141,8 +137,7 @@ module.exports = function(grunt) {
                     dot: true,
                     src: [
                         '.tmp',
-                        '<%= paths.out %>/*',
-                        '!<%= paths.out %>/.git*'
+                        out + '/*',
                     ]
                 }]
             }
@@ -151,13 +146,13 @@ module.exports = function(grunt) {
 
     grunt.registerTask('serve', function () {
         grunt.task.run([
-            'copy',
             'connect:livereload',
             'coffee',
-            'concat',         
+            'concat',
+            'copy:dist',      
             'watch'
         ]);
     });
 
-    grunt.registerTask('default', ['newer:jsonlint', 'newer:jshint', 'serve']);
+    grunt.registerTask('default', ['serve']);
 };
