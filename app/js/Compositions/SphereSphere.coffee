@@ -2,7 +2,7 @@ class SphereSphereComposition extends Composition
   name: "Spherize"
   setup: (@renderer) ->
     @scene = new THREE.Scene
-    @camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 10000);
+    @camera = new THREE.PerspectiveCamera(75, @renderer.innerWidth / @renderer.innerHeight, 1, 10000);
     @camera.position.z = 1000;
     @origin = new THREE.Vector3 0, 0, 0
     @group = new THREE.Object3D
@@ -39,6 +39,7 @@ class SphereSphereComposition extends Composition
     ambient = new THREE.PointLight( 0x444444, 1, 10000 );
     ambient.position.set -500, 500, 500
     @scene.add ambient
+    
   update: () ->
     @group.rotation.y += 0.001
     @group.rotation.z += 0.0001
