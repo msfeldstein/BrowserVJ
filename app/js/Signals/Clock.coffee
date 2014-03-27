@@ -1,7 +1,7 @@
 class Clock extends VJSSignal
   name: "Clock"
   inputs: [
-    {name: "BPM", type: "number", min: 1, max: 300, default: 120}
+    {name: "BPM", type: "number", min: 1, max: 300, default: 80}
     {name: "BPMTap", type: "boolean"}
     {name: "DownBeat", type: "boolean"}
   ]

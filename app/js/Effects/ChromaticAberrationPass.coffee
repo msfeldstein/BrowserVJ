@@ -16,9 +16,9 @@ class ChromaticAberration extends ShaderPassBase
 
       void main (void)
       {
-          float r = texture2D(uTex, vUv + vec2(rShift * 0.01, 0.0)).r;
-          float g = texture2D(uTex, vUv + vec2(gShift * 0.01, 0.0)).g;
-          float b = texture2D(uTex, vUv + vec2(bShift * 0.01, 0.0)).b;
+          float r = texture2D(uTex, vUv + vec2(rShift * 0.05, 0.0)).r;
+          float g = texture2D(uTex, vUv + vec2(gShift * 0.05, 0.0)).g;
+          float b = texture2D(uTex, vUv + vec2(bShift * 0.05, 0.0)).b;
           float a = max(r, max(g, b));
           gl_FragColor = vec4(r, g, b, a);
       }

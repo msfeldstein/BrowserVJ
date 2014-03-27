@@ -17,6 +17,7 @@ class App extends Backbone.Model
     @initMicrophone()
     @initSignals()
     requestAnimationFrame @animate
+    @setComposition new BlobbyComposition
 
     $(window).resize () =>
         @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
@@ -55,8 +56,11 @@ class App extends Backbone.Model
     @effectsManager.registerEffect InvertPass
     @effectsManager.registerEffect ChromaticAberration
     @effectsManager.registerEffect MirrorPass
+    @effectsManager.registerEffect DotRollPass
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
+
+    @effectsManager.addEffectToStack new DotRollPass
 
   initStats: () ->
     @stats = new Stats

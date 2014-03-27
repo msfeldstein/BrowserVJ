@@ -20,7 +20,7 @@ class VJSBindable extends Backbone.Model
   bindToKey: (property, target, targetProperty) ->
     @clearBinding(property.name)
     f = @createBinding(property)
-    @bindings[property] = {callback: f, target: target, targetProperty: targetProperty}
+    @bindings[property.name] = {callback: f, target: target, targetProperty: targetProperty}
     target.on("change:#{targetProperty}", f)
 
   createBinding: (property) =>

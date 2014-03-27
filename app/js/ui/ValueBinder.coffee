@@ -40,7 +40,7 @@ class ValueBinder extends Backbone.View
       else
         observer.bindToKey @currentProperty, signal, property
     else
-      observer.clearBinding @currentProperty
+      observer.clearBinding @currentProperty.name
     @hide()
 
   show: (model, property) =>
