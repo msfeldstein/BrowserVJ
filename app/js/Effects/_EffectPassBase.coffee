@@ -1,27 +1,8 @@
-class EffectPassBase extends Backbone.Model
+class EffectPassBase extends VJSBindable
   constructor: () ->
     super()
     @uniformValues = @uniformValues || []
     @options = @options || []
-    @inputs = @inputs || []
-    @outputs = @outputs || []
-
-    @bindings = {}
-
-  clearBinding: (property) =>
-    if @bindings[property]
-      binding = @bindings[property]
-      binding.target.off("change:#{binding.targetProperty}", binding.callback)
-
-  bindToKey: (property, target, targetProperty) ->
-    @clearBinding(property)
-    f = @createBinding(property)
-    @bindings[property] = {callback: f, target: target, targetProperty: targetProperty}
-    target.on("change:#{targetProperty}", f)
-
-  createBinding: (property) =>
-    (signal, value) =>
-      @set property.name, value
 
 class ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->

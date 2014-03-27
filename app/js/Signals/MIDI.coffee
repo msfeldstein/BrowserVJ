@@ -1,10 +1,10 @@
-class MIDI extends VJSSignal
+class @MIDI extends VJSSignal
   name: "MIDI"
   inputs: [
     {name: "Listen", type: "boolean"}
   ]
   outputs: [
-    {name: "MIDI Listen", type: "boolean", hidden: true}
+    {name: "MIDI Listen", type: "function", hidden: true}
   ]
 
   constructor: () ->

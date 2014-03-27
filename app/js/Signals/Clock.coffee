@@ -20,6 +20,7 @@ class Clock extends VJSSignal
     if down then @downTime = Date.now()
 
   "change:BPMTap": (model, down) =>
+    console.log down
     if !down then return
     t = Date.now()
     if @taps.length == 0

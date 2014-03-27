@@ -18,7 +18,7 @@ module.exports = function(grunt) {
                     sourceMap: true
                 },
                 files: {
-                    "dist/js/app.js": [base + "/js/**/_*.coffee", base + '/js/**/*.coffee']
+                    "dist/js/app.js": [base + "/js/_*.coffee", base + "/js/**/_*.coffee", base + '/js/**/*.coffee']
                 }
             }
         },
@@ -77,6 +77,7 @@ module.exports = function(grunt) {
                 },
                 files: [
                     '<%= watch.js.files %>',
+                    '<%= watch.coffee.files %>',
                     base + '/css/**/*.css',
                     base + '/**/*.html'
                 ]

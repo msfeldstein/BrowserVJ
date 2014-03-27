@@ -43,3 +43,5 @@ class SignalUIBase extends Backbone.View
       new VJSButton(@model, input)
     else if input.type == "color"
       new VJSColorPicker(@model, input)
+    else if input.type == "function"
+      new VJSButton(@model, input)
