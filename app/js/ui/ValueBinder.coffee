@@ -34,7 +34,11 @@ class ValueBinder extends Backbone.View
     property = target.property
     observer = @currentModel
     if signal
-      observer.bindToKey @currentProperty, signal, property
+      output = _.find(signal.outputs, ((o) -> o.name == property))
+      if output.type == "function"
+        signal[output.callback] observer, @currentProperty
+      else
+        observer.bindToKey @currentProperty, signal, property
     else
       observer.clearBinding @currentProperty
     @hide()
