@@ -1,9 +1,14 @@
 class SignalUIBase extends Backbone.View
   className: "signal-set hidden"
 
+  events:
+    "click .close-button": "destroy"
+
   initialize: () ->
     @el.appendChild arrow = document.createElement 'div'
     arrow.className = "arrow"
+    @el.appendChild close = document.createElement 'div'
+    close.className = 'close-button'
     @el.appendChild label = document.createElement 'div'
     label.textContent = @model.name
     label.className = 'label'
@@ -31,8 +36,17 @@ class SignalUIBase extends Backbone.View
   clickLabel: () =>
     @$el.toggleClass 'hidden'
 
+  open: () =>
+    @el.classList.remove 'hidden'
+
+  close: () =>
+    @el.classList.add 'hidden'
+
   render: () ->
     @el
+
+  destroy: () =>
+    @model.trigger('destroy', @model)
 
   newControl: (input) ->
     if input.type == "number"

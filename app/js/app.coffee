@@ -17,7 +17,6 @@ class App extends Backbone.Model
     @initMicrophone()
     @initSignals()
     requestAnimationFrame @animate
-    @setComposition new BlobbyComposition
 
     $(window).resize () =>
         @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
@@ -60,13 +59,8 @@ class App extends Backbone.Model
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
 
-    @effectsManager.addEffectToStack new DotRollPass
-
   initStats: () ->
     @stats = new Stats
-    @stats.domElement.style.position = 'absolute'
-    @stats.domElement.style.right = '20px'
-    @stats.domElement.style.top = '0px'
     document.body.appendChild @stats.domElement
 
   initMicrophone: () ->
@@ -80,9 +74,8 @@ class App extends Backbone.Model
     @signalManager.registerSignal Palette
     @signalManager.registerSignal MIDI
     @signalManagerView = new SignalManagerView(model:@signalManager)
-    @signalManager.add new MIDI
+    @signalManager.add @midi = new MIDI
     @signalManager.add @clock = new Clock
-
 
     @valueBinder = new ValueBinder(model: @signalManager)
 
