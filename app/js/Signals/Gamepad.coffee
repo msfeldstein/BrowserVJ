@@ -2,7 +2,7 @@ class Gamepad extends VJSSignal
   hidden: true
   name: "Gamepad"
   outputs: [
-    {name: "Listen", type: "function", callback: "listenForNext", hidden: true}
+    {name: "Gamepad Listen", type: "function", callback: "listenForNext", hidden: true}
   ]
 
   constructor: () ->

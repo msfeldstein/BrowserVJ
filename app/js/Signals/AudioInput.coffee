@@ -33,8 +33,6 @@ class AudioInput extends VJSSignal
 
 
 class AudioVisualizer extends Backbone.View
-  el: ".audio-analyzer"
-
   events:
     "mousemove canvas": "drag"
     "mouseout canvas": "mouseOut"
@@ -43,7 +41,7 @@ class AudioVisualizer extends Backbone.View
   initialize: () ->
     @canvas = document.createElement 'canvas'
     @el.appendChild @canvas
-    @canvas.width = @el.offsetWidth
+    @canvas.width = 300
     @canvas.height = 200
     @hoveredFreq = null
     @listenTo @model, "change:data", @update
