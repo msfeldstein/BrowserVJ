@@ -3,9 +3,9 @@ class ChromaticAberration extends ShaderPassBase
     @name: "Chromatic Aberration"
 
     fragmentShader: """
-      uniform float rShift; //input name: Red Shift, type: number, min: -1, max: 1
-      uniform float gShift; //input name: Green Shift, type: number, min: -1, max: 1
-      uniform float bShift; //input name: Blue Shift, type: number, min: -1, max: 1
+      uniform float rShift; //input name: "Red Shift", type: "number", min: -1, max: 1
+      uniform float gShift; //input name: "Green Shift", type: "number", min: -1, max: 1
+      uniform float bShift; //input name: "Blue Shift", type: "number", min: -1, max: 1
       uniform vec2 uSize;
       varying vec2 vUv;
       uniform sampler2D uTex;

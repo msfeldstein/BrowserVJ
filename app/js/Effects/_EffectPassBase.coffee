@@ -159,7 +159,7 @@ class ShaderPassBase extends EffectPassBase
           input.uniform = name
           for keyValue in keyValues
             tokens = keyValue.split(":")
-            input[tokens[0].trim()] = tokens[1].trim()
+            input[tokens[0].trim()] = JSON.parse(tokens[1].trim())
           uniforms[name].input = input
 
     uniforms

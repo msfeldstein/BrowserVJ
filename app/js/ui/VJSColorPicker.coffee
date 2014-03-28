@@ -9,8 +9,9 @@ class VJSColorPicker extends VJSControl
     div.className = 'swatch'
     div.appendChild @picker = document.createElement 'input'
     @picker.type = 'color'
-    @picker.value = @model.get(@property.name)
     @el.appendChild div
+    @render()
 
   render: () =>
+    @picker.value = @model.get(@property.name)
     @el

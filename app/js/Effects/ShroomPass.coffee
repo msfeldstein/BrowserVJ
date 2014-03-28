@@ -13,9 +13,9 @@ class ShroomPass extends ShaderPassBase
     const float C_PI_2  = C_PI / 2.0;
 
     uniform float time;
-    uniform float freq; //input name: Frequency, type: number, min: 1, max: 100, default: 10
-    uniform float amp; //input name: Strength, type: number, min: 0, max: .1, default: .01
-    uniform float speed; //input name: Speed, type: number, min: 0, max:1, default: 0.3
+    uniform float freq; //input name: "Frequency", type: "number", min: 1, max: 100, default: 10
+    uniform float amp; //input name: "Strength", type: "number", min: 0, max: 0.1, default: 0.01
+    uniform float speed; //input name: "Speed", type: "number", min: 0, max:1, default: 0.3
     uniform vec2 uSize;
     varying vec2 vUv;
 

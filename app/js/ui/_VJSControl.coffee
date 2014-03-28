@@ -4,6 +4,7 @@ class VJSControl extends Backbone.View
 
   initialize: () ->
     @$el.on "contextmenu", @showBindings
+    @listenTo @model, "change:#{@property.name}", @render
 
   showBindings: (e) =>
     e.preventDefault()

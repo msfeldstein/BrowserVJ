@@ -70,6 +70,7 @@ class App extends Backbone.Model
     @signalManager.registerSignal LFO
     @signalManager.registerSignal Clock
     @signalManager.registerSignal Palette
+    @signalManager.registerSignal ColorGenerator
     @signalManagerView = new SignalManagerView(model:@signalManager)
     @signalManager.add @midi = new MIDI
     @signalManager.add @clock = new Clock

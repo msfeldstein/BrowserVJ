@@ -7,7 +7,7 @@ class VJSBindable extends Backbone.Model
     
     @bindings = {}
     for input in @inputs
-      @set input.name, input.default
+      @set input.name, (input.default || 0)
       # If there is a change:property method then automatically set that up as a listener
       if @["change:#{input.name}"] then @listenTo @, "change:#{input.name}", @["change:#{input.name}"]
 

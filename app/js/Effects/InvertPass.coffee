@@ -3,7 +3,7 @@ class InvertPass extends ShaderPassBase
   @name: "Invert"
 
   fragmentShader: """
-    uniform float amount; //input name: Invert Amount, type: number, min: 0, max: 1, default: 0
+    uniform float amount; //input name: "Invert Amount", type: "number", min: 0, max: 1, default: 0
     uniform vec2 uSize;
     varying vec2 vUv;
     uniform sampler2D uTex;

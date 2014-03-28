@@ -23,7 +23,7 @@ class SignalManagerView extends Backbone.View
     @listenTo @model, "remove", @removeSignalView
     @listenTo @model, "change:registration", @render
     @addButton = document.createElement 'select'
-    @addButton.className = 'add-signal'
+    @addButton.className = 'add-signal add-button'
     @stack = document.createElement 'div'
     @el.appendChild @stack
     @el.appendChild @addButton
@@ -35,7 +35,7 @@ class SignalManagerView extends Backbone.View
       e.target.selectedIndex = 0
 
   render: () =>
-    @addButton.innerHTML = "<option value=-1>Add Signal</option>"
+    @addButton.innerHTML = "<option value=-1>+ Add Signal</option>"
     for signal, i in @model.signalClasses
       option = document.createElement 'option'
       option.value = i

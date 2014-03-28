@@ -26,7 +26,7 @@ class EffectsPanel extends Backbone.View
   initialize: () ->
     @panels = []
     @addButton = document.createElement 'select'
-    @addButton.className = 'add-effect'
+    @addButton.className = 'add-effect add-button'
     @stack = document.createElement 'div'
     @el.appendChild @stack
     @el.appendChild @addButton

@@ -5,42 +5,47 @@ class SignalUIBase extends Backbone.View
     "click .close-button": "destroy"
 
   initialize: () ->
-    @el.appendChild arrow = document.createElement 'div'
-    arrow.className = "arrow"
-    @el.appendChild close = document.createElement 'div'
-    close.className = 'close-button'
-    @el.appendChild label = document.createElement 'div'
+    @el.appendChild arrow = @div('arrow')
+    @el.appendChild close = @div('close-button')
+    @el.appendChild label = @div('label')
     label.textContent = @model.name
-    label.className = 'label'
-    arrow.addEventListener 'click', @clickLabel
-    @el.appendChild @stack = document.createElement 'div'
-    @stack.className = 'stack'
-    for input in @model.inputs
-      @stack.appendChild div = document.createElement 'div'
-      div.className = "signal"
-      div.setAttribute("data-ui-type", input.type)
-      div.textContent = input.name
-      div.appendChild @newControl(input).render()
+    arrow.addEventListener 'click', @toggleOpen
 
+    @insertInputViews()
+    @insertCustomViews()
+    if @model.outputs?.length > 0
+      @inputStack.appendChild document.createElement 'hr'
+    @insertOutputViews()
+
+  div: (className) ->
+    div = document.createElement 'div'
+    div.className = className
+    div
+
+  insertInputViews: () ->
+    @el.appendChild @inputStack = @div('input stack')
+    for input in @model.inputs
+      @inputStack.appendChild el = @div('signal')
+      el.setAttribute("data-ui-type", input.type)
+      el.textContent = input.name
+      el.appendChild @newControl(input).render()
+
+  insertCustomViews: () ->
     customViews = @model.getCustomViews()
     if customViews
       for view in customViews
-        @stack.appendChild view.render()
+        @inputStack.appendChild view.render()
 
-    if @model.outputs?.length > 0
-      @stack.appendChild document.createElement 'hr'
+  insertOutputViews: () ->
+    @el.appendChild @outputStack = @div('output stack')
     for output in @model.outputs
       if output.hidden then continue
-      @stack.appendChild div = document.createElement 'div'
-      div.className = "signal"
-      div.textContent = output.name
-      div.setAttribute("data-ui-type", output.type)
-      if output.type == "boolean" then div.classList.add 'inline'
-      div.appendChild @newControl(output).render()
+      @outputStack.appendChild el = @div('signal')
+      el.textContent = output.name
+      el.setAttribute("data-ui-type", output.type)
+      el.appendChild @newControl(output).render()
 
-
-
-  clickLabel: () =>
+  toggleOpen: () =>
     @$el.toggleClass 'hidden'
 
   open: () =>

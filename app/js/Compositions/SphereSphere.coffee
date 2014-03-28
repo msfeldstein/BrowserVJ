@@ -31,7 +31,6 @@ class SphereSphereComposition extends Composition
       @group.add @particles
     
   update: () =>
-    console.log "UPDATE"
     @group.rotation.y += 0.001
     @group.rotation.z += 0.0001
     @group.rotation.x += 0.00014

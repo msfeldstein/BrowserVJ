@@ -9,6 +9,7 @@ class AudioInput extends VJSSignal
 
   name: "Audio"
   customView: AudioVisualizer
+  outputProperty: 'peak'
   initialize: () ->
     navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
     navigator.getUserMedia_({audio: true}, @startAudio, (()->))
@@ -33,6 +34,7 @@ class AudioInput extends VJSSignal
 
 
 class AudioVisualizer extends Backbone.View
+  className: 'signal'
   events:
     "mousemove canvas": "drag"
     "mouseout canvas": "mouseOut"
@@ -45,6 +47,7 @@ class AudioVisualizer extends Backbone.View
     @canvas.height = 200
     @hoveredFreq = null
     @listenTo @model, "change:data", @update
+    $(window).resize @render
 
   update: () =>
     data = @model.get('data')
@@ -54,7 +57,7 @@ class AudioVisualizer extends Backbone.View
 
     ctx = @canvas.getContext('2d')
     ctx.save()
-    ctx.fillStyle = "rgba(0,0,0,0.5)"
+    ctx.fillStyle = "rgba(0,0,0,0.4)"
     ctx.fillRect(0, 0, @canvas.width, @canvas.height);
     ctx.translate(0, @canvas.height)
     ctx.scale @scale, @scale
@@ -85,6 +88,7 @@ class AudioVisualizer extends Backbone.View
     ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height    
 
   render: () =>
+    @canvas.width = @canvas.parentNode.offsetWidth || 300
     @el
 
   drag: (e) =>

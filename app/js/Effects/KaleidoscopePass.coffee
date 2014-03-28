@@ -5,10 +5,10 @@ class KaleidoscopePass extends ShaderPassBase
     uniform float amount;
     uniform vec2 uSize;
     varying vec2 vUv;
-    uniform float size; //input name: Number of Sections, type: number, min:1,max:12,default:6,step:1
+    uniform float size; //input name: "Number of Sections", type: "number", min:1, max:12, default:6, step:1
     uniform sampler2D uTex;
     uniform float time;
-    uniform float fromCenter; //input name: From Center, type: boolean,toggle:true, default: true
+    uniform float fromCenter; //input name: "From Center", type: "boolean", toggle:true, default: true
 
     const float NUM_SIDES = 6.0;
     const float PI = 3.14159265359;
