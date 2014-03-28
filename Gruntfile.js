@@ -18,7 +18,8 @@ module.exports = function(grunt) {
                     sourceMap: true
                 },
                 files: {
-                    "dist/js/app.js": [base + "/js/_*.coffee", base + "/js/**/_*.coffee", base + '/js/**/*.coffee']
+                    "dist/js/app.js": [base + "/js/_*.coffee", base + "/js/**/_*.coffee", base + '/js/**/*.coffee'],
+                    "dist/output/output.js": [base + "/output/**/*.coffee"]
                 }
             }
         },

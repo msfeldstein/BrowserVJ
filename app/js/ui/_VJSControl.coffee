@@ -9,6 +9,4 @@ class VJSControl extends Backbone.View
   showBindings: (e) =>
     e.preventDefault()
     el = window.application.valueBinder.render()
-    window.application.valueBinder.show(@model, @property)
-    el.style.top = e.pageY + "px"
-    el.style.left = e.pageX + "px"
+    window.application.valueBinder.show(e.pageX, e.pageY, @model, @property)

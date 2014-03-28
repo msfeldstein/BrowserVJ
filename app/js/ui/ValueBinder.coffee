@@ -43,13 +43,20 @@ class ValueBinder extends Backbone.View
       observer.clearBinding @currentProperty.name
     @hide()
 
-  show: (model, property) =>
+  show: (x, y, model, property) =>
     @currentModel = model
     @currentProperty = property
     $(document).on "keydown", @keydown
     $(document).on "mousedown", @mousedown
     @$el.show()
-  
+    @el.style.left = x + "px"
+    if y + @el.offsetHeight > window.innerHeight
+      @el.style.top = (y - @el.offsetHeight) + "px"
+      delete @el.style.top
+    else
+      @el.style.top = y + "px"
+
+    
   hide: () =>
     $(document).off "keydown", @keydown
     $(document).off "mousedown", @mousedown

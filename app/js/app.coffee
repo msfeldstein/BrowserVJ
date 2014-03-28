@@ -18,8 +18,19 @@ class App extends Backbone.Model
 
     requestAnimationFrame @animate
 
+    $(".pop-out").click @popout
+
     $(window).resize () =>
         @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
+
+  popout: () =>
+    @outputWindow = window.open("/output.html")
+
+  setOutputCanvas: (canvas) =>
+    console.log canvas
+    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true, canvas: canvas})
+    @composer.renderer = @renderer
+    @initEffects()
 
   animate: () =>
     time = Date.now()
