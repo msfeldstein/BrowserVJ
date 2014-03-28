@@ -1,15 +1,11 @@
 class ChromaticAberration extends ShaderPassBase
     name: "Chromatic Aberration"
     @name: "Chromatic Aberration"
-    uniformValues: [
-      {uniform: "rShift", name: "Red Shift", min: -1, max: 1, default: -.2}
-      {uniform: "gShift", name: "Green Shift", min: -1, max: 1, default: -.2}
-      {uniform: "bShift", name: "Blue Shift", min: -1, max: 1, default: -.2}
-    ]
+
     fragmentShader: """
-      uniform float rShift;
-      uniform float gShift;
-      uniform float bShift;
+      uniform float rShift; //input name: Red Shift, type: number, min: -1, max: 1
+      uniform float gShift; //input name: Green Shift, type: number, min: -1, max: 1
+      uniform float bShift; //input name: Blue Shift, type: number, min: -1, max: 1
       uniform vec2 uSize;
       varying vec2 vUv;
       uniform sampler2D uTex;

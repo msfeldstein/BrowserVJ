@@ -1,17 +1,9 @@
 class ShroomPass extends ShaderPassBase
   constructor: () ->
-    super amp: 0, StartRad: 0, freq: 10
+    super()
 
   name: "Wobble"
   @name: "Wobble"
-  uniformValues: [
-    {uniform: "amp", name: "Strength", start: 0, end: 0.01}
-  ]
-  options: [
-    {property: "speed", name: "Speed", start: .001, end: .01, default: 0.005}
-  ]
-  update: () ->
-    @uniforms.StartRad.value += @speed
     
   fragmentShader: """
     // Constants
@@ -20,9 +12,10 @@ class ShroomPass extends ShaderPassBase
     const float C_2PI_I = 1.0 / (2.0 * C_PI);
     const float C_PI_2  = C_PI / 2.0;
 
-    uniform float StartRad;
-    uniform float freq;
-    uniform float amp;
+    uniform float time;
+    uniform float freq; //input name: Frequency, type: number, min: 1, max: 100, default: 10
+    uniform float amp; //input name: Strength, type: number, min: 0, max: .1, default: .01
+    uniform float speed; //input name: Speed, type: number, min: 0, max:1, default: 0.3
     uniform vec2 uSize;
     varying vec2 vUv;
 
@@ -35,7 +28,7 @@ class ShroomPass extends ShaderPassBase
         vec4  color;
 
         // Compute a perturbation factor for the x-direction
-        rad = (vUv.s + vUv.t - 1.0 + StartRad) * freq;
+        rad = (vUv.s + vUv.t - 1.0 + time * speed) * freq;
 
         // Wrap to -2.0*PI, 2*PI
         rad = rad * C_2PI_I;
@@ -53,7 +46,7 @@ class ShroomPass extends ShaderPassBase
         perturb.x  = (rad - (rad * rad * rad / 6.0)) * amp;
 
         // Now compute a perturbation factor for the y-direction
-        rad = (vUv.s - vUv.t + StartRad) * freq;
+        rad = (vUv.s - vUv.t + time * speed) * freq;
 
         // Wrap to -2*PI, 2*PI
         rad = rad * C_2PI_I;
@@ -73,6 +66,6 @@ class ShroomPass extends ShaderPassBase
         pos.x = 1.0 - pos.x;
         color = texture2D(uTex, perturb + pos);
 
-        gl_FragColor = vec4(color.rgb, color.a);
+        gl_FragColor = color;
     }
   """

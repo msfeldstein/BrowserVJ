@@ -1,5 +1,6 @@
 class MIDI extends VJSSignal
   name: "MIDI"
+  hidden: true
   inputs: [
     {name: "Listen", type: "boolean"}
   ]

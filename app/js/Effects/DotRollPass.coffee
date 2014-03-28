@@ -4,10 +4,6 @@ class DotRollPass extends ShaderPassBase
     super()
     @time = 0
 
-  uniformValues: [
-    {uniform: "rollSpeed", name: "Roll Speed", start: 0, end: .01, default: .001}
-  ]
-
   update: () ->
     @time += 1
     @uniforms.time.value = @time

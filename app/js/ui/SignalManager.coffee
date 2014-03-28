@@ -43,6 +43,7 @@ class SignalManagerView extends Backbone.View
       @addButton.appendChild option
 
   createSignalView: (signal) =>
+    if signal.hidden then return
     @views[signal.cid] = view = new SignalUIBase(model: signal)
     @stack.appendChild view.render()
 

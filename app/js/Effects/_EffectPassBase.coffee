@@ -9,10 +9,12 @@ class ShaderPassBase extends EffectPassBase
     super()
     @enabled = true
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
-    for uniformDesc in @uniformValues
-      @inputs.push uniformDesc
-      @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
-      @set uniformDesc.name, uniformDesc.default
+    for key, uniformDesc of @uniforms
+      if uniformDesc.input
+        input = uniformDesc.input
+        @inputs.push input
+        @listenTo @, "change:#{input.name}", @_uniformsChanged
+        @set(input.name, input.default || 0)
 
     @material = new THREE.ShaderMaterial {
       uniforms: @uniforms
@@ -29,11 +31,12 @@ class ShaderPassBase extends EffectPassBase
 
     @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
     @scene.add @quad
+    @startTime = Date.now()
 
   _uniformsChanged: (obj) ->
     for name, value of obj.changed
-      uniformDesc = _.find(@uniformValues, ((u) -> u.name == name))
-      @uniforms[uniformDesc.uniform].value = value
+      uniformDesc = _.find(@uniforms, ((u) -> u.input?.name == name))
+      @uniforms[uniformDesc.input.uniform].value = value
 
 
   render: (renderer, writeBuffer, readBuffer, delta) ->
@@ -41,6 +44,8 @@ class ShaderPassBase extends EffectPassBase
     if !@enabled
       writeBuffer = readBuffer
       return
+    if @uniforms.time
+      @uniforms.time.value = (@startTime - Date.now()) / 1000
     @uniforms['uTex'].value = readBuffer
     if @uniforms['uSize'] then @uniforms['uSize'].value.set(readBuffer.width, readBuffer.height)
     @quad.material = @material
@@ -139,11 +144,24 @@ class ShaderPassBase extends EffectPassBase
   findUniforms: (shader) ->
     lines = shader.split("\n")
     uniforms = {}
+    # re = /\/\/(\w+)\((\{.+\})/
     for line in lines
       if (line.indexOf("uniform") == 0)
         tokens = line.split(" ")
         name = tokens[2].substring(0, tokens[2].length - 1)
         uniforms[name] = @typeToUniform tokens[1]
+
+        inputIndex = line.indexOf("//input")
+        if inputIndex != -1
+          stringDesc = line.substring(inputIndex + 7)
+          keyValues = stringDesc.split(',')
+          input = {}
+          input.uniform = name
+          for keyValue in keyValues
+            tokens = keyValue.split(":")
+            input[tokens[0].trim()] = tokens[1].trim()
+          uniforms[name].input = input
+
     uniforms
 
   typeToUniform: (type) ->
