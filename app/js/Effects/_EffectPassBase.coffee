@@ -10,7 +10,7 @@ class ShaderPassBase extends EffectPassBase
     @enabled = true
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
     for uniformDesc in @uniformValues
-      @inputs.push {name: uniformDesc.name, type: "number", min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
+      @inputs.push uniformDesc
       @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
       @set uniformDesc.name, uniformDesc.default
 

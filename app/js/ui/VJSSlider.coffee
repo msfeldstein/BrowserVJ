@@ -37,7 +37,11 @@ class VJSSlider extends VJSControl
     percent = x / @el.clientWidth
     value = (@max - @min) * percent + @min
     value = Math.clamp(value, @min, @max)
-    @model.set(@property.name, value)
+    step = @property.step
+    if step
+      @model.set(@property.name, Math.round(value / step) * step)
+    else
+      @model.set(@property.name, value)
 
   render: () => 
     value = @model.get(@property.name)

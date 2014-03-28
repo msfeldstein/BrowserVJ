@@ -2,14 +2,14 @@ class KaleidoscopePass extends ShaderPassBase
   name: "Kaleidoscope"
   @name: "Kaleidoscope"
   uniformValues: [
-    {uniform: "size", name: "size", min: 2, max: 10, default: 6}
-    {uniform: "fromCenter", name: "From Center", min: 0, max: 1, default: 1}
+    {uniform: "size", type: "number", name: "size", min: 2, max: 10, default: 6, step: 1}
+    {uniform: "fromCenter", type: "boolean", toggle: true, name: "From Center", min: 0, max: 1, default: 1}
   ]
   fragmentShader: """
     uniform float amount;
     uniform vec2 uSize;
     varying vec2 vUv;
-    uniform float size;
+    uniform float size; //slider({min:1,max:12,default:6,step:1})
     uniform sampler2D uTex;
     uniform float time;
     uniform float fromCenter;
