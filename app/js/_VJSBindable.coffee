@@ -26,3 +26,7 @@ class VJSBindable extends Backbone.Model
   createBinding: (property) =>
     (signal, value) =>
       @set property.name, value
+
+  getCustomViews: () ->
+    # Return any custom views that should show up in panels
+    # See AudioInput for example

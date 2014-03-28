@@ -26,3 +26,4 @@ class VJSSignal extends VJSBindable
 
   update: (time) ->
     # Override
+

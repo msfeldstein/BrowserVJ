@@ -22,6 +22,11 @@ class SignalUIBase extends Backbone.View
       div.textContent = input.name
       div.appendChild @newControl(input).render()
 
+    customViews = @model.getCustomViews()
+    if customViews
+      for view in customViews
+        @stack.appendChild view.render()
+
     if @model.outputs?.length > 0
       @stack.appendChild document.createElement 'hr'
     for output in @model.outputs
@@ -32,6 +37,8 @@ class SignalUIBase extends Backbone.View
       div.setAttribute("data-ui-type", output.type)
       if output.type == "boolean" then div.classList.add 'inline'
       div.appendChild @newControl(output).render()
+
+
 
   clickLabel: () =>
     @$el.toggleClass 'hidden'

@@ -14,8 +14,8 @@ class App extends Backbone.Model
     @initCompositions()
     @initEffects()
     @initStats()
-    @initMicrophone()
     @initSignals()
+
     requestAnimationFrame @animate
 
     $(window).resize () =>
@@ -24,7 +24,7 @@ class App extends Backbone.Model
   animate: () =>
     time = Date.now()
     @signalManager.update(time)
-    @composition?.update({audio: @audioVisualizer.level || 0})
+    @composition?.update()
     @composer.render()
     @stats.update()
     requestAnimationFrame @animate
@@ -65,10 +65,6 @@ class App extends Backbone.Model
     @stats = new Stats
     document.body.appendChild @stats.domElement
 
-  initMicrophone: () ->
-    @audioInputNode = new AudioInputNode
-    @audioVisualizer = new AudioVisualizer model: @audioInputNode
-
   initSignals: () ->
     @signalManager = new SignalManager
     @signalManager.registerSignal LFO
@@ -78,6 +74,7 @@ class App extends Backbone.Model
     @signalManager.add @midi = new MIDI
     @signalManager.add @clock = new Clock
     @signalManager.add @gamepad = new Gamepad
+    @signalManager.add @audio = new AudioInput
 
     @valueBinder = new ValueBinder(model: @signalManager)
 

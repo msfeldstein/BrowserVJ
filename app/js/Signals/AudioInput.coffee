@@ -1,3 +1,36 @@
+class AudioInput extends VJSSignal
+  @MAX_AUDIO_LEVEL: 200
+  inputs: [
+    {name: "gain", type: "number", min: 0, max: 1, default: 0.1}
+  ]
+  outputs: [
+    {name: "peak", type: "number", min: 0, max: 1}
+  ]
+
+  name: "Audio"
+  customView: AudioVisualizer
+  initialize: () ->
+    navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+    navigator.getUserMedia_({audio: true}, @startAudio, (()->))
+    @context = new webkitAudioContext()
+    @analyzer = @context.createAnalyser()
+    @set "selectedFreq", 500
+
+  startAudio: (stream) =>
+    mediaStreamSource = @context.createMediaStreamSource(stream)
+    mediaStreamSource.connect @analyzer
+
+  update: () =>
+    if !@data
+      @data = new Uint8Array(@analyzer.frequencyBinCount)
+      @set "data", @data
+    @analyzer.getByteFrequencyData(@data);
+    @set "peak", @data[@get('selectedFreq')] / AudioInputNode.MAX_AUDIO_LEVEL * @get('gain') / 0.1
+    @trigger "change:data"
+
+  getCustomViews: () ->
+    [new AudioVisualizer(model: @)]
+
 
 class AudioVisualizer extends Backbone.View
   el: ".audio-analyzer"
