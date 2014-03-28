@@ -49,10 +49,12 @@ class ValueBinder extends Backbone.View
     $(document).on "keydown", @keydown
     $(document).on "mousedown", @mousedown
     @$el.show()
-    @el.style.left = x + "px"
+    if x + @el.offsetWidth > window.innerWidth
+      @el.style.left = (x - @el.offsetWidth) + "px"
+    else
+      @el.style.left = x + "px"
     if y + @el.offsetHeight > window.innerHeight
       @el.style.top = (y - @el.offsetHeight) + "px"
-      delete @el.style.top
     else
       @el.style.top = y + "px"
 
