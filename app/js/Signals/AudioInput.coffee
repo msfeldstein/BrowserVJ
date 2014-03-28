@@ -25,7 +25,7 @@ class AudioInput extends VJSSignal
       @data = new Uint8Array(@analyzer.frequencyBinCount)
       @set "data", @data
     @analyzer.getByteFrequencyData(@data);
-    @set "peak", @data[@get('selectedFreq')] / AudioInputNode.MAX_AUDIO_LEVEL * @get('gain') / 0.1
+    @set "peak", @data[@get('selectedFreq')] / AudioInput.MAX_AUDIO_LEVEL * @get('gain') / 0.1
     @trigger "change:data"
 
   getCustomViews: () ->
