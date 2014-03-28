@@ -56,9 +56,10 @@ class App extends Backbone.Model
     @effectsManager.registerEffect ChromaticAberration
     @effectsManager.registerEffect MirrorPass
     @effectsManager.registerEffect DotRollPass
+    @effectsManager.registerEffect KaleidoscopePass
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
-
+    
   initStats: () ->
     @stats = new Stats
     document.body.appendChild @stats.domElement

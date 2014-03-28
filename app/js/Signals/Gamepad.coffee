@@ -40,24 +40,6 @@ class Gamepad extends VJSSignal
     @nextObserver = observer
     @nextObservingProperty = observingProperty
 
-  onMIDIMessage: (message) =>
-    # Data is [SurfaceID, KnobNumber, Value(0..127)]
-    controlKey = "#{message.data[0]}:#{message.data[1]}"
-    if @listenNext
-      @nextObserver.bindToKey @nextObservingProperty, @, controlKey
-      @listenNext = false
-      @nextObserver = null
-      @nextObservingProperty = null
-    @set controlKey, message.data[2] / 127
-
-  requestSuccess: (access) =>
-    @midi = access
-    for input in @midi.inputs()
-      input.onmidimessage = @onMIDIMessage
-
-  errorHandler: (e) =>
-    console.log e
-
   buttonEvent: (key, value) ->
     if @listenNext
       @nextObserver.bindToKey @nextObservingProperty, @, key
@@ -66,12 +48,30 @@ class Gamepad extends VJSSignal
       @nextObservingProperty = null
     @set key, value
 
+  axisEvent: (pad, axisIndex) ->
+    key = "#{pad.index}-Axis#{axisIndex}"
+    value = pad.axes[axisIndex]
+    lastValue = @lastAxes[axisIndex]
+
+    if @listenNext && Math.abs(lastValue - value) > .1
+      @nextObserver.bindToKey @nextObservingProperty, @, key
+      @listenNext = false
+      @nextObserver = null
+      @nextObservingProperty = null
+
+    value = (value + 1) / 2 # Normalize from 0..1
+    if axisIndex == 1 || axisIndex == 3 then value = 1 - value
+    @set key, value
+
   update: () =>
-    setTimeout @updatePad, 1000
     pad = navigator.webkitGetGamepads()[0]
     if pad && @lastPad
       for button in Gamepad.BUTTONS
         if pad.buttons[button] != @lastButtons[button]
           @buttonEvent "#{pad.index}-#{button}", pad.buttons[button]
+      for axis, i in pad.axes
+        if axis != @lastAxes[i]
+          @axisEvent pad, i
     @lastPad = pad
-    @lastButtons = pad.buttons
+    @lastButtons = pad?.buttons
+    @lastAxes = pad?.axes
