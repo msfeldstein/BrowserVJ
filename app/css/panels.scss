@@ -1,0 +1,41 @@
+.sidebar .section {
+    margin-bottom: 40px;
+}
+
+.label {
+    font-size: 30px;
+    font-weight: 500;
+}
+
+
+.arrow {
+  margin: 8px;
+  margin-top: 12px;
+  float:left;
+  width: 0; 
+  height: 0; 
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  
+  border-top: 15px solid rgba(255,255,255,0.4);
+  -webkit-transition: -webkit-transform .2s;
+}
+
+
+.hidden .arrow {
+  margin-right: 3px;
+  margin-top: 10px;
+  width: 0;
+  height: 0; 
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  
+  border-left: 15px solid rgba(255,255,255,0.4);
+}
+
+.close-button:before {
+  float: right;
+  margin: 12px;
+  margin-top: 8px;
+  content: "✖";
+}

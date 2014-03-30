@@ -1,0 +1,22 @@
+.popup {
+  position: absolute;
+  background: white;
+  border: 2px solid black;
+
+  .binding-label {
+    padding: 2px;
+    font-size: 14px;
+    background: black;
+    color: #EEEEEE;
+  }
+
+  .binding-row {
+    padding: 2px;
+    cursor: pointer;
+    font-size: 20px;
+
+    &:hover {
+      background: rgba(0,0,0,0.3);
+    }
+  }
+}

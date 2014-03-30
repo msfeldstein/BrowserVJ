@@ -2,7 +2,7 @@ class VJSLayer extends Backbone.Model
   constructor: () ->
     super()
     @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
-    outputWindow = document.querySelector(".output")
+    outputWindow = document.querySelector(".output-frame")
     @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
 
     outputWindow.appendChild(@renderer.domElement);

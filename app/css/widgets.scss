@@ -1,0 +1,33 @@
+.vjs-button {
+    width: 30px;
+    height: 30px;
+    background: rgba(255,255,255,0.3);
+
+    &.active {
+      background: white;
+    }
+}
+
+.signal[data-ui-type=boolean], .signal[data-ui-type=color] {
+    display: inline-block;
+    width: 20%;
+}
+
+.slider {
+    color: black;
+    box-sizing: border-box;
+    width: 100%;
+    height: 30px;
+    background: rgba(255,255,255,0.3);
+}
+
+.slider .level {
+    width: 50%;
+    height: 100%;
+    opacity: 0.6;
+    background: white;
+}
+
+.slider:hover .level {
+    opacity: 1;
+}

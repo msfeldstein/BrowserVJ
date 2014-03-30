@@ -3,6 +3,7 @@ module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     grunt.loadNpmTasks('grunt-contrib-coffee');
     grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-contrib-sass');
 
     require('time-grunt')(grunt);
 
@@ -11,6 +12,7 @@ module.exports = function(grunt) {
     var out = 'dist';
 
     grunt.initConfig({
+        bowercopy: grunt.file.readJSON('bowercopy.json'),
         coffee: {
             compile: {
                 options: {
@@ -46,6 +48,16 @@ module.exports = function(grunt) {
                 }
             }
         },
+        sass: {
+            compile: {
+                options: {
+                    style: 'expanded'
+                },
+                files: {
+                  "dist/css/style.css": "app/css/style.scss"
+                }
+            }
+        },
         watch: {
             coffee: {
                 files: [
@@ -71,6 +83,10 @@ module.exports = function(grunt) {
                 files: [base + '/**/*.html'],
                 tasks: ['copy:html']
             },
+            sass: {
+                files: [base + '/**/*.scss'],
+                tasks: ['sass']
+            },
             // Live reload
             reload: {
                 options: {
@@ -79,6 +95,7 @@ module.exports = function(grunt) {
                 files: [
                     '<%= watch.js.files %>',
                     '<%= watch.coffee.files %>',
+                    '<%= watch.sass.files %>',
                     base + '/css/**/*.css',
                     base + '/**/*.html'
                 ]
@@ -150,6 +167,7 @@ module.exports = function(grunt) {
         grunt.task.run([
             'connect:livereload',
             'coffee',
+            'sass',
             'concat',
             'copy:dist',      
             'watch'

@@ -1,0 +1,28 @@
+.tab-set {
+  margin-bottom: 30px;
+  background: gray;
+  .contents > div {
+    padding-bottom: 15px;
+  }
+
+  .labels {
+    display: -webkit-box;
+    -webkit-box-orient: horizontal;
+    background: black;
+  }
+
+  .tab-label {
+    padding: 10px;
+    cursor: pointer;
+    color: gray;
+
+    &:hover {
+      color: white;
+    }
+
+    &.active {
+      background: gray;
+      color: white;
+    }
+  }
+}
