@@ -4,8 +4,8 @@ class FlameComposition extends GLSLComposition
     @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)
     @uniforms['time'].value += .04
   fragmentShader: """
-    const int _VolumeSteps = 32;
-    const float _StepSize = 0.1; 
+    const int _VolumeSteps = 16;
+    const float _StepSize = 0.3; 
     const float _Density = 0.2;
 
     const float _SphereRadius = 2.0;

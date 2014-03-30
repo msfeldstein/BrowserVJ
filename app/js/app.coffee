@@ -30,17 +30,21 @@ class App extends Backbone.Model
   animate: () =>
     time = Date.now()
     @signalManager.update(time)
-    @layer1.render()
+    @mixer.render()
     @stats.update()
     requestAnimationFrame @animate
 
   initLayers: () ->
     @layer1 = new VJSLayer()
-    console.log @layer1
     @layer1View = new VJSLayerView({model: @layer1})
+    @layer2 = new VJSLayer()
+    @layer2View = new VJSLayerView({model: @layer2})
+    outputWindow = document.querySelector(".output-frame")
+    @mixer = new VJSLayerMixer({output: outputWindow, layers:[@layer1, @layer2]})
+
     tabs = [
       {name: "Layer 1", view: @layer1View.render()}
-      # {name: "Layer 2", view: compositionPicker2.render()}
+      {name: "Layer 2", view: @layer2View.render()}
       {name: "Output", view: document.createElement('div')}
     ]
 

@@ -4,10 +4,8 @@ class VJSLayer extends Backbone.Model
     @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
     outputWindow = document.querySelector(".output-frame")
     @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
-
-    outputWindow.appendChild(@renderer.domElement);
     $(window).resize () =>
-        @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
+      @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
 
     @initCompositions()
     @initEffects()
@@ -15,6 +13,9 @@ class VJSLayer extends Backbone.Model
   render: () =>
     @get("composition")?.update()
     @composer.render()
+
+  output: () =>
+    @renderer.domElement
 
   initCompositions: () ->
     @compositionPicker = new CompositionPicker(@)
@@ -44,9 +45,17 @@ class VJSLayer extends Backbone.Model
 
     @effectsPanel = new EffectsPanel(model: @effectsManager)
 
+  eject: () =>
+    @setComposition(null)
+
   setComposition: (comp) ->
-    console.log "Getting set", comp
+    @unload(@get("composition"))
     @set("composition", comp)
-    comp.setup(@renderer)
-    @renderModel.scene = comp.scene
-    @renderModel.camera = comp.camera
+    if comp
+      @listenTo(comp, "destroy", @eject)
+      comp.setup(@renderer)
+      @renderModel.scene = comp.scene
+      @renderModel.camera = comp.camera
+
+  unload: (comp) ->
+    @stopListening comp
