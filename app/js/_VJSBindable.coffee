@@ -1,11 +1,13 @@
 # Base class for composition and effects
 class VJSBindable extends Backbone.Model
   constructor: () ->
-    super()
     @inputs = @inputs?.slice() || []
     @outputs = @outputs?.slice() || []
     
     @bindings = {}
+    
+    super()
+    
     for input in @inputs
       @set input.name, (input.default || 0)
       # If there is a change:property method then automatically set that up as a listener

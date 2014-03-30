@@ -1,10 +1,14 @@
+
+
 noise.seed(Math.random())
 
 $ ->
+  window.CompositionClasses = [CircleGrower, SphereSphereComposition, BlobbyComposition, FlameComposition]
   window.application = new App
 
 class App extends Backbone.Model
   constructor: () ->
+    window.application = @
     @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
     outputWindow = document.querySelector(".output")
     @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
@@ -27,7 +31,6 @@ class App extends Backbone.Model
     @outputWindow = window.open("/output.html")
 
   setOutputCanvas: (canvas) =>
-    console.log canvas
     @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true, canvas: canvas})
     @composer.renderer = @renderer
     @initEffects()
@@ -42,12 +45,20 @@ class App extends Backbone.Model
 
   initCompositions: () ->
     @compositionPicker = new CompositionPicker
-    @compositionPicker.addComposition new CircleGrower
-    @compositionPicker.addComposition new SphereSphereComposition
-    @compositionPicker.addComposition new BlobbyComposition
-    @compositionPicker.addComposition new FlameComposition
-
+    for clazz in CompositionClasses
+      @compositionPicker.addComposition new clazz
     @inspector = new CompositionInspector
+    compositionPicker2 = new CompositionPicker
+    for clazz in CompositionClasses
+      compositionPicker2.addComposition new clazz
+
+    tabs = [
+      {name: "Layer 1", view: @compositionPicker.render()}
+      {name: "Layer 2", view: compositionPicker2.render()}
+      {name: "Output", view: document.createElement('div')}
+    ]
+
+    tabs = new TabSet(document.querySelector('.layers-section'), tabs)
   
   initEffects: () ->
     @composer = new THREE.EffectComposer(@renderer)
@@ -82,11 +93,24 @@ class App extends Backbone.Model
     @signalManager.registerSignal Clock
     @signalManager.registerSignal Palette
     @signalManager.registerSignal ColorGenerator
+    @signalManager.registerSignal Sequencer
+    
     @signalManagerView = new SignalManagerView(model:@signalManager)
     @signalManager.add @midi = new MIDI
     @signalManager.add @clock = new Clock
     @signalManager.add @gamepad = new Gamepad
     @signalManager.add @audio = new AudioInput
+    @signalManager.add new Sequencer
+
+    filters = document.createElement('div')
+    filters.textContent = "Filter content"
+
+    set = [
+        {name: "Signals", view: @signalManagerView.render()}
+        {name: "Signal Filters", view: filters}
+    ]
+
+    tabset = new TabSet(document.querySelector('.signal-section'), set)
 
     @valueBinder = new ValueBinder(model: @signalManager)
 

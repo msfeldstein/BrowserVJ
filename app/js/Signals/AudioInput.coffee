@@ -1,4 +1,5 @@
 class AudioInput extends VJSSignal
+  readonly: true
   @MAX_AUDIO_LEVEL: 200
   inputs: [
     {name: "gain", type: "number", min: 0, max: 1, default: 0.1}

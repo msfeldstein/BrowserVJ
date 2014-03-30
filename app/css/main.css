@@ -41,7 +41,6 @@ hr {
     overflow-y: scroll;
     overflow-x: hidden;
     color: white;
-    background: gray;
 }
 
 .sidebar .section {
@@ -98,9 +97,20 @@ hr {
     margin: 10px;
 }
 
+.signal-set .label input {
+    font-family: 'Ubuntu Mono';
+    color: white;
+    background: transparent;
+    border: 0;
+    font-size: 30px;
+    width: 80%;
+    padding: 0;
+    margin: 0;
+}
+
 .signal[data-ui-type=boolean], .signal[data-ui-type=color] {
     display: inline-block;
-    width: 25%;
+    width: 20%;
 }
 
 .slider {
@@ -125,7 +135,6 @@ hr {
 .label {
     font-size: 30px;
     font-weight: 500;
-    margin: 10px;
 }
 
 select {
@@ -205,4 +214,32 @@ select {
 
 .vjs-button.active {
     background: white;
+}
+
+.tab-set {
+    margin-bottom: 30px;
+    background: gray;
+}
+
+.tab-set .contents > div {
+    padding-bottom: 15px;
+}
+
+.tab-set .labels {
+    display: -webkit-box;
+    -webkit-box-orient: horizontal;
+    background: black;
+}
+
+.tab-set .label {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.tab-set .label {
+    color: gray;
+}
+.tab-set .label.active {
+    background: gray;
+    color: white;
 }

@@ -13,7 +13,6 @@ class SignalManager extends Backbone.Collection
       signal.update(time)
 
 class SignalManagerView extends Backbone.View
-  el: ".signals"
   events:
     "change .add-signal": "addSignal"
 
@@ -41,6 +40,7 @@ class SignalManagerView extends Backbone.View
       option.value = i
       option.textContent = signal.name
       @addButton.appendChild option
+    @el
 
   createSignalView: (signal) =>
     if signal.hidden then return

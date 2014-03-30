@@ -43,7 +43,6 @@ class GLSLComposition extends Composition
   bindToKey: (property, target, targetProperty) ->
     @listenTo target, "change:#{targetProperty}", @createBinding(property)
 
-
   createBinding: (property) =>
     (signal, value) =>
       @set property.name, value

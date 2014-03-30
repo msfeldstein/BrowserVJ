@@ -1,5 +1,5 @@
 class CompositionPicker extends Backbone.View
-  el: ".composition-picker"
+  className: "composition-picker"
 
   events:
     "dragover": "dragover"

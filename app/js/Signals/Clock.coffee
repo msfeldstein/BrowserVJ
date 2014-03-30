@@ -1,5 +1,6 @@
 class Clock extends VJSSignal
   name: "Clock"
+  readonly: true
   inputs: [
     {name: "BPM", type: "number", min: 1, max: 300, default: 80}
     {name: "BPMTap", type: "boolean"}
@@ -8,6 +9,7 @@ class Clock extends VJSSignal
   outputs: [
     {name: "Beat", type: "boolean"}
     {name: "Downbeat", type: "boolean"}
+    {name: "BeatNumber", type: "number", min: 1, max: 8}
     {name: "Smoothbeat", type: "number", min: 0, max: 1}
   ]
   
@@ -17,7 +19,8 @@ class Clock extends VJSSignal
     @taps = []
 
   "change:DownBeat": (model, down) =>
-    if down then @downTime = Date.now()
+    if down
+      @downTime = Date.now()
 
   "change:BPMTap": (model, down) =>
     if !down then return
@@ -51,6 +54,7 @@ class Clock extends VJSSignal
     if percentInBeat < @lastPercent
       @set("Beat", true)
       if beatNumber % 4 == 0 then @set("Downbeat", true)
+      @set("BeatNumber", (beatNumber % 8) + 1)
     else
       @set("Beat", false)
       @set("Downbeat", false)
