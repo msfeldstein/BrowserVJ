@@ -85,6 +85,10 @@ hr {
     margin: 10px;
 }
 
+.signal-set .label {
+    padding: 10px;
+}
+
 .add-button {
     margin: 10px;
 }
@@ -231,15 +235,15 @@ select {
     background: black;
 }
 
-.tab-set .label {
+.tab-set .tab-label {
     padding: 10px;
     cursor: pointer;
 }
 
-.tab-set .labels .label {
+.tab-set .labels .tab-label {
     color: gray;
 }
-.tab-set .labels .label.active {
+.tab-set .labels .tab-label.active {
     background: gray;
     color: white;
 }
