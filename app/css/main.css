@@ -236,10 +236,10 @@ select {
     cursor: pointer;
 }
 
-.tab-set .label {
+.tab-set .labels .label {
     color: gray;
 }
-.tab-set .label.active {
+.tab-set .labels .label.active {
     background: gray;
     color: white;
 }

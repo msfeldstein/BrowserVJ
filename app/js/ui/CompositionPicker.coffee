@@ -5,8 +5,9 @@ class CompositionPicker extends Backbone.View
     "dragover": "dragover"
     "dragleave": "dragleave"
     "drop": "drop"
+    "click .slot": "launch"
   
-  constructor: () ->
+  constructor: (@layer) ->
     super()
     @compositions = []
   dragover: (e) =>
@@ -26,8 +27,14 @@ class CompositionPicker extends Backbone.View
 
   addComposition: (comp) ->
     slot = new CompositionSlot(model: comp)
+    @compositions.push comp
     if !comp.thumbnail then comp.generateThumbnail()
     @el.appendChild slot.render()
+
+  launch: (e) =>
+    cid = e.currentTarget.getAttribute("data-composition-id")
+    composition = _.find(@compositions, ((comp) -> comp.cid == cid))
+    @layer.setComposition(composition)
 
   render: () =>
     @el
@@ -39,12 +46,11 @@ class CompositionSlot extends Backbone.View
 
   initialize: () =>
     super()
+    @el.setAttribute("data-composition-id", @model.cid)
     @listenTo @model, "thumbnail-available", @render
 
   render: () =>
     @$el.html(@model.thumbnail)
     @el
 
-  launch: () =>
-    application.setComposition @model
 

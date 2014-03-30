@@ -20,7 +20,7 @@ class EffectsManager extends Backbone.Model
 
 
 class EffectsPanel extends Backbone.View
-  el: ".effects"
+  className: "effects"
   events:
     "change .add-effect": "addEffect"
   initialize: () ->
@@ -57,4 +57,5 @@ class EffectsPanel extends Backbone.View
       option.value = i
       option.textContent = effect.name
       @addButton.appendChild option
+    @el
     
