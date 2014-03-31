@@ -10,7 +10,7 @@ class BlobbyComposition extends Composition
   setup: (@renderer) ->
     @time = 0
     @scene = new THREE.Scene
-    @scene.fog = new THREE.FogExp2( 0x000000, 0.0005 )
+    # @scene.fog = new THREE.FogExp2( 0x000000, 0.0005 )
     @camera = new THREE.PerspectiveCamera(75, @renderer.domElement.width / @renderer.domElement.height, 1, 10000)
     @camera.position.z = 1000;
 

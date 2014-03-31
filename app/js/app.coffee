@@ -19,14 +19,6 @@ class App extends Backbone.Model
 
     $(".pop-out").click @popout
 
-  popout: () =>
-    @outputWindow = window.open("/output.html")
-
-  setOutputCanvas: (canvas) =>
-    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true, canvas: canvas})
-    @composer.renderer = @renderer
-    @initEffects()
-
   animate: () =>
     time = Date.now()
     @signalManager.update(time)
