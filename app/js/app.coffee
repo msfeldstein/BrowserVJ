@@ -35,9 +35,9 @@ class App extends Backbone.Model
     requestAnimationFrame @animate
 
   initLayers: () ->
-    @layer1 = new VJSLayer()
+    @layer1 = new VJSLayer("Layer 1")
     @layer1View = new VJSLayerView({model: @layer1})
-    @layer2 = new VJSLayer()
+    @layer2 = new VJSLayer("Layer 2")
     @layer2View = new VJSLayerView({model: @layer2})
     outputWindow = document.querySelector(".output-frame")
     @mixer = new VJSLayerMixer({output: outputWindow, layers:[@layer1, @layer2]})

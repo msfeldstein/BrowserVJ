@@ -1,6 +1,10 @@
 class VJSLayer extends Backbone.Model
-  constructor: () ->
-    super()
+  inputs: [
+    {name: "opacity", type: "number", min: 0, max: 1, default: 1}
+    {name: "Blend Mode", type: "select", options: ['source-over','source-in','source-out','source-atop','destination-over','destination-in','destination-out','destination-atop','lighter','darker','copy','xor'], default: "source-over"}
+  ]
+  constructor: (@name) ->
+    super(opacity: 1)
     @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 1, transparent: true})
     outputWindow = document.querySelector(".output-frame")
     @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)

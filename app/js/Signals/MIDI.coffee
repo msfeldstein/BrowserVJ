@@ -10,7 +10,10 @@ class MIDI extends VJSSignal
 
   constructor: () ->
     super()
-    navigator.requestMIDIAccess().then(@requestSuccess, @errorHandler)
+    if navigator.requestMIDIAccess
+      navigator.requestMIDIAccess().then(@requestSuccess, @errorHandler)
+    else
+      console.error "Enable Midi access in chrome://flags"
 
   listenForNext: (observer, observingProperty) =>
     @listenNext = true

@@ -13,9 +13,9 @@ class VJSLayerMixer extends Backbone.Model
   render: () =>
     ctx = @canvas.getContext('2d')
     ctx.clearRect(0,0,@canvas.width, @canvas.height)
-    # ctx.globalCompositeOperation = 'normal'
     for layer, i in @get("layers")
       if layer.get("composition")
         layer.render()
-        ctx.globalCompositeOperation = 'multiply'
+        ctx.globalAlpha = layer.get("opacity")
+        ctx.globalCompositeOperation = layer.get("Blend Mode")
         ctx.drawImage(layer.output(), 0, 0)

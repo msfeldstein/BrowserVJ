@@ -23,7 +23,7 @@ class SignalUIBase extends Backbone.View
     @insertCustomViews()
     if @model.outputs?.length > 0
       @inputStack.appendChild document.createElement 'hr'
-    @insertOutputViews()
+      @insertOutputViews()
 
   div: (className) ->
     div = document.createElement 'div'
@@ -39,8 +39,8 @@ class SignalUIBase extends Backbone.View
       el.appendChild @newControl(input).render()
 
   insertCustomViews: () ->
-    customViews = @model.getCustomViews()
-    if customViews
+    customViews = @model.getCustomViews?()
+    if !!customViews
       for view in customViews
         @inputStack.appendChild view.render()
 

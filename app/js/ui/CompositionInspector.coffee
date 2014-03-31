@@ -3,6 +3,7 @@ class CompositionInspector extends Backbone.View
     @stack = document.createElement("div")
     @stack.className = "stack"
     @el.appendChild @stack
+    @stack.appendChild new SignalUIBase(model: @model).render()
   
   setComposition: (composition) ->
     @view?.remove()
