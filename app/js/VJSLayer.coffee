@@ -6,7 +6,6 @@ class VJSLayer extends Backbone.Model
   constructor: (@name) ->
     super(opacity: 1)
     @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
-    # @renderer.setClearColor(0x000000, 0)
     outputWindow = document.querySelector(".output-frame")
     @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
     $(window).resize () =>
@@ -29,8 +28,8 @@ class VJSLayer extends Backbone.Model
 
   initEffects: () ->
     parameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, stencilBuffer: false };
-    renderTarget = new THREE.WebGLRenderTarget( @renderer.domElement.width, @renderer.domElement.height, parameters );
-    @composer = new THREE.EffectComposer(@renderer, renderTarget)
+    @renderTarget = new THREE.WebGLRenderTarget( @renderer.domElement.width, @renderer.domElement.height, parameters );
+    @composer = new THREE.EffectComposer(@renderer, @renderTarget)
     @renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera)
     @renderModel.enabled = true
     @composer.addPass @renderModel
