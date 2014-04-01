@@ -33,7 +33,6 @@ class SphereReplication extends Composition
     arr = [-steps/2..steps/2]
     @cubes = []
     for x in arr
-
       for y in arr
         for z in arr
           pos = new THREE.Vector3(x * spacing, y * spacing, z * spacing)
