@@ -30,6 +30,6 @@ class KaleidoscopePass extends ShaderPassBase
     {
       vec2 uv = mix(vUv, vUv * 2.0 - 1.0, fromCenter);
       uv = Kaleidoscope( uv * 2.0, size, time * 0.5 );
-      gl_FragColor =  texture2D(uTex,uv*.5);
+      gl_FragColor =  texture2D(uTex,uv / 4.0 + 0.5);
     }
   """
