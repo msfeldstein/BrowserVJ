@@ -24,7 +24,7 @@ class VJSLayer extends VJSBindable
     @renderer.domElement
 
   texture: () =>
-    @composer.renderTarget1
+    @composer.writeBuffer
 
   initCompositions: () ->
     @compositionPicker = new CompositionPicker(@)

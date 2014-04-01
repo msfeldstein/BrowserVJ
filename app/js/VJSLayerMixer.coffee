@@ -49,6 +49,7 @@ class VJSMixerRenderPass
     for layerSet in @layerSets
       mat = layerSet.material
       layer = layerSet.layer
+      mat.map = layer.texture()
       mat.blending = THREE["#{layer.get('Blend Mode')}Blending"]
       mat.opacity = layer.get("opacity")
     renderer.render(@scene, @camera);
