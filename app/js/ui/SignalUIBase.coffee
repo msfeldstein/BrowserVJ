@@ -6,6 +6,9 @@ class SignalUIBase extends Backbone.View
 
   initialize: () ->
     @el.appendChild arrow = @div('arrow')
+    @inputViews = []
+    @customViews = []
+    @outputViews = []
     
     if not @model.readonly
       @el.appendChild close = @div('close-button')
@@ -36,13 +39,17 @@ class SignalUIBase extends Backbone.View
       @inputStack.appendChild el = @div('signal')
       el.setAttribute("data-ui-type", input.type)
       el.textContent = input.name
-      el.appendChild @newControl(input).render()
+      v = @newControl(input)
+      el.appendChild v.render()
+      @inputViews.push v
 
   insertCustomViews: () ->
     customViews = @model.getCustomViews?()
     if !!customViews
       for view in customViews
+        @customViews.push view
         @inputStack.appendChild view.render()
+
 
   insertOutputViews: () ->
     @el.appendChild @outputStack = @div('output stack')
@@ -51,15 +58,24 @@ class SignalUIBase extends Backbone.View
       @outputStack.appendChild el = @div('signal')
       el.textContent = output.name
       el.setAttribute("data-ui-type", output.type)
-      el.appendChild @newControl(output).render()
+      v = @newControl(output)
+      @outputViews.push v
+      el.appendChild v.render()
 
   toggleOpen: () =>
-    @$el.toggleClass 'hidden'
+    if @el.classList.contains('hidden')
+      @open()
+    else
+      @close()
 
   open: () =>
+    for v in @customViews
+      v.visible = true
     @el.classList.remove 'hidden'
 
   close: () =>
+    for v in @customViews
+      v.visible = false
     @el.classList.add 'hidden'
 
   render: () ->
