@@ -22,24 +22,18 @@ class VJSLayerMixer extends Backbone.Model
     @compositePass.setup(@renderer)
     @composer.addPass @compositePass
 
-    # Todo: Why can we render without this?
-    passthrough = new Passthrough
-    passthrough.enabled = true
-    passthrough.renderToScreen = true
-    @composer.addPass passthrough
-
   render: () =>
     for layer in @get("layers")
       layer.render()
-    @composer.render()
-
+    @compositePass.render(@renderer)
 class VJSMixerRenderPass
   constructor: (@layers) ->
     @layerSets = []
 
   setup: (@renderer) ->
     @enabled = true
-    @renderToScreen = false
+    @renderToScreen = true
+    @needsSwap = true
 
     @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
     @scene = new THREE.Scene
@@ -57,4 +51,4 @@ class VJSMixerRenderPass
       layer = layerSet.layer
       mat.blending = THREE["#{layer.get('Blend Mode')}Blending"]
       mat.opacity = layer.get("opacity")
-    renderer.render(@scene, @camera, writeBuffer, @clear );
+    renderer.render(@scene, @camera);

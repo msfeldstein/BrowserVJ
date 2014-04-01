@@ -8,6 +8,8 @@ class ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->
     super()
     @enabled = true
+    @renderToScreen = false
+    @needsSwap = true
     
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
     for key, uniformDesc of @uniforms
@@ -22,10 +24,6 @@ class ShaderPassBase extends EffectPassBase
       vertexShader: @vertexShader
       fragmentShader: @fragmentShader
     }
-
-    @enabled = true
-    @renderToScreen = false
-    @needsSwap = true
 
     @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
     @scene  = new THREE.Scene();
