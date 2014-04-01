@@ -1,8 +1,11 @@
+EffectsClasses = [MirrorPass, InvertPass, ChromaticAberration, MirrorPass, DotRollPass, KaleidoscopePass, ShroomPass]
 class EffectsManager extends Backbone.Model
   constructor: (@composer) ->
     super()
     @effectClasses = []
     @stack = []
+    for effectClass in EffectsClasses
+      @registerEffect effectClass
 
   registerEffect: (effectClass) ->
     @effectClasses.push effectClass
@@ -23,6 +26,7 @@ class EffectsPanel extends Backbone.View
   className: "effects"
   events:
     "change .add-effect": "addEffect"
+
   initialize: () ->
     @panels = []
     @addButton = document.createElement 'select'

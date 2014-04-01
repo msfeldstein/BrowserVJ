@@ -1,12 +1,14 @@
-class VJSLayer extends Backbone.Model
+class VJSLayer extends VJSBindable
   inputs: [
     {name: "opacity", type: "number", min: 0, max: 1, default: 1}
-    {name: "Blend Mode", type: "select", options: ['source-over','source-in','source-out','source-atop','destination-over','destination-in','destination-out','destination-atop','lighter','darker','copy','xor'], default: "source-over"}
+    {name: "Blend Mode", type: "select", options: ['Normal', 'Additive', 'Subtractive', 'Multiply', 'AdditiveAlpha'], default: 'Normal'}
   ]
-  constructor: (@name) ->
-    super(opacity: 1)
-    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true})
-    outputWindow = document.querySelector(".output-frame")
+  constructor: (properties) ->
+    super()
+    @name = properties.name || "Layer #{@cid}"
+    canvas = properties.canvas
+    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true, canvas: canvas})
+    outputWindow = properties.frame
     @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
     $(window).resize () =>
       @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
@@ -21,6 +23,9 @@ class VJSLayer extends Backbone.Model
   output: () =>
     @renderer.domElement
 
+  texture: () =>
+    @renderTarget
+
   initCompositions: () ->
     @compositionPicker = new CompositionPicker(@)
     for clazz in CompositionClasses
@@ -34,21 +39,13 @@ class VJSLayer extends Backbone.Model
     @renderModel.enabled = true
     @composer.addPass @renderModel
 
-    # Todo: Why can we render without this?
+    # Todo: Why can't we render without this?
     passthrough = new Passthrough
     passthrough.enabled = true
     passthrough.renderToScreen = true
     @composer.addPass passthrough
 
     @effectsManager = new EffectsManager @composer
-    @effectsManager.registerEffect MirrorPass
-    @effectsManager.registerEffect InvertPass
-    @effectsManager.registerEffect ChromaticAberration
-    @effectsManager.registerEffect MirrorPass
-    @effectsManager.registerEffect DotRollPass
-    @effectsManager.registerEffect KaleidoscopePass
-    @effectsManager.registerEffect ShroomPass
-
     @effectsPanel = new EffectsPanel(model: @effectsManager)
 
   eject: () =>

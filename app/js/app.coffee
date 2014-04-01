@@ -1,4 +1,4 @@
-
+RUN = true
 
 noise.seed(Math.random())
 
@@ -18,21 +18,26 @@ class App extends Backbone.Model
     requestAnimationFrame @animate
 
     $(".pop-out").click @popout
+    if !RUN
+        $(document).keydown (e) =>
+            if e.keyCode == 82 then @animate()
 
   animate: () =>
     time = Date.now()
     @signalManager.update(time)
     @mixer.render()
     @stats.update()
-    requestAnimationFrame @animate
+    if RUN then requestAnimationFrame @animate
 
   initLayers: () ->
-    @layer1 = new VJSLayer("Layer 1")
+    canvas = document.querySelector('#output')
+    frame = document.querySelector(".output-frame")
+    @layer1 = new VJSLayer(name: "Layer 1", canvas: canvas, frame: frame)
     @layer1View = new VJSLayerView({model: @layer1})
-    @layer2 = new VJSLayer("Layer 2")
+    @layer2 = new VJSLayer(name: "Layer 2", canvas: canvas, frame: frame)
     @layer2View = new VJSLayerView({model: @layer2})
     outputWindow = document.querySelector(".output-frame")
-    @mixer = new VJSLayerMixer({output: outputWindow, layers:[@layer1, @layer2]})
+    @mixer = new VJSLayerMixer({output: outputWindow, canvas: canvas, frame: frame, layers:[@layer1, @layer2]})
 
     tabs = [
       {name: "Layer 1", view: @layer1View.render()}
@@ -48,18 +53,12 @@ class App extends Backbone.Model
 
   initSignals: () ->
     @signalManager = new SignalManager
-    @signalManager.registerSignal LFO
-    @signalManager.registerSignal Clock
-    @signalManager.registerSignal Palette
-    @signalManager.registerSignal ColorGenerator
-    @signalManager.registerSignal Sequencer
     
     @signalManagerView = new SignalManagerView(model:@signalManager)
     @signalManager.add @midi = new MIDI
     @signalManager.add @clock = new Clock
     @signalManager.add @gamepad = new Gamepad
     @signalManager.add @audio = new AudioInput
-    @signalManager.add new Sequencer
 
     filters = document.createElement('div')
     filters.textContent = "Filter content"

@@ -8,6 +8,7 @@ class ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->
     super()
     @enabled = true
+    
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
     for key, uniformDesc of @uniforms
       if uniformDesc.input
@@ -41,9 +42,6 @@ class ShaderPassBase extends EffectPassBase
 
   render: (renderer, writeBuffer, readBuffer, delta) ->
     @update?()
-    if !@enabled
-      writeBuffer = readBuffer
-      return
     if @uniforms.time
       @uniforms.time.value = (@startTime - Date.now()) / 1000
     @uniforms['uTex'].value = readBuffer
