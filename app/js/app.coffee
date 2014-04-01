@@ -1,9 +1,9 @@
 RUN = true
 
 noise.seed(Math.random())
-
+AUTO_LAUNCH_COMP = null
 $ ->
-  window.CompositionClasses = [CircleGrower, SphereSphereComposition, BlobbyComposition, FlameComposition]
+  window.CompositionClasses = [SphereReplication, CircleGrower, SphereSphereComposition, BlobbyComposition, FlameComposition]
   window.application = new App
 
 class App extends Backbone.Model
@@ -33,6 +33,8 @@ class App extends Backbone.Model
     canvas = document.querySelector('#output')
     frame = document.querySelector(".output-frame")
     @layer1 = new VJSLayer(name: "Layer 1", canvas: canvas, frame: frame)
+    if AUTO_LAUNCH_COMP
+      @layer1.setComposition(new AUTO_LAUNCH_COMP)
     @layer1View = new VJSLayerView({model: @layer1})
     @layer2 = new VJSLayer(name: "Layer 2", canvas: canvas, frame: frame)
     @layer2View = new VJSLayerView({model: @layer2})

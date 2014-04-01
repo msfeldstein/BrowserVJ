@@ -45,7 +45,7 @@ class VideoComposition extends Composition
     @video.load()
     @video.play()
     @video.volume = 0
-    window.video = @video
+    @video.loop = true
     @video.addEventListener 'loadeddata', () =>
       @videoImage = document.createElement 'canvas'
       @videoImage.width = @video.videoWidth
