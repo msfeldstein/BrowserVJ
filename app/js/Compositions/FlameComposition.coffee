@@ -1,8 +1,12 @@
 class FlameComposition extends GLSLComposition
   name: "Flame"
+
+  inputs: [
+    {name: "Speed", type: "number", min: 0, max: 1, default: 1}
+  ]
   update: () ->
     @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)
-    @uniforms['time'].value += .04
+    @uniforms['time'].value += .04 * @get("Speed")
   fragmentShader: """
     const int _VolumeSteps = 16;
     const float _StepSize = 0.3; 
