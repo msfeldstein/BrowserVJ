@@ -12,9 +12,20 @@ class VJSBindable extends Backbone.Model
       @set(output.name, output.default || 0)
     
     for input in @inputs
-      @set input.name, (input.default || 0)
+      @setDefault(input)
+      
       # If there is a change:property method then automatically set that up as a listener
       if @["change:#{input.name}"] then @listenTo @, "change:#{input.name}", @["change:#{input.name}"]
+
+  setDefault: (input) ->
+    if input.default != undefined
+      @set input.name, (input.default)
+    else if input.type == "number"
+      @set input.name, 0
+    else if input.type == "boolean"
+      @set input.name, false
+    else if input.type == "color"
+      @set input.name, 0xFFFFFF
 
   clearBinding: (property) =>
     if @bindings[property]

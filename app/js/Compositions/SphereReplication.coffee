@@ -3,6 +3,7 @@ class SphereReplication extends Composition
 
   inputs: [
     {name: "Trigger", type: "boolean", toggle: false}
+    {name: "Color", type: "color", default: "#ffffff"}
   ]
   setup: (@renderer) ->
     @scene = new THREE.Scene
@@ -15,7 +16,8 @@ class SphereReplication extends Composition
     @scene.add @group
     
 
-    @material = new THREE.MeshBasicMaterial(transparent: true)
+    @matColor = new THREE.Color
+    @material = new THREE.MeshBasicMaterial(transparent: true, color: @matColor)
     @material.blending = THREE.AdditiveBlending
     @material.opacity = 0.3
     cubeSize = 40
@@ -46,6 +48,10 @@ class SphereReplication extends Composition
       for cube in @cubes
         if Math.random() > 0.8
           cube.material.opacity = 1
+
+  "change:Color": (obj, val) =>
+    for cube in @cubes
+      cube.material.color.setStyle(val)
 
   addCube: (group, pos) ->
     material = new THREE.MeshBasicMaterial(transparent: true)
