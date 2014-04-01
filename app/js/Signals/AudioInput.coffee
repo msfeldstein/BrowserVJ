@@ -45,7 +45,7 @@ class AudioVisualizer extends Backbone.View
     @canvas = document.createElement 'canvas'
     @el.appendChild @canvas
     @canvas.width = 300
-    @canvas.height = 200
+    @canvas.height = 120
     @hoveredFreq = null
     @listenTo @model, "change:data", @update
     $(window).resize @render
