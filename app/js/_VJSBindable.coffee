@@ -41,7 +41,18 @@ class VJSBindable extends Backbone.Model
 
   createBinding: (property) =>
     (signal, value) =>
-      @set property.name, value
+      if (typeof value) == property.type
+        @set property.name, value
+      else
+        v = @convertTypes(value, property.type)
+        @set property.name, v
+
+  convertTypes: (value, type) ->
+    if type == "boolean" then return !!value
+    if type == "number"
+      if typeof value == "boolean"
+        return if value then 1 else 0
+    return value
 
   getCustomViews: () ->
     # Return any custom views that should show up in panels

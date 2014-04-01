@@ -11,7 +11,7 @@ class Keyboard extends VJSSignal
   constructor: () ->
     super()
     $(document).keydown @down
-    $(document).keydown @up
+    $(document).keyup @up
 
   down: (e) =>
     controlKey = String.fromCharCode(e.keyCode)
