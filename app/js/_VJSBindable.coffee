@@ -1,4 +1,4 @@
-# Base class for composition and effects
+# Base class for composition and effects, anything that will show up with buttons or sliders
 class VJSBindable extends Backbone.Model
   constructor: () ->
     @inputs = @inputs?.slice() || []
@@ -7,6 +7,9 @@ class VJSBindable extends Backbone.Model
     @bindings = {}
     
     super()
+
+    for output in @outputs
+      @set(output.name, output.default || 0)
     
     for input in @inputs
       @set input.name, (input.default || 0)

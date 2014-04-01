@@ -18,7 +18,8 @@ class SphereReplication extends Composition
     @material = new THREE.MeshBasicMaterial(transparent: true)
     @material.blending = THREE.AdditiveBlending
     @material.opacity = 0.3
-    @cubeGeometry = new THREE.CubeGeometry(20, 20, 20)
+    cubeSize = 40
+    @cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize)
 
     geometry = new THREE.Geometry
     
@@ -26,7 +27,7 @@ class SphereReplication extends Composition
     @scene.add(@group)
 
     steps = 10
-    spacing = 50
+    spacing = 100
     arr = [-steps/2..steps/2]
     @cubes = []
     for x in arr

@@ -2,6 +2,7 @@ class SignalManager extends Backbone.Collection
   constructor: () ->
     super([], {model: VJSSignal})
     @signalClasses = []
+    @registerSignal FallingSignal
     @registerSignal LFO
     @registerSignal Clock
     @registerSignal Palette
