@@ -3,13 +3,17 @@ class CircleGrower extends GLSLComposition
   setup: (@renderer) ->
     super(@renderer)
 
+  inputs: [
+    {name: "Speed", type: "number", min: -1, max: 1, default: 0.4}
+  ]
+
   uniformValues: [
-    {uniform: "circleSize", name: "Number Of Circles", min: 0, max: 1, default: .2}
+    {uniform: "circleSize", name: "Number Of Circles", min: 0, max: 1, default: .3}
   ]
 
   update: () ->
     @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)
-    @uniforms['time'].value += 1
+    @uniforms['time'].value += @get("Speed")
   
   fragmentShader: """
     uniform vec2 uSize;
