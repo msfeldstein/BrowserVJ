@@ -10,6 +10,7 @@ class CompositionPicker extends Backbone.View
   constructor: (@layer) ->
     super()
     @compositions = []
+
   dragover: (e) =>
     e.preventDefault()
     @el.classList.add 'dragover'
@@ -48,7 +49,13 @@ class CompositionSlot extends Backbone.View
     super()
     @el.setAttribute("data-composition-id", @model.cid)
     @listenTo @model, "thumbnail-available", @render
+    @listenTo @model, "change:active", @activeChanged
 
+  activeChanged: (obj, val) =>
+    if val
+      @el.classList.add("active")
+    else
+      @el.classList.remove("active")
   render: () =>
     @$el.html(@model.thumbnail)
     @el

@@ -1,4 +1,5 @@
 class VJSLayer extends VJSBindable
+  readonly: true
   inputs: [
     {name: "opacity", type: "number", min: 0, max: 1, default: 1}
     {name: "Blend Mode", type: "select", options: ['Normal', 'Additive', 'Subtractive', 'Multiply', 'AdditiveAlpha'], default: 'Normal'}
@@ -55,10 +56,13 @@ class VJSLayer extends VJSBindable
     @unload(@get("composition"))
     @set("composition", comp)
     if comp
+      comp.set("active", true)
       @listenTo(comp, "destroy", @eject)
       comp.setup(@renderer)
       @renderModel.scene = comp.scene
       @renderModel.camera = comp.camera
 
   unload: (comp) ->
-    @stopListening comp
+    if comp
+      comp.set("active", false)
+      @stopListening comp
