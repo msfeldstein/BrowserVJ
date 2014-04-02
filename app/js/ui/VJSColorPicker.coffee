@@ -1,7 +1,6 @@
 class VJSColorPicker extends VJSControl
   events: 
-    "click .picker": "click"
-    "mousedown .slider": "dragBegin"
+    "change .picker": "colorChange"
 
   initialize: () ->
     super()
@@ -9,8 +8,12 @@ class VJSColorPicker extends VJSControl
     div.className = 'swatch'
     div.appendChild @picker = document.createElement 'input'
     @picker.type = 'color'
+    @picker.className = 'picker'
     @el.appendChild div
     @render()
+
+  colorChange: (e) =>
+    @model.set @property.name, e.target.value
 
   render: () =>
     @picker.value = @model.get(@property.name)

@@ -24,6 +24,10 @@ class VJSSignal extends VJSBindable
   inputs: []
   outputs: []
 
+  constructor: () ->
+    super()
+    @set("name", @name)
+
   update: (time) ->
     # Override
 

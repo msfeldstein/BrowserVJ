@@ -1,4 +1,4 @@
-# Base class for composition and effects
+# Base class for composition and effects, anything that will show up with buttons or sliders
 class VJSBindable extends Backbone.Model
   constructor: () ->
     @inputs = @inputs?.slice() || []
@@ -7,11 +7,25 @@ class VJSBindable extends Backbone.Model
     @bindings = {}
     
     super()
+
+    for output in @outputs
+      @set(output.name, output.default || 0)
     
     for input in @inputs
-      @set input.name, (input.default || 0)
+      @setDefault(input)
+      
       # If there is a change:property method then automatically set that up as a listener
       if @["change:#{input.name}"] then @listenTo @, "change:#{input.name}", @["change:#{input.name}"]
+
+  setDefault: (input) ->
+    if input.default != undefined
+      @set input.name, (input.default)
+    else if input.type == "number"
+      @set input.name, 0
+    else if input.type == "boolean"
+      @set input.name, false
+    else if input.type == "color"
+      @set input.name, 0xFFFFFF
 
   clearBinding: (property) =>
     if @bindings[property]
@@ -27,7 +41,18 @@ class VJSBindable extends Backbone.Model
 
   createBinding: (property) =>
     (signal, value) =>
-      @set property.name, value
+      if (typeof value) == property.type
+        @set property.name, value
+      else
+        v = @convertTypes(value, property.type)
+        @set property.name, v
+
+  convertTypes: (value, type) ->
+    if type == "boolean" then return !!value
+    if type == "number"
+      if typeof value == "boolean"
+        return if value then 1 else 0
+    return value
 
   getCustomViews: () ->
     # Return any custom views that should show up in panels

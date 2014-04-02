@@ -1,6 +1,8 @@
 class VJSLayerView extends Backbone.View
   initialize: () ->
     super()
+    @layerInspector = new LayerInspector(model: @model)
+    @el.appendChild @layerInspector.el
     @el.appendChild @model.compositionPicker.render()
     @inspector = new CompositionInspector(model: @model)
     @el.appendChild @inspector.el

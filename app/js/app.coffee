@@ -61,6 +61,7 @@ class App extends Backbone.Model
     @signalManager.add @clock = new Clock
     @signalManager.add @gamepad = new Gamepad
     @signalManager.add @audio = new AudioInput
+    @signalManager.add @keyboard = new Keyboard
 
     filters = document.createElement('div')
     filters.textContent = "Filter content"
