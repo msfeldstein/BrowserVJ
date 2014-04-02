@@ -8,7 +8,7 @@ class FeedbackPass extends EffectPassBase
     super()
     @needsSwap = true
     @enabled = true
-    parameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, stencilBuffer: false };
+    parameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, stencilBuffer: false , depthBuffer: false};
     canvas = document.querySelector('#output')
     @fboWrite = new THREE.WebGLRenderTarget( canvas.width, canvas.height, parameters );
     @fboRead = new THREE.WebGLRenderTarget( canvas.width, canvas.height, parameters );
@@ -18,14 +18,12 @@ class FeedbackPass extends EffectPassBase
     @feedbackMaterial = new THREE.MeshBasicMaterial(map: @fboRead)
     @feedbackMaterial.depthTest = false
     @feedbackMaterial.transparent = true;
-    @feedbackMaterial.blending = THREE.AdditiveAlphaBlending
     quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), @feedbackMaterial)
     @scene.add quad
 
     @drawMaterial = new THREE.MeshBasicMaterial()
     @drawMaterial.depthTest = false
     @drawMaterial.transparent = true;
-    @drawMaterial.blending = THREE.AdditiveAlphaBlending
     quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), @drawMaterial)
     @scene.add quad
 
