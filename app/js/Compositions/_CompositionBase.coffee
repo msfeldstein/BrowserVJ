@@ -11,6 +11,12 @@ class Composition extends VJSBindable
     @thumbnail.src = renderer.domElement.toDataURL()
     @trigger "thumbnail-available"
 
+  setup: (renderer) ->
+    # Override to set up the scene
+    
+  update: () ->
+    # Override to be updated every frame
+
 
 class GLSLComposition extends Composition
   uniformValues: []

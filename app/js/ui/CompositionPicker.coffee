@@ -2,6 +2,7 @@ class CompositionPicker extends Backbone.View
   className: "composition-picker"
 
   events:
+    "dragenter": "dragenter"
     "dragover": "dragover"
     "dragleave": "dragleave"
     "drop": "drop"
@@ -11,6 +12,8 @@ class CompositionPicker extends Backbone.View
     super()
     @compositions = []
 
+  dragenter: (e) =>
+    
   dragover: (e) =>
     e.preventDefault()
     @el.classList.add 'dragover'
@@ -23,8 +26,18 @@ class CompositionPicker extends Backbone.View
     e.preventDefault()
     @el.classList.remove 'dragover'
     file = e.originalEvent.dataTransfer.files[0]
-    composition = new VideoComposition file
-    @addComposition composition
+    @addCompositionFromFile(file)
+
+  addCompositionFromFile: (file) ->
+    composition = null
+    if file.type.indexOf("video") == 0
+      composition = new VideoComposition file
+    else if file.type.indexOf("image") == 0
+      composition = new ImageComposition file
+    if composition
+      @addComposition composition
+    else
+      alert("I don't know what to do with this file :(")
 
   addComposition: (comp) ->
     slot = new CompositionSlot(model: comp)
