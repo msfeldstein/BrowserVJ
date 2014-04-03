@@ -51,7 +51,6 @@ class AudioVisualizer extends Backbone.View
     $(window).resize @render
 
   update: () =>
-    console.log @visible
     if !@visible then return
     data = @model.get('data')
     selectedFreq = @model.get('selectedFreq')
