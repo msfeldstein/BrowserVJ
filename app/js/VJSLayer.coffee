@@ -37,6 +37,8 @@ class VJSLayer extends VJSBindable
     @renderTarget = new THREE.WebGLRenderTarget( @renderer.domElement.width, @renderer.domElement.height, parameters );
     @composer = new THREE.EffectComposer(@renderer, @renderTarget)
     @renderModel = new THREE.RenderPass(new THREE.Scene, new THREE.PerspectiveCamera)
+    @renderModel.emptyScene = @renderModel.scene
+    @renderModel.emptyCamera = @renderModel.camera
     @renderModel.enabled = true
     @composer.addPass @renderModel
 
@@ -61,6 +63,10 @@ class VJSLayer extends VJSBindable
       comp.setup(@renderer)
       @renderModel.scene = comp.scene
       @renderModel.camera = comp.camera
+    else
+      @renderModel.scene = @renderModel.emptyScene
+      @renderModel.camera = @renderModel.emptyCamera
+      @renderer.clearTarget(@renderTarget, true, true, true)
 
   unload: (comp) ->
     if comp
