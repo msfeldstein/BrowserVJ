@@ -5,6 +5,7 @@ class SignalUIBase extends Backbone.View
     "click .close-button": "destroy"
 
   initialize: () ->
+    @el.setAttribute('model-id', @model.cid)
     @el.appendChild arrow = @div('arrow')
     @inputViews = []
     @customViews = []
