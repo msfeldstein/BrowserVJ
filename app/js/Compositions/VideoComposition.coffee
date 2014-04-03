@@ -47,12 +47,7 @@ class VideoComposition extends Composition
     @video.volume = 0
     @video.loop = true
     @video.addEventListener 'loadeddata', () =>
-      @videoImage = document.createElement 'canvas'
-      @videoImage.width = @video.videoWidth
-      @videoImage.height = @video.videoHeight
-
-      @videoImageContext = @videoImage.getContext('2d')
-      @videoTexture = new THREE.Texture(@videoImage)
+      @videoTexture = new THREE.Texture(@video)
       @videoTexture.minFilter = THREE.LinearFilter;
       @videoTexture.magFilter = THREE.LinearFilter;
       @material = new THREE.MeshBasicMaterial(map: @videoTexture)
@@ -67,5 +62,4 @@ class VideoComposition extends Composition
 
   update: () ->
     if @videoTexture
-      @videoImageContext.drawImage @video, 0, 0
       @videoTexture.needsUpdate = true
