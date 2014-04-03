@@ -1,6 +1,7 @@
 class EffectPassBase extends VJSBindable
   constructor: () ->
     super()
+    @name = @constructor.effectName
     @uniformValues = @uniformValues || []
     @options = @options || []
 

@@ -1,5 +1,5 @@
 class FeedbackPass extends EffectPassBase
-  name: "Feedback"
+  @effectName: "Feedback"
 
   inputs: [
     {name: "Opacity", type: "number", min: 0, max: 1, default: 0.5}

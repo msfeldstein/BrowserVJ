@@ -1,6 +1,6 @@
 class KaleidoscopePass extends ShaderPassBase
-  name: "Kaleidoscope"
-  @name: "Kaleidoscope"
+  @effectName: "Kaleidoscope"
+
   fragmentShader: """
     uniform float amount;
     uniform vec2 uSize;

@@ -2,7 +2,7 @@ class FlameComposition extends GLSLComposition
   name: "Flame"
 
   inputs: [
-    {name: "Speed", type: "number", min: 0, max: 1, default: 1}
+    {name: "Speed", type: "number", min: 0, max: 1, default: .1}
   ]
   update: () ->
     @uniforms['uSize'].value.set(@renderer.domElement.width, @renderer.domElement.height)

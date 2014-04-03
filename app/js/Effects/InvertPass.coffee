@@ -1,6 +1,5 @@
 class InvertPass extends ShaderPassBase
-  name: "Invert"
-  @name: "Invert"
+  @effectName: "Invert"
 
   fragmentShader: """
     uniform float amount; //input name: "Invert Amount", type: "number", min: 0, max: 1, default: 0

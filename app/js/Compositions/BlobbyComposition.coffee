@@ -35,7 +35,7 @@ class BlobbyComposition extends Composition
 
   update: () ->
     @time += .01 * @get("Speed")
-    @particles.rotation.y += 0.01
+    @particles.rotation.y += 0.01 * @get("Speed")
 
     a = @get("Level") * 500
     a = a + 1

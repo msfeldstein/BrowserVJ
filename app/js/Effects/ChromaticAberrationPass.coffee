@@ -1,6 +1,5 @@
 class ChromaticAberration extends ShaderPassBase
-    name: "Chromatic Aberration"
-    @name: "Chromatic Aberration"
+    @effectName: "Chromatic Aberration"
 
     fragmentShader: """
       uniform float rShift; //input name: "Red Shift", type: "number", min: -1, max: 1

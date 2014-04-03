@@ -59,7 +59,7 @@ class EffectsPanel extends Backbone.View
     for effect, i in @model.effectClasses
       option = document.createElement 'option'
       option.value = i
-      option.textContent = effect.name
+      option.textContent = effect.effectName
       @addButton.appendChild option
     @el
     

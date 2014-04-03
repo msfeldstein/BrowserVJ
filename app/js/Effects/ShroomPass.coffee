@@ -1,9 +1,5 @@
 class ShroomPass extends ShaderPassBase
-  constructor: () ->
-    super()
-
-  name: "Wobble"
-  @name: "Wobble"
+  @effectName: "Wobble"
     
   fragmentShader: """
     // Constants

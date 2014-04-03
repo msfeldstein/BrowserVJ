@@ -1,6 +1,6 @@
 class Passthrough extends ShaderPassBase
-  name: "Passthrough"
-  @name: "Passthrough"
+  @effectName: "Passthrough"
+
   fragmentShader: """
     uniform vec2 uSize;
     varying vec2 vUv;

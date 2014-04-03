@@ -1,5 +1,6 @@
 class DotRollPass extends ShaderPassBase
-  name: "Rolling Dot Screen"
+  @effectName: "Rolling Dot Screen"
+  
   constructor: () ->
     super()
     @time = 0
