@@ -12,10 +12,12 @@ class SignalUIBase extends Backbone.View
     
     if not @model.readonly
       @el.appendChild close = @div('close-button')
+      # @el.appendChild label = @div('label')
+      # label.appendChild input = document.createElement('input')
+      # input.value = @model.name
+      # input.type = 'text'
       @el.appendChild label = @div('label')
-      label.appendChild input = document.createElement('input')
-      input.value = @model.name
-      input.type = 'text'
+      label.textContent = @model.name
     else
       @el.appendChild label = @div('label')
       label.textContent = @model.name

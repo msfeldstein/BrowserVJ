@@ -6,6 +6,7 @@ class VJSLayerView extends Backbone.View
     @el.appendChild @model.compositionPicker.render()
     @inspector = new CompositionInspector(model: @model)
     @el.appendChild @inspector.el
+    @el.appendChild document.createElement('hr')
     @el.appendChild @model.effectsPanel.render()
     @listenTo @model, "change:composition", @compositionChanged
 

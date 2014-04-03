@@ -38,10 +38,7 @@ class VideoComposition extends Composition
     @scene = new THREE.Scene
 
     @video = document.createElement 'video'
-    if @videoFile
-      @video.src = URL.createObjectURL(@videoFile)
-    else
-      @video.src = "assets/timescapes.mp4"
+    @video.src = URL.createObjectURL(@videoFile)
     @video.load()
     @video.play()
     @video.volume = 0
