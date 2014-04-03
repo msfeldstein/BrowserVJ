@@ -1,5 +1,9 @@
+.dragging {
+  opacity: 0.3;
+}
+
 .signal-set {
-  background: rgba(20, 20, 20, 0.7);
+  background: #343434;
   margin: 10px;
 
   .label {

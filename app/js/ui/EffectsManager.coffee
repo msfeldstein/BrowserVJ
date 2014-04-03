@@ -21,6 +21,11 @@ class EffectsManager extends Backbone.Model
     @stopListening(effect)
     @composer.removePass effect
 
+  moveEffect: (cid, newIndex) =>
+    effect = _.find(@stack, (el) -> el.cid == cid)
+    @composer.movePass(effect, newIndex + 1) # +1 because we need to keep the renderpass as first
+
+
 
 class EffectsPanel extends Backbone.View
   className: "effects"
@@ -37,12 +42,20 @@ class EffectsPanel extends Backbone.View
     @listenTo @model, "change", @render
     @listenTo @model, "add-effect", @insertEffectPanel
     @render()
+    $(@stack).sortable(handle: '.label', axis: 'y')
+    $(@stack).on "sortupdate", @sortupdate
+
+  sortupdate: (e, jui) =>
+    modelid = jui.item[0].getAttribute("model-id")
+    @model.moveEffect(modelid, jui.item.index())
 
   insertEffectPanel: (effect) =>
     @panels.push effectPanel = new SignalUIBase model: effect
     effectPanel.open()
     @listenTo effect, "destroy", @destroyEffect
-    @stack.appendChild effectPanel.render()
+    v = effectPanel.render()
+    @stack.appendChild v
+    
 
   addEffect: (e) =>
     if e.target.value != -1
