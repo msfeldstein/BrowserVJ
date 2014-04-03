@@ -1,7 +1,10 @@
+# Automatically render frames, or dont run, and only render when user presses 'r'
 RUN = true
+# Which class of composition to automatically launch
+AUTO_LAUNCH_COMP = null
 
 noise.seed(Math.random())
-AUTO_LAUNCH_COMP = null
+
 $ ->
   window.CompositionClasses = [SphereReplication, CircleGrower, SphereSphereComposition, BlobbyComposition, FlameComposition]
   window.application = new App
