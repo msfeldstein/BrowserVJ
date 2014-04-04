@@ -4,7 +4,7 @@ class ZoomBlurPass extends ShaderPassBase
   fragmentShader: """
     uniform sampler2D uTex;
     uniform vec2 centerIn;
-    uniform float strength; //input name: "Strength", type: "number", max: 1, min: 0, default: 0.4
+    uniform float strength; //input name: "Strength", type: "number", max: 1, min: 0, default: 0
     uniform vec2 uSize;
     varying vec2 vUv;
     
