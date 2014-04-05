@@ -4,3 +4,6 @@ Math.clamp = (val, min, max) ->
 Math.roundTo = (val, places) ->
   power = Math.pow(10, places)
   Math.round(val * power) / power
+
+Math.fract = (val) ->
+  return val - Math.floor(val)

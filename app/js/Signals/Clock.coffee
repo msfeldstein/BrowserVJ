@@ -11,6 +11,7 @@ class Clock extends VJSSignal
     {name: "Downbeat", type: "boolean"}
     {name: "BeatNumber", type: "number", min: 1, max: 8}
     {name: "Smoothbeat", type: "number", min: 0, max: 1}
+    {name: "Measure", type: "number", min: 0, max: 1}
   ]
   
   initialize: () ->
@@ -49,6 +50,8 @@ class Clock extends VJSSignal
     periodMS = 60 / @get("BPM") * 1000
     timeSinceDown = time - @downTime
     beatNumber = Math.floor(timeSinceDown / periodMS)
+    measuretime = Math.fract(timeSinceDown / (periodMS * 4))
+    @set("Measure", measuretime)
     timeInBeat = timeSinceDown % periodMS
     percentInBeat = timeInBeat / periodMS
     if percentInBeat < @lastPercent

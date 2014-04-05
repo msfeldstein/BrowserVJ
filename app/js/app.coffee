@@ -13,6 +13,8 @@ class App extends Backbone.Model
   constructor: () ->
     window.application = @
 
+    @globalSignals = {}
+
     @initStats()
     @initSignals()
 
@@ -65,6 +67,10 @@ class App extends Backbone.Model
     @signalManager.add @gamepad = new Gamepad
     @signalManager.add @audio = new AudioInput
     @signalManager.add @keyboard = new Keyboard
+
+    @globalSignals.Clock = @clock
+    @globalSignals.Keyboard = @keyboard
+    @globalSignals.Audio = @audio
 
     filters = document.createElement('div')
     filters.textContent = "Filter content"

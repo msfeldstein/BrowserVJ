@@ -39,6 +39,7 @@ class SignalUIBase extends Backbone.View
   insertInputViews: () ->
     @el.appendChild @inputStack = @div('input stack')
     for input in @model.inputs
+      if input.hidden then continue
       @inputStack.appendChild el = @div('signal')
       el.setAttribute("data-ui-type", input.type)
       el.textContent = input.name

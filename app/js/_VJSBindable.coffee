@@ -17,6 +17,15 @@ class VJSBindable extends Backbone.Model
       # If there is a change:property method then automatically set that up as a listener
       if @["change:#{input.name}"] then @listenTo @, "change:#{input.name}", @["change:#{input.name}"]
 
+      if input.autoconnect
+        @autoconnect(input)
+
+  autoconnect: (input) ->
+    [objname, key] = input.autoconnect.split(".")
+    obj = application.globalSignals[objname]
+    console.log obj, key
+    @bindToKey(input, obj, key)
+
   setDefault: (input) ->
     if input.default != undefined
       @set input.name, (input.default)
