@@ -77,7 +77,6 @@ class App extends Backbone.Model
 
     set = [
         {name: "Signals", view: @signalManagerView.render()}
-        {name: "Signal Filters", view: filters}
     ]
 
     tabset = new TabSet(document.querySelector('.signal-section'), set)

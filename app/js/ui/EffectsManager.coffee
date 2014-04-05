@@ -1,4 +1,4 @@
-EffectsClasses = [FeedbackPass, InkPass, ZoomBlurPass, NoisePass, MirrorPass, InvertPass, ChromaticAberration, MirrorPass, DotRollPass, KaleidoscopePass, ShroomPass]
+EffectsClasses = [ZoomBlurPass, InkPass, NoisePass, MirrorPass, InvertPass, ChromaticAberration, MirrorPass, DotRollPass, KaleidoscopePass, ShroomPass]
 class EffectsManager extends Backbone.Model
   constructor: (@composer) ->
     super()
