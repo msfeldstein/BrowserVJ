@@ -17,6 +17,35 @@ class Composition extends VJSBindable
   update: () ->
     # Override to be updated every frame
 
+class CanvasComposition extends Composition
+ setup: (@renderer) ->
+    @enabled = true
+    @renderToScreen = false
+    @needsSwap = true
+
+    @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+    @scene = new THREE.Scene
+
+    @canvas = document.createElement 'canvas'
+    @canvas.width = @renderer.domElement.width
+    @canvas.height = @renderer.domElement.height
+    
+    @texture = new THREE.Texture(@canvas)
+    @texture.minFilter = THREE.LinearFilter;
+    @texture.magFilter = THREE.LinearFilter;
+    @material = new THREE.MeshBasicMaterial(map: @texture)
+
+
+    @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), @material)
+    @scene.add @quad
+
+    @time = 0
+
+  update: () ->
+    @time += 0.1
+    @draw()
+    if @texture
+      @texture.needsUpdate = true
 
 class GLSLComposition extends Composition
   uniformValues: []
