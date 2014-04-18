@@ -1,0 +1,1 @@
+class VJSPopup extends Backbone.View

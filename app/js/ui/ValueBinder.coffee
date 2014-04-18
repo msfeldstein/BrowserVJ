@@ -1,5 +1,5 @@
 class ValueBinder extends Backbone.View
-  className: "popup"
+  className: "value-binder-popup"
   events: 
     "click .binding-row": "clickRow"
 
