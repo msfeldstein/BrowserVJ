@@ -29,7 +29,6 @@ class ValueBinder extends Backbone.View
     @el
 
   clickRow: (e) =>
-    console.log "Click row", e
     target = e.target
     signal = target.signal
     property = target.property
@@ -67,7 +66,6 @@ class ValueBinder extends Backbone.View
 
   mousedown: (e) =>
     if $(e.target).closest(".value-binder-popup").length == 0
-      console.log "Hiding"
       @hide()
 
   keydown: (e) =>

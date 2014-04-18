@@ -17,8 +17,13 @@ class VJSPopup extends Backbone.View
     $(document).on "mousedown", @mousedown
 
     @el.style.display = 'block'
-    x = pos.x
-    y = pos.y
+    if pos.element
+      x = pos.element.offsetLeft
+      y = $(pos.element).offset().top - $(window).scrollTop();
+      @el.style.width = pos.element.offsetWidth - 4 + "px"
+    else
+      x = pos.x
+      y = pos.y
     if x + @el.offsetWidth > window.innerWidth
       @el.style.left = (x - @el.offsetWidth) + "px"
     else
@@ -27,8 +32,6 @@ class VJSPopup extends Backbone.View
       @el.style.top = (y - @el.offsetHeight) + "px"
     else
       @el.style.top = y + "px"
-
-    
 
   addOption: (option) ->
     @el.appendChild row = document.createElement('div')
@@ -39,7 +42,6 @@ class VJSPopup extends Backbone.View
     @nextCallback e.target.textContent
     @hide()
 
-
   hide: () =>
     @nextCallback = null
     $(document).off "keydown", @keydown
@@ -47,7 +49,6 @@ class VJSPopup extends Backbone.View
     @$el.hide()
 
   mousedown: (e) =>
-    console.log "STOLEN"
     if $(e.target).closest(".popup").length == 0
       @hide()
 

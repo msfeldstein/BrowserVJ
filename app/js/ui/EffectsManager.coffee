@@ -54,7 +54,7 @@ class EffectsPanel extends Backbone.View
     values = []
     for effect in @model.effectClasses
       values.push effect.name
-    @popup.show({x:e.pageX, y:e.pageY}, values, @addEffect)
+    @popup.show({element: e.target}, values, @addEffect)
 
   insertEffectPanel: (effect) =>
     @panels.push effectPanel = new SignalUIBase model: effect
@@ -65,7 +65,6 @@ class EffectsPanel extends Backbone.View
     
 
   addEffect: (name) =>
-    console.log @model.effectClasses
     clazz = _.find(@model.effectClasses, ((s)->s.name==name))
     @model.addEffectToStack new clazz
 

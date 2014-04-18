@@ -48,7 +48,7 @@ class SignalManagerView extends Backbone.View
     values = []
     for signal in @model.signalClasses
       values.push signal.name
-    @popup.show({x:e.pageX, y:e.pageY}, values, @addSignal)
+    @popup.show({element: e.target}, values, @addSignal)
 
   addSignal: (name) =>
     clazz = _.find(@model.signalClasses, ((s)->s.name==name))
@@ -64,5 +64,4 @@ class SignalManagerView extends Backbone.View
     @stack.appendChild view.render()
 
   removeSignalView: (signal) =>
-    console.log arguments
     @views[signal.cid].remove()

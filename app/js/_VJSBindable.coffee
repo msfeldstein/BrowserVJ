@@ -23,7 +23,6 @@ class VJSBindable extends Backbone.Model
   autoconnect: (input) ->
     [objname, key] = input.autoconnect.split(".")
     obj = application.globalSignals[objname]
-    console.log obj, key
     @bindToKey(input, obj, key)
 
   setDefault: (input) ->
