@@ -4,6 +4,9 @@ class VJSSelect extends VJSControl
     "click .row": "change"
     "click .button": "showPopup"
 
+  showBindings: () =>
+    "do nothing"
+
   initialize: () ->
     super()
     @el.appendChild @button = @div('button')
@@ -17,7 +20,6 @@ class VJSSelect extends VJSControl
     @popup.style.display = "block"
     
   render: () =>
-    console.log "RENDER", @model.get(@property.name)
     @button.textContent = @model.get(@property.name)
     @popup.innerHTML = ''
     console.log @popup

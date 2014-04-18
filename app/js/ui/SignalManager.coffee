@@ -1,6 +1,9 @@
 class SignalManager extends Backbone.Collection
+  signalList: 
+    {name: "Signals", type: "select", options: ["Add Signal"], default: "Add Signal"}
   constructor: () ->
     super([], {model: VJSSignal})
+    @set("Signals", "Add Signal")
     @signalClasses = []
     @registerSignal FallingSignal
     @registerSignal LFO
@@ -12,6 +15,7 @@ class SignalManager extends Backbone.Collection
 
   registerSignal: (signalClass) ->
     @signalClasses.push signalClass
+    @signalList.options.push signalClass.name
     @trigger 'change:registration'
 
   update: (time) ->
@@ -21,17 +25,19 @@ class SignalManager extends Backbone.Collection
 class SignalManagerView extends Backbone.View
   events:
     "change .add-signal": "addSignal"
-
+    "click .add-button": "showPopup"
+  
   initialize: () ->
     @views = {}
     @listenTo @model, "add", @createSignalView
     @listenTo @model, "remove", @removeSignalView
     @listenTo @model, "change:registration", @render
-    @addButton = document.createElement 'select'
+    @addButton = document.createElement 'div'
     @addButton.className = 'add-signal add-button'
     @stack = document.createElement 'div'
     @el.appendChild @stack
     @el.appendChild @addButton
+    @popup = new VJSPopup
     @render()
 
   addSignal: (e) =>
@@ -39,13 +45,18 @@ class SignalManagerView extends Backbone.View
       @model.add new @model.signalClasses[e.target.value]
       e.target.selectedIndex = 0
 
+  showPopup: (e) =>
+    values = []
+    for signal in @model.signalClasses
+      values.push signal.name
+    @popup.show({x:e.pageX, y:e.pageY}, values, @addSignal)
+
+  addSignal: (name) =>
+    clazz = _.find(@model.signalClasses, ((s)->s.name==name))
+    @model.add new clazz
+
   render: () =>
-    @addButton.innerHTML = "<option value=-1>+ Add Signal</option>"
-    for signal, i in @model.signalClasses
-      option = document.createElement 'option'
-      option.value = i
-      option.textContent = signal.name
-      @addButton.appendChild option
+    @addButton.textContent = "+ Add Signal"
     @el
 
   createSignalView: (signal) =>
@@ -54,4 +65,5 @@ class SignalManagerView extends Backbone.View
     @stack.appendChild view.render()
 
   removeSignalView: (signal) =>
+    console.log arguments
     @views[signal.cid].remove()
