@@ -47,6 +47,7 @@ class VJSPopup extends Backbone.View
     @$el.hide()
 
   mousedown: (e) =>
+    console.log "STOLEN"
     if $(e.target).closest(".popup").length == 0
       @hide()
 

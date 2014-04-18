@@ -22,7 +22,6 @@ class VJSSelect extends VJSControl
   render: () =>
     @button.textContent = @model.get(@property.name)
     @popup.innerHTML = ''
-    console.log @popup
     for option in @property.options
       @popup.appendChild opt = @div('row', option)
     @el
