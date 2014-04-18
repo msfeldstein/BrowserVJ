@@ -1,5 +1,5 @@
 class SphereReplication extends Composition
-  name: "Sphere Replication"
+  name: "Cube Replication"
 
   inputs: [
     {name: "Trigger", type: "boolean", toggle: false}
