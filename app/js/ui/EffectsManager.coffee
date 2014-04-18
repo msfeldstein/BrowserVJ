@@ -30,11 +30,12 @@ class EffectsManager extends Backbone.Model
 class EffectsPanel extends Backbone.View
   className: "effects"
   events:
-    "change .add-effect": "addEffect"
+    "click .add-button": "showPopup"
 
   initialize: () ->
     @panels = []
-    @addButton = document.createElement 'select'
+    @popup = new VJSPopup
+    @addButton = document.createElement 'div'
     @addButton.className = 'add-effect add-button'
     @stack = document.createElement 'div'
     @el.appendChild @stack
@@ -49,6 +50,12 @@ class EffectsPanel extends Backbone.View
     modelid = jui.item[0].getAttribute("model-id")
     @model.moveEffect(modelid, jui.item.index())
 
+  showPopup: (e) =>
+    values = []
+    for effect in @model.effectClasses
+      values.push effect.name
+    @popup.show({x:e.pageX, y:e.pageY}, values, @addEffect)
+
   insertEffectPanel: (effect) =>
     @panels.push effectPanel = new SignalUIBase model: effect
     effectPanel.open()
@@ -57,10 +64,10 @@ class EffectsPanel extends Backbone.View
     @stack.appendChild v
     
 
-  addEffect: (e) =>
-    if e.target.value != -1
-      @model.addEffectToStack new @model.effectClasses[e.target.value]
-      e.target.selectedIndex = 0
+  addEffect: (name) =>
+    console.log @model.effectClasses
+    clazz = _.find(@model.effectClasses, ((s)->s.name==name))
+    @model.addEffectToStack new clazz
 
   destroyEffect: (effect) =>
     for panel in @panels
@@ -68,11 +75,6 @@ class EffectsPanel extends Backbone.View
         panel.remove()
 
   render: () =>
-    @addButton.innerHTML = "<option value=-1>Add Effect</option>"
-    for effect, i in @model.effectClasses
-      option = document.createElement 'option'
-      option.value = i
-      option.textContent = effect.effectName
-      @addButton.appendChild option
+    @addButton.textContent = "+ Add Effect"
     @el
     

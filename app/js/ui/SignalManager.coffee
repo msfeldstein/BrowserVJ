@@ -24,7 +24,6 @@ class SignalManager extends Backbone.Collection
 
 class SignalManagerView extends Backbone.View
   events:
-    "change .add-signal": "addSignal"
     "click .add-button": "showPopup"
   
   initialize: () ->
