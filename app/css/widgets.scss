@@ -11,6 +11,7 @@
 .signal[data-ui-type=boolean], .signal[data-ui-type=color] {
   display: inline-block;
   width: 20%;
+  vertical-align: top;
 }
 
 .slider {
