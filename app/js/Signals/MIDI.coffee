@@ -1,4 +1,4 @@
-class MIDI extends VJSSignal
+class @MIDI extends VJSSignal
   name: "MIDI"
   hidden: true
   inputs: [
@@ -16,7 +16,7 @@ class MIDI extends VJSSignal
       console.error "Enable Midi access in chrome://flags"
 
   listenForNext: (observer, observingProperty) =>
-    if !@midi 
+    if !@midi
       alert("You need to enable midi in chrome://flags to use this")
       return
     @listenNext = true

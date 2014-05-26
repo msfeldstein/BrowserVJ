@@ -1,5 +1,5 @@
 class SignalManager extends Backbone.Collection
-  signalList: 
+  signalList:
     {name: "Signals", type: "select", options: ["Add Signal"], default: "Add Signal"}
   constructor: () ->
     super([], {model: VJSSignal})
@@ -22,10 +22,33 @@ class SignalManager extends Backbone.Collection
     for signal in @models
       signal.update(time)
 
+  serialize: () ->
+    data =
+      signals: []
+    @each (signal) ->
+      serial = signal.serialize()
+      if serial.name
+        data.signals.push serial
+    data
+
+  unserialize: (state) ->
+    for signalInfo in state.signals
+      signal = new window[signalInfo.className]
+      signal.oldCid = signalInfo.cid
+      signalInfo.signalObj = signal
+      @add signal
+
+    for signalInfo in state.signals
+      for key, binding of signalInfo.bindings
+        target = _.find(@models, (m) -> m.oldCid == binding.target)
+        property = _.find(signalInfo.signalObj.inputs, (input) -> input.name == key)
+        signalInfo.signalObj.bindToKey(property, target, binding.targetProperty)
+
+
 class SignalManagerView extends Backbone.View
   events:
     "click .add-button": "showPopup"
-  
+
   initialize: () ->
     @views = {}
     @listenTo @model, "add", @createSignalView

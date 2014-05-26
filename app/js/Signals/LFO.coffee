@@ -1,4 +1,4 @@
-class LFO extends VJSSignal
+class @LFO extends VJSSignal
   inputs: [
     {name: "measuretime", type: "number", min: 0, max: 1, autoconnect: "Clock.Measure", hidden: true}
     {name: "Clock Sync", type: "boolean", toggle: true}
@@ -9,7 +9,7 @@ class LFO extends VJSSignal
     {name: "value", type: "number", min: 0, max: 1}
   ]
   name: "LFO"
-    
+
   update: (time) ->
     value = 0
     if @get("Clock Sync")
@@ -18,7 +18,7 @@ class LFO extends VJSSignal
     else
       time = time / 1000
       period = @get("period")
-    
+
     switch @get("type")
       when "Sin"
         value = Math.sin(Math.PI * time / (period)) * .5 + .5

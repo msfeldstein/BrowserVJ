@@ -3,17 +3,17 @@ class VJSBindable extends Backbone.Model
   constructor: () ->
     @inputs = @inputs?.slice() || []
     @outputs = @outputs?.slice() || []
-    
+
     @bindings = {}
-    
+
     super()
 
     for output in @outputs
       @set(output.name, output.default || 0)
-    
+
     for input in @inputs
       @setDefault(input)
-      
+
       # If there is a change:property method then automatically set that up as a listener
       if @["change:#{input.name}"] then @listenTo @, "change:#{input.name}", @["change:#{input.name}"]
 
@@ -65,3 +65,13 @@ class VJSBindable extends Backbone.Model
   getCustomViews: () ->
     # Return any custom views that should show up in panels
     # See AudioInput for example
+
+  serialize: () ->
+    data =
+      className: @constructor.name
+      name: @name
+      cid: @cid
+      bindings: {}
+    for key, value of @bindings
+      data.bindings[key] = {target: value.target.cid, targetProperty: value.targetProperty}
+    data

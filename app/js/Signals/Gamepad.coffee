@@ -1,4 +1,4 @@
-class Gamepad extends VJSSignal
+class @Gamepad extends VJSSignal
   hidden: true
   name: "Gamepad"
   outputs: [

@@ -14,17 +14,17 @@ class SphereReplication extends Composition
     @origin = new THREE.Vector3 0, 0, 0
     @group = new THREE.Object3D
     @scene.add @group
-    
+
 
     @matColor = new THREE.Color
     @material = new THREE.MeshBasicMaterial(transparent: true, color: @matColor)
     @material.blending = THREE.AdditiveBlending
     @material.opacity = 0.3
     cubeSize = 40
-    @cubeGeometry = new THREE.CubeGeometry(cubeSize, cubeSize, cubeSize)
+    @cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)
 
     geometry = new THREE.Geometry
-    
+
     @group = new THREE.Object3D
     @scene.add(@group)
 
@@ -40,7 +40,7 @@ class SphereReplication extends Composition
 
     sprite = new THREE.ImageUtils.loadTexture("assets/disc.png")
     sprite.needsUpdate = true
-    
+
 
   "change:Trigger": (obj,val) =>
     if val

@@ -1,4 +1,4 @@
-class ColorGenerator extends VJSSignal
+class @ColorGenerator extends VJSSignal
   inputs: [
     {name: "hue", type: "number", min: 0, max: 1}
     {name: "saturation", type: "number", min: 0, max: 1}

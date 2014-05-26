@@ -1,4 +1,4 @@
-class Sequencer extends VJSSignal
+class @Sequencer extends VJSSignal
   name: "Sequencer"
   inputs: [
     {name: "beat1", type: "boolean", toggle: true}
@@ -37,7 +37,7 @@ class Sequencer extends VJSSignal
       @set("steady", false)
   update: (time) ->
     lastBeat = @beat
-    @beat = 
+    @beat =
     time = time / 1000
     period = @get("period")
     value = 0

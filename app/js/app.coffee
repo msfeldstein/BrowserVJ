@@ -60,17 +60,8 @@ class App extends Backbone.Model
 
   initSignals: () ->
     @signalManager = new SignalManager
-    
-    @signalManagerView = new SignalManagerView(model:@signalManager)
-    @signalManager.add @midi = new MIDI
-    @signalManager.add @clock = new Clock
-    @signalManager.add @gamepad = new Gamepad
-    @signalManager.add @audio = new AudioInput
-    @signalManager.add @keyboard = new Keyboard
 
-    @globalSignals.Clock = @clock
-    @globalSignals.Keyboard = @keyboard
-    @globalSignals.Audio = @audio
+    @signalManagerView = new SignalManagerView(model:@signalManager)
 
     filters = document.createElement('div')
     filters.textContent = "Filter content"
@@ -80,6 +71,28 @@ class App extends Backbone.Model
     ]
 
     tabset = new TabSet(document.querySelector('.signal-section'), set)
+    if !@loadSignalState()
+      @signalManager.add @midi = new MIDI
+      @signalManager.add @clock = new Clock
+      @signalManager.add @gamepad = new Gamepad
+      @signalManager.add @audio = new AudioInput
+      @signalManager.add @keyboard = new Keyboard
+
+      @globalSignals.Clock = @clock
+      @globalSignals.Keyboard = @keyboard
+      @globalSignals.Audio = @audio
 
     @valueBinder = new ValueBinder(model: @signalManager)
 
+  loadSignalState: () =>
+    state = localStorage.getItem("state")
+    if !state then return false
+    state = JSON.parse(state)
+    @signalManager.unserialize(state.signals)
+    true
+  save: () =>
+    data =
+      signals: @signalManager.serialize()
+    console.log data
+    localStorage.setItem("state", JSON.stringify(data))
+    data
