@@ -1,4 +1,4 @@
-class FeedbackPass extends EffectPassBase
+class @FeedbackPass extends EffectPassBase
   @effectName: "Feedback"
 
   inputs: [

@@ -1,4 +1,4 @@
-class ShroomPass extends ShaderPassBase
+class @ShroomPass extends ShaderPassBase
   @effectName: "Wobble"
     
   fragmentShader: """

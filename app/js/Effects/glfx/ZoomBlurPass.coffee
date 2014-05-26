@@ -1,4 +1,4 @@
-class ZoomBlurPass extends ShaderPassBase
+class @ZoomBlurPass extends ShaderPassBase
   @effectName: "Zoom Blur"
 
   fragmentShader: """

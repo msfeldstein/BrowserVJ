@@ -75,3 +75,10 @@ class VJSBindable extends Backbone.Model
     for key, value of @bindings
       data.bindings[key] = {target: value.target.cid, targetProperty: value.targetProperty}
     data
+
+  @inflate: (data) ->
+    console.log data
+    obj = new window[data.className]
+    obj.oldCid = data.cid
+    data.inflated = obj
+    obj

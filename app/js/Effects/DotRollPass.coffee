@@ -1,4 +1,4 @@
-class DotRollPass extends ShaderPassBase
+class @DotRollPass extends ShaderPassBase
   @effectName: "Rolling Dot Screen"
   
   constructor: () ->

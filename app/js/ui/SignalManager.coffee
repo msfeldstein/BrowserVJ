@@ -31,19 +31,12 @@ class SignalManager extends Backbone.Collection
         data.signals.push serial
     data
 
+  # Unserialize self, and return anything that might need to be rebound
   unserialize: (state) ->
     for signalInfo in state.signals
-      signal = new window[signalInfo.className]
-      signal.oldCid = signalInfo.cid
-      signalInfo.signalObj = signal
+      signal = VJSBindable.inflate(signalInfo)
       @add signal
-
-    for signalInfo in state.signals
-      for key, binding of signalInfo.bindings
-        target = _.find(@models, (m) -> m.oldCid == binding.target)
-        property = _.find(signalInfo.signalObj.inputs, (input) -> input.name == key)
-        signalInfo.signalObj.bindToKey(property, target, binding.targetProperty)
-
+    state.signals
 
 class SignalManagerView extends Backbone.View
   events:

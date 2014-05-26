@@ -1,4 +1,4 @@
-class InvertPass extends ShaderPassBase
+class @InvertPass extends ShaderPassBase
   @effectName: "Invert"
 
   fragmentShader: """

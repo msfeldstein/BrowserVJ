@@ -1,4 +1,4 @@
-class ChromaticAberration extends ShaderPassBase
+class @ChromaticAberration extends ShaderPassBase
     @effectName: "Chromatic Aberration"
 
     fragmentShader: """

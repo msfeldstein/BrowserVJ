@@ -1,4 +1,4 @@
-class MirrorPass extends ShaderPassBase
+class @MirrorPass extends ShaderPassBase
   @effectName: "Mirror"
   
   fragmentShader: """

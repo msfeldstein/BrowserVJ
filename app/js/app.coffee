@@ -17,8 +17,9 @@ class App extends Backbone.Model
 
     @initStats()
     @initSignals()
-
     @initLayers()
+
+    @load()
 
     requestAnimationFrame @animate
 
@@ -71,28 +72,45 @@ class App extends Backbone.Model
     ]
 
     tabset = new TabSet(document.querySelector('.signal-section'), set)
-    if !@loadSignalState()
-      @signalManager.add @midi = new MIDI
-      @signalManager.add @clock = new Clock
-      @signalManager.add @gamepad = new Gamepad
-      @signalManager.add @audio = new AudioInput
-      @signalManager.add @keyboard = new Keyboard
-
-      @globalSignals.Clock = @clock
-      @globalSignals.Keyboard = @keyboard
-      @globalSignals.Audio = @audio
-
     @valueBinder = new ValueBinder(model: @signalManager)
 
-  loadSignalState: () =>
-    state = localStorage.getItem("state")
-    if !state then return false
-    state = JSON.parse(state)
-    @signalManager.unserialize(state.signals)
-    true
+  load: () =>
+    @state = JSON.parse(localStorage.getItem("state"))
+    if !@state then return @loadInitialState()
+    needsRebinding = []
+    signals = @signalManager.unserialize(@state.signals)
+    needsRebinding = needsRebinding.concat(signals)
+    effects = @layer1.unserialize(@state.layer1)
+    needsRebinding = needsRebinding.concat(effects)
+    effects = @layer2.unserialize(@state.layer2)
+    needsRebinding = needsRebinding.concat(effects)
+    console.log "NEEDS", needsRebinding
+    @rebind(needsRebinding)
+
+  rebind: (bindables) =>
+    for signalInfo in bindables
+      for key, binding of signalInfo.bindings
+        target = _.find(@signalManager.models, (m) -> m.oldCid == binding.target)
+        property = _.find(signalInfo.inflated.inputs, (input) -> input.name == key)
+        signalInfo.inflated.bindToKey(property, target, binding.targetProperty)
+
+  loadInitialState: () =>
+    @signalManager.add @midi = new MIDI
+    @signalManager.add @clock = new Clock
+    @signalManager.add @gamepad = new Gamepad
+    @signalManager.add @audio = new AudioInput
+    @signalManager.add @keyboard = new Keyboard
+
+    @globalSignals.Clock = @clock
+    @globalSignals.Keyboard = @keyboard
+    @globalSignals.Audio = @audio
+
+
   save: () =>
     data =
       signals: @signalManager.serialize()
+      layer1: @layer1.serialize()
+      layer2: @layer2.serialize()
     console.log data
     localStorage.setItem("state", JSON.stringify(data))
     data

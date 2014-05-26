@@ -72,3 +72,18 @@ class VJSLayer extends VJSBindable
     if comp
       comp.set("active", false)
       @stopListening comp
+
+  load: (effects) ->
+    for effect in effects
+      @effectsManager.add(effect)
+
+  serialize: () =>
+    properties = super
+    properties.effects = @effectsManager.serialize()
+    properties
+
+  unserialize: (state) =>
+    for effectInfo in state.effects
+      effect = VJSBindable.inflate(effectInfo)
+      @effectsManager.addEffectToStack effect
+    state.effects

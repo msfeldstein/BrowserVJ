@@ -1,4 +1,4 @@
-class Passthrough extends ShaderPassBase
+class @Passthrough extends ShaderPassBase
   @effectName: "Passthrough"
 
   fragmentShader: """
