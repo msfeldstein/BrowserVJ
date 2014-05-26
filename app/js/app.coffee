@@ -84,7 +84,6 @@ class App extends Backbone.Model
     needsRebinding = needsRebinding.concat(effects)
     effects = @layer2.unserialize(@state.layer2)
     needsRebinding = needsRebinding.concat(effects)
-    console.log "NEEDS", needsRebinding
     @rebind(needsRebinding)
 
   rebind: (bindables) =>
@@ -111,6 +110,5 @@ class App extends Backbone.Model
       signals: @signalManager.serialize()
       layer1: @layer1.serialize()
       layer2: @layer2.serialize()
-    console.log data
     localStorage.setItem("state", JSON.stringify(data))
     data

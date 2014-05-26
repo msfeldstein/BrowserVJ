@@ -28,7 +28,6 @@ class EffectsManager extends Backbone.Model
   serialize: () ->
     effects = []
     for effect in @stack
-      console.log effect.serialize()
       effects.push effect.serialize()
     effects
 

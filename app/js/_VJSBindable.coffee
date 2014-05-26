@@ -77,7 +77,6 @@ class VJSBindable extends Backbone.Model
     data
 
   @inflate: (data) ->
-    console.log data
     obj = new window[data.className]
     obj.oldCid = data.cid
     data.inflated = obj

@@ -18,6 +18,7 @@ class @Clock extends VJSSignal
     super()
     @downTime = 0
     @taps = []
+    application.globalSignals.Clock = @
 
   "change:DownBeat": (model, down) =>
     if down
