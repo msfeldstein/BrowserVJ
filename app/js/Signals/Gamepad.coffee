@@ -10,8 +10,8 @@ class @Gamepad extends VJSSignal
     requestAnimationFrame @checkForPad
 
   checkForPad: () =>
-    if navigator.webkitGetGamepads && navigator.webkitGetGamepads()[0]
-      @pad = navigator.webkitGetGamepads()[0]
+    if navigator.getGamepads && navigator.getGamepads()[0]
+      @pad = navigator.getGamepads()[0]
     else
       requestAnimationFrame @checkForPad
 
@@ -44,7 +44,7 @@ class @Gamepad extends VJSSignal
     @set key, value
 
   update: () =>
-    pad = navigator.webkitGetGamepads()[0]
+    pad = navigator.getGamepads()[0]
     if pad && @lastPad
       for button in Gamepad.BUTTONS
         if pad.buttons[button] != @lastButtons[button]
