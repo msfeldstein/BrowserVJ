@@ -29,11 +29,13 @@ class CompositionPicker extends Backbone.View
     @addCompositionFromFile(file)
 
   addCompositionFromFile: (file) ->
-    composition = null
+    composition = null  
     if file.type.indexOf("video") == 0
-      composition = new VideoComposition file
+      composition = new VideoComposition(file)
     else if file.type.indexOf("image") == 0
-      composition = new ImageComposition file
+      composition = new ImageComposition(file)
+    else if file.name.indexOf(".isf") != -1
+      composition = new ISFComposition(file)
     if composition
       @addComposition composition
     else

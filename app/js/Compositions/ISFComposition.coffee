@@ -139,10 +139,26 @@ void main() {
 
 """
 
-class @ISFComposition extends GLSLComposition
-  constructor: (source) ->
+class @ISFComposition extends Composition
+  constructor: (file) ->
+    super()
+    if file
+      reader = new FileReader
+      reader.file = file
+      reader.onload = @fileLoaded
+      reader.readAsText(file)
+      window.file = file
+    else
+      @name = "An ISF Comp"
+      @loadSource sketch
+
+  fileLoaded: (e) =>
+    reader = e.target
+    @name = reader.file.name
+    @loadSource(reader.result)
+
+  loadSource: (sketch) ->
     window.isfComp = @
-    @name = "An ISF Comp"
     @isf = new ISFParser
     @isf.parse(sketch)
     @fragmentShader = @isf.fragmentShader
@@ -158,7 +174,11 @@ class @ISFComposition extends GLSLComposition
         uniform: input.NAME
       }
     @startTime = (new Date()).getTime() / 1000
-    super()
+    @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
+    for uniformDesc in @uniformValues
+      @inputs.push {name: uniformDesc.name, type: uniformDesc.type, min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
+      @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
+      @set uniformDesc.name, uniformDesc.default
 
   isfTypeToUniformType: (inType) ->
     {
@@ -176,7 +196,65 @@ class @ISFComposition extends GLSLComposition
 
   update: () ->
     super()
+    if !@uniforms then return
     if @uniforms.RENDERSIZE
       @uniforms.RENDERSIZE.value.set(@renderer.domElement.width, @renderer.domElement.height)
     if @uniforms.TIME
       @uniforms.TIME.value = (new Date().getTime()) / 1000 - @startTime
+  setup: (renderer) ->
+    @renderer = renderer
+    @material = new THREE.ShaderMaterial {
+      uniforms: @uniforms
+      vertexShader: @vertexShader
+      fragmentShader: @fragmentShader
+    }
+
+    @enabled = true
+    @renderToScreen = false
+    @needsSwap = true
+
+    @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
+    @scene = new THREE.Scene
+
+    @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
+    @quad.material = @material
+    @scene.add @quad
+
+  bindToKey: (property, target, targetProperty) ->
+    @listenTo target, "change:#{targetProperty}", @createBinding(property)
+
+  createBinding: (property) =>
+    (signal, value) =>
+      @set property.name, value
+
+  _uniformsChanged: (obj) =>
+    for name, value of obj.changed
+      uniformDesc = _.find(@uniformValues, ((u) -> u.name == name))
+      @uniforms[uniformDesc.uniform].value = value
+
+  vertexShader: """
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+    }
+  """
+
+  findUniforms: (shader) ->
+    lines = shader.split("\n")
+    uniforms = {}
+    for line in lines
+      if (line.indexOf("uniform") == 0)
+        tokens = line.split(" ")
+        name = tokens[2].substring(0, tokens[2].length - 1)
+        uniforms[name] = @typeToUniform tokens[1]
+    uniforms
+
+  typeToUniform: (type) ->
+    switch type
+      when "float" then {type: "f", value: 0}
+      when "vec2" then {type: "v2", value: new THREE.Vector2}
+      when "vec3" then {type: "v3", value: new THREE.Vector3}
+      when "vec4" then {type: "v4", value: new THREE.Vector4}
+      when "bool" then {type: "i", value: 0}
+      when "sampler2D" then {type: "t", value: null}

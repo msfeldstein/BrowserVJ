@@ -6,7 +6,7 @@ AUTO_LAUNCH_COMP = null
 noise.seed(Math.random())
 
 $ ->
-  window.CompositionClasses = [ISFComposition, SphereReplication, CircleGrower, SphereSphereComposition, BlobbyComposition, FlameComposition]
+  window.CompositionClasses = [SphereReplication, CircleGrower, SphereSphereComposition, BlobbyComposition, FlameComposition]
   window.application = new App
 
 class App extends Backbone.Model
