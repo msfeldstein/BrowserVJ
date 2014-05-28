@@ -1,3 +1,13 @@
+/*
+
+  Uniforms you will need to set, in addition to any inputs specified are
+  RENDERSIZE: vec2 rendering size in pixels
+  TIME: float time in seconds since rendering started
+  PASSINDEX: int index of the current pass being rendered
+  See http://vdmx.vidvox.net/blog/isf for more info
+
+*/
+
 var ISFParser = function () {};
 
 ISFParser.prototype.parse = function ( rawFragmentShader, rawVertexShader ) {
@@ -171,12 +181,13 @@ ISFParser._typeUniformMap = {
 };
 
 ISFParser.fragmentShaderSkeleton = [
-    "precision mediump float;",
-    "precision mediump int;",
+    "precision highp float;",
+    "precision highp int;",
     "",
     "uniform int PASSINDEX;",
     "uniform vec2 RENDERSIZE;",
     "varying vec2 vv_FragNormCoord;",
+    "varying vec2 vv_FragCoord;",
     "uniform float TIME;",
     "",
     "[[uniforms]]",
@@ -204,8 +215,8 @@ ISFParser.vertexShaderDefault = [
 ].join("\n");
 
 ISFParser.vertexShaderSkeleton = [
-    "precision mediump float;",
-    "precision mediump int;",
+    "precision highp float;",
+    "precision highp int;",
     "void vv_vertShaderInit();",
     "",
     // "attribute vec2 position; // -1..1",
@@ -213,16 +224,15 @@ ISFParser.vertexShaderSkeleton = [
     "uniform int     PASSINDEX;",
     "uniform vec2    RENDERSIZE;",
     "varying vec2    vv_FragNormCoord; // 0..1",
-    "varying vec2    vv_fragCoord; // Pixel Space",
+    "vec2    vv_fragCoord; // Pixel Space",
     "",
     "[[uniforms]]",
     "",
     "[[main]]",
     "void vv_vertShaderInit(void)  {",
-    "  // Since webgl doesn't support ftransform, we do this by hand.",
-    "  gl_Position = vec4(position, 0);",
+    "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
     "  vv_FragNormCoord = vec2((gl_Position.x+1.0)/2.0, (gl_Position.y+1.0)/2.0);",
-    "  vec2  vv_fragCoord = floor(vv_FragNormCoord * RENDERSIZE);",
+    "  vv_fragCoord = floor(vv_FragNormCoord * RENDERSIZE);",
     "  [[functions]]",
     "}",
     ""

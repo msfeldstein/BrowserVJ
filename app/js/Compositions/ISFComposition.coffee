@@ -1,40 +1,182 @@
 sketch = """
 /*{
-  "CREDIT": "by You",
+  "CREDIT": "by macromeez",
   "CATEGORIES": [
   ],
   "INPUTS": [
-
     {
-        "NAME": "mouseNorm",
-        "TYPE":"point2D"
+      "NAME":"c",
+      "TYPE": "color"
     }
   ]
 }*/
-void main() {
-    vec2 resolution = RENDERSIZE;
-    vec2 mouse = mouseNorm / resolution;
-  float resolution_length = length(resolution);
-  
-  float mouse_length = length(mouse * resolution.xy - gl_FragCoord.xy); 
-  float mouse_intensity = sin(128.0 * mouse_length / resolution_length);
-  
-  float static_length = length((resolution.xy / 2.0) - gl_FragCoord.xy);
-  float static_intensity = tan(32.0 * static_length / resolution_length);
-  
-  float intensity = abs(mouse_intensity + static_intensity);
-  
-  float omega = gl_FragCoord.y / resolution.y;
-  vec3 color = vec3(cos(omega), sin(omega), tan(omega));
-    
-  gl_FragColor = vec4(intensity * color, 1.0);
+const float PI = 3.1415;
+
+//
+// GLSL textureless classic 2D noise "cnoise",
+// with an RSL-style periodic variant "pnoise".
+// Author:  Stefan Gustavson (stefan.gustavson@liu.se)
+// Version: 2011-08-22
+//
+// Many thanks to Ian McEwan of Ashima Arts for the
+// ideas for permutation and gradient selection.
+//
+// Copyright (c) 2011 Stefan Gustavson. All rights reserved.
+// Distributed under the MIT license. See LICENSE file.
+// https://github.com/ashima/webgl-noise
+//
+
+vec4 mod289(vec4 x)
+{
+  return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
+
+vec4 permute(vec4 x)
+{
+  return mod289(((x*34.0)+1.0)*x);
+}
+
+vec4 taylorInvSqrt(vec4 r)
+{
+  return 1.79284291400159 - 0.85373472095314 * r;
+}
+
+vec2 fade(vec2 t) {
+  return t*t*t*(t*(t*6.0-15.0)+10.0);
+}
+
+// Classic Perlin noise
+float cnoise(vec2 P)
+{
+  vec4 Pi = floor(P.xyxy) + vec4(0.0, 0.0, 1.0, 1.0);
+  vec4 Pf = fract(P.xyxy) - vec4(0.0, 0.0, 1.0, 1.0);
+  Pi = mod289(Pi); // To avoid truncation effects in permutation
+  vec4 ix = Pi.xzxz;
+  vec4 iy = Pi.yyww;
+  vec4 fx = Pf.xzxz;
+  vec4 fy = Pf.yyww;
+
+  vec4 i = permute(permute(ix) + iy);
+
+  vec4 gx = fract(i * (1.0 / 41.0)) * 2.0 - 1.0 ;
+  vec4 gy = abs(gx) - 0.5 ;
+  vec4 tx = floor(gx + 0.5);
+  gx = gx - tx;
+
+  vec2 g00 = vec2(gx.x,gy.x);
+  vec2 g10 = vec2(gx.y,gy.y);
+  vec2 g01 = vec2(gx.z,gy.z);
+  vec2 g11 = vec2(gx.w,gy.w);
+
+  vec4 norm = taylorInvSqrt(vec4(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11)));
+  g00 *= norm.x;  
+  g01 *= norm.y;  
+  g10 *= norm.z;  
+  g11 *= norm.w;  
+
+  float n00 = dot(g00, vec2(fx.x, fy.x));
+  float n10 = dot(g10, vec2(fx.y, fy.y));
+  float n01 = dot(g01, vec2(fx.z, fy.z));
+  float n11 = dot(g11, vec2(fx.w, fy.w));
+
+  vec2 fade_xy = fade(Pf.xy);
+  vec2 n_x = mix(vec2(n00, n01), vec2(n10, n11), fade_xy.x);
+  float n_xy = mix(n_x.x, n_x.y, fade_xy.y);
+  return 2.3 * n_xy;
+}
+
+// Classic Perlin noise, periodic variant
+float pnoise(vec2 P, vec2 rep)
+{
+  vec4 Pi = floor(P.xyxy) + vec4(0.0, 0.0, 1.0, 1.0);
+  vec4 Pf = fract(P.xyxy) - vec4(0.0, 0.0, 1.0, 1.0);
+  Pi = mod(Pi, rep.xyxy); // To create noise with explicit period
+  Pi = mod289(Pi);        // To avoid truncation effects in permutation
+  vec4 ix = Pi.xzxz;
+  vec4 iy = Pi.yyww;
+  vec4 fx = Pf.xzxz;
+  vec4 fy = Pf.yyww;
+
+  vec4 i = permute(permute(ix) + iy);
+
+  vec4 gx = fract(i * (1.0 / 41.0)) * 2.0 - 1.0 ;
+  vec4 gy = abs(gx) - 0.5 ;
+  vec4 tx = floor(gx + 0.5);
+  gx = gx - tx;
+
+  vec2 g00 = vec2(gx.x,gy.x);
+  vec2 g10 = vec2(gx.y,gy.y);
+  vec2 g01 = vec2(gx.z,gy.z);
+  vec2 g11 = vec2(gx.w,gy.w);
+
+  vec4 norm = taylorInvSqrt(vec4(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11)));
+  g00 *= norm.x;  
+  g01 *= norm.y;  
+  g10 *= norm.z;  
+  g11 *= norm.w;  
+
+  float n00 = dot(g00, vec2(fx.x, fy.x));
+  float n10 = dot(g10, vec2(fx.y, fy.y));
+  float n01 = dot(g01, vec2(fx.z, fy.z));
+  float n11 = dot(g11, vec2(fx.w, fy.w));
+
+  vec2 fade_xy = fade(Pf.xy);
+  vec2 n_x = mix(vec2(n00, n01), vec2(n10, n11), fade_xy.x);
+  float n_xy = mix(n_x.x, n_x.y, fade_xy.y);
+  return 2.3 * n_xy;
+}
+void main() {
+  vec2 pos = vv_FragNormCoord.xy;
+  float r = distance(pos, vec2(0.5));
+  float theta = (atan(pos.x - 0.5, pos.y - 0.5) + PI) / (2.0 * PI);
+  if (cnoise(vec2(mod(theta * 33.0, PI), TIME / 3.0)) > 0.1)
+    gl_FragColor = vec4(c);
+  else if (r > 0.25 && r < 0.29)
+    gl_FragColor = vec4(1.0);
+  else
+    gl_FragColor = vec4(0.0);
+}
+
 """
 
 class @ISFComposition extends GLSLComposition
   constructor: (source) ->
+    window.isfComp = @
+    @name = "An ISF Comp"
     @isf = new ISFParser
     @isf.parse(sketch)
     @fragmentShader = @isf.fragmentShader
     @vertexShader = @isf.vertexShader
+    @uniformValues = []
+    for input in @isf.inputs
+      @uniformValues.push {
+        name: input.NAME,
+        type: @isfTypeToUniformType(input.TYPE)
+        default: @isfUniformDefault(input)
+        min: input.MIN || 0
+        max: input.MAX || 1
+        uniform: input.NAME
+      }
+    @startTime = (new Date()).getTime() / 1000
     super()
+
+  isfTypeToUniformType: (inType) ->
+    {
+      "color": "color",
+      "float": "number"
+    }[inType]
+
+  isfUniformDefault: (input) ->
+    switch input.TYPE
+      when "number" then input.DEFAULT || 0
+      when "color" then input.DEFAULT || [1,1,1,1]
+      when "bool" then !!input.DEFAULT
+      when "event" then !!input.DEFAULT
+      when "long" then input.DEFAULT || 0
+
+  update: () ->
+    super()
+    if @uniforms.RENDERSIZE
+      @uniforms.RENDERSIZE.value.set(@renderer.domElement.width, @renderer.domElement.height)
+    if @uniforms.TIME
+      @uniforms.TIME.value = (new Date().getTime()) / 1000 - @startTime
