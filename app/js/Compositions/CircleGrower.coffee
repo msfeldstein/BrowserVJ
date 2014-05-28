@@ -11,7 +11,7 @@ class CircleGrower extends GLSLComposition
   ]
 
   uniformValues: [
-    {uniform: "circleSize", name: "Number Of Circles", min: 0, max: 1, default: .3}
+    {uniform: "circleSize", name: "Number Of Circles", type: "number", min: 0, max: 1, default: .3}
   ]
 
   "change:Color": (obj, val) =>
