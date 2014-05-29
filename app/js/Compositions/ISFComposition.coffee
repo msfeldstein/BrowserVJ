@@ -143,19 +143,31 @@ class @ISFComposition extends Composition
   constructor: (file) ->
     super()
     if file
-      reader = new FileReader
-      reader.file = file
-      reader.onload = @fileLoaded
-      reader.readAsText(file)
-      window.file = file
+      @readFile file
     else
       @name = "An ISF Comp"
       @loadSource sketch
+
+  readFile: (file) ->
+    @file = file
+    reader = new FileReader
+    reader.file = file
+    reader.onload = @fileLoaded
+    reader.readAsText(file)
+    window.file = file
+    @lastModified = file.lastModifiedDate.getTime()
+    setTimeout @checkModified, 1000
 
   fileLoaded: (e) =>
     reader = e.target
     @name = reader.file.name
     @loadSource(reader.result)
+
+  checkModified: () => 
+    if @file.lastModifiedDate.getTime() != @lastModified
+      @readFile(@file)
+    else
+      setTimeout @checkModified, 1000
 
   loadSource: (sketch) ->
     window.isfComp = @
@@ -179,6 +191,11 @@ class @ISFComposition extends Composition
       @inputs.push {name: uniformDesc.name, type: uniformDesc.type, min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
       @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
       @set uniformDesc.name, uniformDesc.default
+    @quad.material = new THREE.ShaderMaterial {
+      uniforms: @uniforms
+      vertexShader: @vertexShader
+      fragmentShader: @fragmentShader
+    }
 
   isfTypeToUniformType: (inType) ->
     {
@@ -201,13 +218,10 @@ class @ISFComposition extends Composition
       @uniforms.RENDERSIZE.value.set(@renderer.domElement.width, @renderer.domElement.height)
     if @uniforms.TIME
       @uniforms.TIME.value = (new Date().getTime()) / 1000 - @startTime
+
   setup: (renderer) ->
     @renderer = renderer
-    @material = new THREE.ShaderMaterial {
-      uniforms: @uniforms
-      vertexShader: @vertexShader
-      fragmentShader: @fragmentShader
-    }
+
 
     @enabled = true
     @renderToScreen = false
@@ -217,6 +231,12 @@ class @ISFComposition extends Composition
     @scene = new THREE.Scene
 
     @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
+    # This is set when we read and parse the file
+    @material = new THREE.ShaderMaterial {
+      uniforms: @uniforms
+      vertexShader: @vertexShader
+      fragmentShader: @fragmentShader
+    }
     @quad.material = @material
     @scene.add @quad
 
