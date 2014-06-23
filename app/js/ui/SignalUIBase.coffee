@@ -10,7 +10,7 @@ class SignalUIBase extends Backbone.View
     @inputViews = []
     @customViews = []
     @outputViews = []
-    
+
     if not @model.readonly
       @el.appendChild close = @div('close-button')
       # @el.appendChild label = @div('label')
@@ -22,7 +22,7 @@ class SignalUIBase extends Backbone.View
     else
       @el.appendChild label = @div('label')
       label.textContent = @model.name
-      
+
     arrow.addEventListener 'click', @toggleOpen
 
     @insertInputViews()

@@ -17,8 +17,9 @@ class App extends Backbone.Model
 
     @initStats()
     @initSignals()
-
     @initLayers()
+
+    @load()
 
     requestAnimationFrame @animate
 
@@ -62,8 +63,39 @@ class App extends Backbone.Model
 
   initSignals: () ->
     @signalManager = new SignalManager
-    
+
     @signalManagerView = new SignalManagerView(model:@signalManager)
+
+    filters = document.createElement('div')
+    filters.textContent = "Filter content"
+
+    set = [
+        {name: "Signals", view: @signalManagerView.render()}
+    ]
+
+    tabset = new TabSet(document.querySelector('.signal-section'), set)
+    @valueBinder = new ValueBinder(model: @signalManager)
+
+  load: () =>
+    @state = JSON.parse(localStorage.getItem("state"))
+    if !@state then return @loadInitialState()
+    needsRebinding = []
+    signals = @signalManager.unserialize(@state.signals)
+    needsRebinding = needsRebinding.concat(signals)
+    effects = @layer1.unserialize(@state.layer1)
+    needsRebinding = needsRebinding.concat(effects)
+    effects = @layer2.unserialize(@state.layer2)
+    needsRebinding = needsRebinding.concat(effects)
+    @rebind(needsRebinding)
+
+  rebind: (bindables) =>
+    for signalInfo in bindables
+      for key, binding of signalInfo.bindings
+        target = _.find(@signalManager.models, (m) -> m.oldCid == binding.target)
+        property = _.find(signalInfo.inflated.inputs, (input) -> input.name == key)
+        signalInfo.inflated.bindToKey(property, target, binding.targetProperty)
+
+  loadInitialState: () =>
     @signalManager.add @midi = new MIDI
     @signalManager.add @clock = new Clock
     @signalManager.add @gamepad = new Gamepad
@@ -74,14 +106,11 @@ class App extends Backbone.Model
     @globalSignals.Keyboard = @keyboard
     @globalSignals.Audio = @audio
 
-    filters = document.createElement('div')
-    filters.textContent = "Filter content"
 
-    set = [
-        {name: "Signals", view: @signalManagerView.render()}
-    ]
-
-    tabset = new TabSet(document.querySelector('.signal-section'), set)
-
-    @valueBinder = new ValueBinder(model: @signalManager)
-
+  save: () =>
+    data =
+      signals: @signalManager.serialize()
+      layer1: @layer1.serialize()
+      layer2: @layer2.serialize()
+    localStorage.setItem("state", JSON.stringify(data))
+    data

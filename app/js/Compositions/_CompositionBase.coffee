@@ -53,7 +53,7 @@ class GLSLComposition extends Composition
     super()
     @uniforms = THREE.UniformsUtils.clone @findUniforms(@fragmentShader)
     for uniformDesc in @uniformValues
-      @inputs.push {name: uniformDesc.name, type: "number", min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
+      @inputs.push {name: uniformDesc.name, type: uniformDesc.type, min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
       @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
       @set uniformDesc.name, uniformDesc.default
 

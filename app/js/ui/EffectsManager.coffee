@@ -25,6 +25,12 @@ class EffectsManager extends Backbone.Model
     effect = _.find(@stack, (el) -> el.cid == cid)
     @composer.movePass(effect, newIndex + 1) # +1 because we need to keep the renderpass as first
 
+  serialize: () ->
+    effects = []
+    for effect in @stack
+      effects.push effect.serialize()
+    effects
+
 
 
 class EffectsPanel extends Backbone.View

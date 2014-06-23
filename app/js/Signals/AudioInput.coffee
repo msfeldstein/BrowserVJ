@@ -1,4 +1,4 @@
-class AudioInput extends VJSSignal
+class @AudioInput extends VJSSignal
   readonly: true
   @MAX_AUDIO_LEVEL: 200
   inputs: [
@@ -84,11 +84,11 @@ class AudioVisualizer extends Backbone.View
       ctx.lineTo @hoveredFreq, @canvas.height
       ctx.stroke()
 
-    
+
     @level = @model.get('peak') * @canvas.height
     ctx.restore()
     ctx.fillStyle = "#FF0000"
-    ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height    
+    ctx.fillRect @canvas.width - 10, @canvas.height - @level, 10, @canvas.height
 
   render: () =>
     @canvas.width = @canvas.parentNode.offsetWidth || 300
@@ -102,4 +102,3 @@ class AudioVisualizer extends Backbone.View
 
   clickCanvas: (e) =>
     @model.set "selectedFreq", parseInt(e.offsetX / @scale)
-

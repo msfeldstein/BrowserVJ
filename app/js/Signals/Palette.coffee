@@ -1,4 +1,4 @@
-class Palette extends VJSSignal
+class @Palette extends VJSSignal
   name: "Palette"
   inputs: [
     {name: "A", type: "color", default: "#D6835B"}
@@ -8,8 +8,8 @@ class Palette extends VJSSignal
   outputs: [
     {name: "A", type: "color", hidden: true}
     {name: "B", type: "color", hidden: true}
-    {name: "C", type: "color", hidden: true} 
+    {name: "C", type: "color", hidden: true}
   ]
-  
+
   initialize: () ->
     super()

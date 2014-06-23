@@ -1,4 +1,4 @@
-class Clock extends VJSSignal
+class @Clock extends VJSSignal
   name: "Clock"
   readonly: true
   inputs: [
@@ -13,11 +13,12 @@ class Clock extends VJSSignal
     {name: "Smoothbeat", type: "number", min: 0, max: 1}
     {name: "Measure", type: "number", min: 0, max: 1}
   ]
-  
+
   initialize: () ->
     super()
     @downTime = 0
     @taps = []
+    application.globalSignals.Clock = @
 
   "change:DownBeat": (model, down) =>
     if down
@@ -41,8 +42,8 @@ class Clock extends VJSSignal
 
     if @clearTimer then clearTimeout @clearTimer
     @clearTimer = setTimeout @clearTaps, 3000
-  
-  # So we don't get taps from previous tapping sessions  
+
+  # So we don't get taps from previous tapping sessions
   clearTaps: () =>
     @taps = []
 

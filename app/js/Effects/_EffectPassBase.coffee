@@ -1,11 +1,11 @@
-class EffectPassBase extends VJSBindable
+class @EffectPassBase extends VJSBindable
   constructor: () ->
     super()
     @name = @constructor.effectName
     @uniformValues = @uniformValues || []
     @options = @options || []
 
-class ShaderPassBase extends EffectPassBase
+class @ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->
     super()
     @enabled = true

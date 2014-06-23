@@ -1,4 +1,4 @@
-class Keyboard extends VJSSignal
+class @Keyboard extends VJSSignal
   name: "Keyboard"
   hidden: true
   inputs: [

@@ -1,4 +1,4 @@
-class FallingSignal extends VJSSignal
+class @FallingSignal extends VJSSignal
   inputs: [
     {name: "in", type: "number", min: 0, max: 1, default: 0}
     {name: "fallSpeed", type: "number", min: 0, max: 1, default: .3}
@@ -10,7 +10,7 @@ class FallingSignal extends VJSSignal
   name: "Fall"
 
   "change:in": (obj, val) =>
-    
+
 
   update: (time) ->
     input = @get("in")

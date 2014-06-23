@@ -1,4 +1,4 @@
-class KaleidoscopePass extends ShaderPassBase
+class @KaleidoscopePass extends ShaderPassBase
   @effectName: "Kaleidoscope"
 
   fragmentShader: """
