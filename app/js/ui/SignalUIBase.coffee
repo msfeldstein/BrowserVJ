@@ -92,7 +92,6 @@ class SignalUIBase extends Backbone.View
     if input.type == "number"
       new VJSSlider(@model, input)
     else if input.type == "select"
-      console.log VJSSelect
       new VJSSelect(@model, input)
     else if input.type == "boolean"
       new VJSButton(@model, input)

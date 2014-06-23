@@ -35,6 +35,7 @@ class App extends Backbone.Model
     if RUN then requestAnimationFrame @animate
 
   initLayers: () ->
+    @libraryView = new VJSLibraryView()
     canvas = document.querySelector('#output')
     frame = document.querySelector(".output-frame")
     @layer1 = new VJSLayer(name: "Layer 1", canvas: canvas, frame: frame)
@@ -49,6 +50,7 @@ class App extends Backbone.Model
     tabs = [
       {name: "Layer 1", view: @layer1View.render()}
       {name: "Layer 2", view: @layer2View.render()}
+      {name: "Library", view: @libraryView.render()}
       {name: "Output", view: document.createElement('div')}
     ]
 
