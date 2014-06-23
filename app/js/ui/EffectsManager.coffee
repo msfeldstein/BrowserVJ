@@ -1,15 +1,8 @@
-EffectsClasses = [ZoomBlurPass, InkPass, NoisePass, MirrorPass, InvertPass, ChromaticAberration, MirrorPass, DotRollPass, KaleidoscopePass, ShroomPass]
 class EffectsManager extends Backbone.Model
   constructor: (@composer) ->
     super()
-    @effectClasses = []
+    @effectClasses = VJSLibrary.instance.get("effects")
     @stack = []
-    for effectClass in EffectsClasses
-      @registerEffect effectClass
-
-  registerEffect: (effectClass) ->
-    @effectClasses.push effectClass
-    @trigger "change"
 
   addEffectToStack: (effect) ->
     @stack.push effect
@@ -59,7 +52,7 @@ class EffectsPanel extends Backbone.View
   showPopup: (e) =>
     values = []
     for effect in @model.effectClasses
-      values.push effect.name
+      values.push(effect.effectName || effect.name)
     @popup.show({element: e.target}, values, @addEffect)
 
   insertEffectPanel: (effect) =>
@@ -68,7 +61,6 @@ class EffectsPanel extends Backbone.View
     @listenTo effect, "destroy", @destroyEffect
     v = effectPanel.render()
     @stack.appendChild v
-    
 
   addEffect: (name) =>
     clazz = _.find(@model.effectClasses, ((s)->s.name==name))

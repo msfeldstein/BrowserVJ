@@ -14,7 +14,7 @@ class App extends Backbone.Model
     window.application = @
 
     @globalSignals = {}
-
+    @library = new VJSLibrary()
     @initStats()
     @initSignals()
     @initLayers()
@@ -36,7 +36,6 @@ class App extends Backbone.Model
     if RUN then requestAnimationFrame @animate
 
   initLayers: () ->
-    @library = new VJSLibrary()
     @libraryView = new VJSLibraryView(model: @library)
     canvas = document.querySelector('#output')
     frame = document.querySelector(".output-frame")

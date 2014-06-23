@@ -2,10 +2,9 @@ EffectsClasses = [ZoomBlurPass, InkPass, NoisePass, MirrorPass, InvertPass, Chro
 
 class VJSLibrary extends Backbone.Model
   initialize: () ->
+    VJSLibrary.instance = @
     @set "effects", EffectsClasses
     @set "compositions", []
-    for effect in EffectsClasses
-      @addEffect effect
 
   addEffect: (effect) ->
     @get("effects").push effect
@@ -47,7 +46,6 @@ class VJSEffectsLibraryView extends VJSCell
     e.preventDefault()
 
   dragover: (e) =>
-    console.log 'DRAGOVER'
     e.preventDefault()
     @el.classList.add 'dragover'
 
