@@ -36,7 +36,8 @@ class App extends Backbone.Model
     if RUN then requestAnimationFrame @animate
 
   initLayers: () ->
-    @libraryView = new VJSLibraryView()
+    @library = new VJSLibrary()
+    @libraryView = new VJSLibraryView(model: @library)
     canvas = document.querySelector('#output')
     frame = document.querySelector(".output-frame")
     @layer1 = new VJSLayer(name: "Layer 1", canvas: canvas, frame: frame)

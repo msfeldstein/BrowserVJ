@@ -2,7 +2,6 @@ class CompositionPicker extends Backbone.View
   className: "composition-picker"
 
   events:
-    "dragenter": "dragenter"
     "dragover": "dragover"
     "dragleave": "dragleave"
     "drop": "drop"
@@ -11,8 +10,6 @@ class CompositionPicker extends Backbone.View
   constructor: (@layer) ->
     super()
     @compositions = []
-
-  dragenter: (e) =>
     
   dragover: (e) =>
     e.preventDefault()
@@ -57,8 +54,6 @@ class CompositionPicker extends Backbone.View
 
 class CompositionSlot extends Backbone.View
   className: 'slot'
-  events:
-    "click img": "launch"
 
   initialize: () =>
     super()

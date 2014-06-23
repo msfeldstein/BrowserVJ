@@ -2,6 +2,29 @@
     margin-bottom: 40px;
 }
 
+.sidebar .vjs-panel-cell {
+  background: #343434;
+  margin: 10px;
+
+  &.dragover {
+    background: #444444;
+  }
+
+  .label {
+    font-size: 20px;
+    font-weight: 500;
+    padding: 10px;
+  }
+
+  .stack {
+    padding-bottom: 10px;
+  }
+  
+  &.hidden .stack {
+    display: none;
+  }
+}
+
 .label {
     font-size: 30px;
     font-weight: 500;
