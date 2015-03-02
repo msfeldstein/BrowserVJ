@@ -1,4 +1,4 @@
-EffectsClasses = [ZoomBlurPass, InkPass, NoisePass, MirrorPass, InvertPass, ChromaticAberration, MirrorPass, DotRollPass, KaleidoscopePass, ShroomPass]
+EffectsClasses = [BadTVPass, ZoomBlurPass, InkPass, NoisePass, MirrorPass, InvertPass, ChromaticAberration, MirrorPass, DotRollPass, KaleidoscopePass, ShroomPass]
 
 class VJSLibrary extends Backbone.Model
   initialize: () ->

@@ -11,38 +11,48 @@
 var ISFParser = function () {};
 
 ISFParser.prototype.parse = function ( rawFragmentShader, rawVertexShader ) {
-  this.rawFragmentShader = rawFragmentShader;
-  this.rawVertexShader = rawVertexShader || ISFParser.vertexShaderDefault;
-  this.error = null;
-  // First pull out the comment JSON to get the metadata.
-  // This regex (should) match quotes in the form /* */.
-  var regex = /\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/;
-  var results = regex.exec( this.rawFragmentShader );
+  try {
+    this.rawFragmentShader = rawFragmentShader;
+    this.rawVertexShader = rawVertexShader || ISFParser.vertexShaderDefault;
+    this.error = null;
+    // First pull out the comment JSON to get the metadata.
+    // This regex (should) match quotes in the form /* */.
+    var regex = /\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/;
+    var results = regex.exec( this.rawFragmentShader );
 
-  if ( !results ) {
+    if ( !results ) {
+      throw "There is no metadata here."
+    }
+
+    var metadataString = results[0];
+    metadataString = metadataString.substring(1, metadataString.length - 1);
+    var metadata;
+    try {
+      metadata = JSON.parse(metadataString);
+    } catch (e) {
+      throw "Something is wrong with your metadata";
+    }
+    this.credit = metadata.CREDIT;
+    this.categories = metadata.CATEGORIES;
+    this.inputs = metadata.INPUTS;
+    this.imports = ( metadata.IMPORTED || {} );
+    this.description = metadata.DESCRIPTION
+    var persistentArray = metadata.PERSISTENT_BUFFERS || [];
+    if ( !(persistentArray instanceof Array) ) {
+      throw "PERSISTENT_BUFFERS must be an array of strings";
+    }
+    var passesArray = metadata.PASSES || [ {} ];
+    this.passes = this.parsePasses(passesArray, persistentArray);
+    var endOfMetadata = this.rawFragmentShader.indexOf(metadataString) + metadataString.length + 2;
+    this.rawFragmentMain = this.rawFragmentShader.substring(endOfMetadata);
+    this.generateShaders();
+  } catch (e) {
     this.valid = false;
+    this.error = e;
     this.inputs = [];
     this.categories = [];
     this.credit = "";
-    return;
   }
-
-  var metadataString = results[0];
-  metadataString = metadataString.substring(1, metadataString.length - 1);
-  var metadata = JSON.parse(metadataString);
-  this.credit = metadata.CREDIT;
-  this.categories = metadata.CATEGORIES;
-  this.inputs = metadata.INPUTS;
-  this.imports = ( metadata.IMPORTED || {} );
-  var persistentArray = metadata.PERSISTENT_BUFFERS || [];
-  if ( !(persistentArray instanceof Array) ) {
-    throw {error: "PERSISTENT_BUFFERS must be an array of strings"};
-  }
-  var passesArray = metadata.PASSES || [ {} ];
-  this.passes = this.parsePasses(passesArray, persistentArray);
-  var endOfMetadata = this.rawFragmentShader.indexOf(metadataString) + metadataString.length + 2;
-  this.rawFragmentMain = this.rawFragmentShader.substring(endOfMetadata);
-  this.generateShaders();
 }
 
 ISFParser.prototype.parsePasses = function ( passesArray, persistentArray ) {
@@ -69,6 +79,12 @@ ISFParser.prototype.generateShaders = function () {
   for ( var i = 0; i < this.passes.length; ++i ) {
     if ( this.passes[i].target ) {
       this.addUniform( {NAME: this.passes[i].target, TYPE: "image"} );
+    }
+  }
+
+  for ( var k in this.imports ) {
+    if ( this.imports.hasOwnProperty(k) ) {
+      this.addUniform( {NAME: k, TYPE: "image"} )
     }
   }
 
@@ -166,7 +182,7 @@ ISFParser.prototype.texCoordFunctions = function ( input ) {
 
 ISFParser.prototype.inputToType = function ( inputType ) {
   var type = ISFParser._typeUniformMap[inputType];
-  if ( !type ) throw {error: "Unknown input type [" + inputType + "]" };
+  if ( !type )  throw "Unknown input type [" + inputType + "]";
   return type;
 }
 
@@ -219,7 +235,7 @@ ISFParser.vertexShaderSkeleton = [
     "precision highp int;",
     "void vv_vertShaderInit();",
     "",
-    // "attribute vec2 position; // -1..1",
+    "attribute vec2 position; // -1..1",
     "",
     "uniform int     PASSINDEX;",
     "uniform vec2    RENDERSIZE;",
@@ -230,7 +246,7 @@ ISFParser.vertexShaderSkeleton = [
     "",
     "[[main]]",
     "void vv_vertShaderInit(void)  {",
-    "gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+    "gl_Position = vec4( position, 0.0, 1.0 );",
     "  vv_FragNormCoord = vec2((gl_Position.x+1.0)/2.0, (gl_Position.y+1.0)/2.0);",
     "  vv_fragCoord = floor(vv_FragNormCoord * RENDERSIZE);",
     "  [[functions]]",

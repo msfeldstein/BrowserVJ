@@ -1,12 +1,12 @@
 # Automatically render frames, or dont run, and only render when user presses 'r'
 RUN = true
 # Which class of composition to automatically launch
-AUTO_LAUNCH_COMP = CubeReplication
+AUTO_LAUNCH_COMP = null
 
 noise.seed(Math.random())
 
 $ ->
-  window.CompositionClasses = [CubeReplication]
+  window.CompositionClasses = [CubeReplication, FlameComposition]
   window.application = new App
 
 class App extends Backbone.Model
