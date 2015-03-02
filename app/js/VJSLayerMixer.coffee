@@ -25,7 +25,9 @@ class VJSLayerMixer extends Backbone.Model
   render: () =>
     for layer in @get("layers")
       layer.render()
-    @compositePass.render(@renderer)
+    # @compositePass.render(@renderer)
+
+
 class VJSMixerRenderPass
   constructor: (@layers) ->
     @layerSets = []

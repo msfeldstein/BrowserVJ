@@ -6,6 +6,7 @@
         },
         "files": {
             "three.min.js": "threejs/build/three.js",
+            "jquery.min.map": "jquery/dist/jquery.min.map",
             "jquery.min.js": "jquery/dist/jquery.min.js"
         }
     }

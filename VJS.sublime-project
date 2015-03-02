@@ -4,7 +4,7 @@
 		{
 			"path": ".",
       "folder_exclude_patterns": ["dist", "node_modules", ".sass-cache"],
-      "file_exclude_patterns": []
+      "file_exclude_patterns": [".bowerrc"]
 		}
 	]
 }

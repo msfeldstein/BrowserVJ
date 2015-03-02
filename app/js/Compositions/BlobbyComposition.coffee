@@ -10,7 +10,6 @@ class BlobbyComposition extends Composition
   setup: (@renderer) ->
     @time = 0
     @scene = new THREE.Scene
-    # @scene.fog = new THREE.FogExp2( 0x000000, 0.0005 )
     @camera = new THREE.PerspectiveCamera(75, @renderer.domElement.width / @renderer.domElement.height, 1, 10000)
     @camera.position.z = 1000;
 
@@ -25,11 +24,11 @@ class BlobbyComposition extends Composition
       vtx.z = 500 * Math.random() - 250
       vtx.seed = i
       geometry.vertices.push vtx
-    material = new THREE.ParticleSystemMaterial({size: 135, map: sprite, transparent: true})
+    material = new THREE.PointCloudMaterial({size: 135, map: sprite, transparent: true})
     material.color.setHSL( 1.0, 0.3, 0.7 );
     material.opacity = 0.2
     material.blending = THREE.AdditiveBlending
-    @particles = new THREE.ParticleSystem geometry, material
+    @particles = new THREE.PointCloud geometry, material
     @particles.sortParticles = true
     @scene.add @particles
 

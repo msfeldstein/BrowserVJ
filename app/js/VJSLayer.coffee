@@ -8,7 +8,7 @@ class VJSLayer extends VJSBindable
     super()
     @name = properties.name || "Layer #{@cid}"
     canvas = properties.canvas
-    @renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, clearAlpha: 0, transparent: true, canvas: canvas})
+    @renderer = new THREE.WebGLRenderer({ antialiasing: true, alpha: true, clearAlpha: 0, transparent: true, canvas: canvas})
     outputWindow = properties.frame
     @renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight)
     $(window).resize () =>
@@ -18,8 +18,9 @@ class VJSLayer extends VJSBindable
     @initEffects()
 
   render: () =>
-    @get("composition")?.update()
-    @composer.render()
+    if @get("composition")
+      @get("composition")?.update()
+      @composer.render()
 
   output: () =>
     @renderer.domElement

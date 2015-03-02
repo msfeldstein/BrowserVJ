@@ -16,7 +16,7 @@ class SphereSphereComposition extends Composition
     sprite.premultiplyAlpha = true
     sprite.needsUpdate = true
     geometry = new THREE.Geometry
-    @material = new THREE.ParticleSystemMaterial({size: 35, map: sprite, transparent: true})
+    @material = new THREE.PointCloudMaterial({size: 35, map: sprite, transparent: true})
     @material.blending = THREE.AdditiveBlending
     @material.opacity = 0.2
     @material.color.setHSL( 1.0, 0.3, 0.7 );
@@ -26,7 +26,7 @@ class SphereSphereComposition extends Composition
       for vertex in skeleton.vertices
         geometry.vertices.push vertex
       
-      @particles = new THREE.ParticleSystem geometry, @material
+      @particles = new THREE.PointCloud geometry, @material
       @particles.sortParticles = true
       @group.add @particles
     

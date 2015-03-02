@@ -1,4 +1,4 @@
-class SphereReplication extends Composition
+class CubeReplication extends Composition
   name: "Cube Replication"
 
   inputs: [
@@ -15,15 +15,12 @@ class SphereReplication extends Composition
     @group = new THREE.Object3D
     @scene.add @group
 
-
     @matColor = new THREE.Color
     @material = new THREE.MeshBasicMaterial(transparent: true, color: @matColor)
     @material.blending = THREE.AdditiveBlending
     @material.opacity = 0.3
     cubeSize = 40
     @cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize)
-
-    geometry = new THREE.Geometry
 
     @group = new THREE.Object3D
     @scene.add(@group)
@@ -34,13 +31,8 @@ class SphereReplication extends Composition
     @cubes = []
     for x in arr
       for y in arr
-        for z in arr
-          pos = new THREE.Vector3(x * spacing, y * spacing, z * spacing)
-          @addCube(@group, pos)
-
-    sprite = new THREE.ImageUtils.loadTexture("assets/disc.png")
-    sprite.needsUpdate = true
-
+        for z in arr 
+          @addCube @group, new THREE.Vector3(x * spacing, y * spacing, z * spacing)
 
   "change:Trigger": (obj,val) =>
     if val
@@ -57,9 +49,10 @@ class SphereReplication extends Composition
     material.blending = THREE.AdditiveBlending
     material.opacity = 0.3
     cube = new THREE.Mesh(@cubeGeometry, material)
-    cube.position = pos
+    
     @cubes.push(cube)
     group.add(cube)
+    cube.position.set(pos.x, pos.y, pos.z)
 
   update: () ->
     for cube in @cubes

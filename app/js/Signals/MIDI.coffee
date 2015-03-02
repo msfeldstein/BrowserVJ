@@ -35,7 +35,8 @@ class @MIDI extends VJSSignal
 
   requestSuccess: (access) =>
     @midi = access
-    for input in @midi.inputs()
+    for input in @midi.inputs.values()
+      console.log input, @onMidiMessage
       input.onmidimessage = @onMIDIMessage
 
   errorHandler: (e) =>
