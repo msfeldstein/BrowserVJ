@@ -63,7 +63,7 @@ class EffectsPanel extends Backbone.View
     @stack.appendChild v
 
   addEffect: (name) =>
-    clazz = _.find(@model.effectClasses, ((s)->s.name==name))
+    clazz = _.find(@model.effectClasses, ((s)->s.effectName==name))
     @model.addEffectToStack new clazz
 
   destroyEffect: (effect) =>
