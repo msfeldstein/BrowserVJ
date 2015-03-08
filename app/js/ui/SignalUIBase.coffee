@@ -25,11 +25,14 @@ class SignalUIBase extends VJSCell
   insertInputViews: () ->
     @el.appendChild @inputStack = _V.div('input stack')
     for input in @model.inputs
+
       if input.hidden then continue
+      v = @newControl(input)
+      if !v then continue
       @inputStack.appendChild el = _V.div('signal')
       el.setAttribute("data-ui-type", input.type)
       el.textContent = input.name
-      v = @newControl(input)
+      
       el.appendChild v.render()
       @inputViews.push v
 

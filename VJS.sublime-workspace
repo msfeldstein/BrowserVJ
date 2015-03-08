@@ -4,6 +4,14 @@
 		"selected_items":
 		[
 			[
+				"ISF",
+				"ISFvertexShader"
+			],
+			[
+				"addEf",
+				"addEffectToStack"
+			],
+			[
 				"data-",
 				"data-original-src"
 			],
@@ -19,6 +27,48 @@
 	},
 	"buffers":
 	[
+		{
+			"file": "app/js/Effects/BadTV.coffee",
+			"settings":
+			{
+				"buffer_size": 8891,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "Searching 144 files for \"insertInput\"\n\n/Users/michael/Source/BrowserVJ/app/js/ui/SignalUIBase.coffee:\n   17      label.textContent = @model.name\n   18      \n   19:     @insertInputViews()\n   20      @insertCustomViews()\n   21      if @model.outputs?.length > 0\n   ..\n   23        @insertOutputViews()\n   24  \n   25:   insertInputViews: () ->\n   26      @el.appendChild @inputStack = _V.div('input stack')\n   27      for input in @model.inputs\n\n2 matches in 1 file\n\n\nSearching 144 files for \"Unknown type \"\n\n0 matches across 0 files\n\n\nSearching 144 files for \"Unknown type\"\n\n/Users/michael/Source/BrowserVJ/app/js/lib/ISFRenderer.js:\n  197            break;\n  198          default:\n  199:           console.log(\"Unknown type\", input);\n  200        }\n  201        input.dirty = false;\n\n1 match in 1 file\n",
+			"settings":
+			{
+				"buffer_size": 802,
+				"line_ending": "Unix",
+				"name": "Find Results",
+				"scratch": true
+			}
+		},
+		{
+			"file": "app/js/lib/ISFRenderer.js",
+			"settings":
+			{
+				"buffer_size": 8318,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "app/js/ui/SignalUIBase.coffee",
+			"settings":
+			{
+				"buffer_size": 2041,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "app/js/Effects/_EffectPassBase.coffee",
+			"settings":
+			{
+				"buffer_size": 5517,
+				"line_ending": "Unix"
+			}
+		}
 	],
 	"build_system": "",
 	"command_palette":
@@ -52,8 +102,34 @@
 	},
 	"file_history":
 	[
-		"/Users/michael/Source/BrowserVJ/app/js/ui/VJSPopup.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/Effects/glfx/InkPass.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/lib/ISFParser.js",
+		"/Users/michael/Source/BrowserVJ/app/js/lib/ISFRenderer.js",
+		"/Users/michael/Source/BrowserVJ/app/js/app.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/ui/EffectsManager.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/VJSLayerMixer.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/VJSLayer.coffee",
+		"/Users/michael/Source/BrowserVJ/app/index.html",
+		"/Users/michael/Source/BrowserVJ/app/js/Compositions/CubeReplication.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/Effects/_EffectPassBase.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/ui/VJSLibraryView.coffee",
+		"/Users/michael/Source/BrowserVJ/README.md",
+		"/Users/michael/Source/BrowserVJ/app/js/Compositions/_CompositionBase.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/Compositions/BlobbyComposition.coffee",
+		"/Users/michael/Source/BrowserVJ/VJS.sublime-project",
+		"/Users/michael/Source/BrowserVJ/app/js/Compositions/BadTV.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/Effects/BadTV.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/lib/postprocessing/ShaderPass.js",
+		"/Users/michael/Source/BrowserVJ/app/js/ui/CompositionPicker.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/Compositions/FlameComposition.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/Compositions/SphereSphere.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/Effects/InvertPass.coffee",
+		"/Users/michael/Source/BrowserVJ/bower.json",
 		"/Users/michael/Source/BrowserVJ/Gruntfile.js",
+		"/Users/michael/Source/BrowserVJ/bowercopy.json",
+		"/Users/michael/Source/BrowserVJ/app/js/vendor/jquery.min.js",
+		"/Users/michael/Source/BrowserVJ/app/js/Signals/MIDI.coffee",
+		"/Users/michael/Source/BrowserVJ/app/js/ui/VJSPopup.coffee",
 		"/Users/michael/Source/BrowserVJ/app/css/widgets.scss",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/VJSSelect.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/_VJSControl.coffee",
@@ -61,10 +137,8 @@
 		"/Users/michael/Source/BrowserVJ/app/js/ui/ValueBinder.coffee",
 		"/Users/michael/Source/BrowserVJ/app/css/valuebinder-popup.scss",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/SignalUIBase.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/ui/EffectsManager.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/VJSButton.coffee",
 		"/Users/michael/Source/BrowserVJ/style.css",
-		"/Users/michael/Source/BrowserVJ/VJS.sublime-project",
 		"/Users/michael/Source/BrowserVJ/app/js/_VJSBindable.coffee",
 		"/Users/michael/Source/CanopyRails/config/application.rb",
 		"/Users/michael/Source/CanopyRails/config/environments/production.rb",
@@ -139,47 +213,23 @@
 		"/Users/michael/Source/BrowserVJ/app/js/Compositions/SphereReplication.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/CompositionInspector.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/LayerInspector.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/app.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/VJSLayerView.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/Compositions/CircleGrower.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/Compositions/_CompositionBase.coffee",
 		"/Users/michael/Source/BrowserVJ/node_modules/bower/node_modules/request/node_modules/form-data/node_modules/combined-stream/test/integration/test-delayed-streams-and-buffers-and-strings.js",
 		"/Users/michael/Source/BrowserVJ/node_modules/grunt-contrib-jshint/node_modules/jshint/node_modules/htmlparser2/lib/FeedHandler.js",
 		"/Users/michael/Source/BrowserVJ/app/js/Signals/_VJSSignal.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/VJSColorPicker.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/vendor/three.min.js",
-		"/Users/michael/Source/BrowserVJ/app/js/VJSLayerMixer.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/VJSLayer.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/Signals/FallingSignal.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/Effects/KaleidoscopePass.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/ui/SignalManager.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/Signals/MIDI.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/Signals/LFO.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/lib/postprocessing/EffectComposer.js",
-		"/Users/michael/Source/BrowserVJ/app/js/Effects/_EffectPassBase.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/lib/postprocessing/RenderPass.js",
 		"/Users/michael/Source/BrowserVJ/app/js/lib/shaders/CopyShader.js",
-		"/Users/michael/Source/BrowserVJ/app/js/lib/postprocessing/ShaderPass.js",
 		"/Users/michael/Source/BrowserVJ/app/js/Effects/ChromaticAberrationPass.coffee",
 		"/Users/michael/Source/BrowserVJ/app/js/Effects/passthrough.coffee",
-		"/Users/michael/Source/BrowserVJ/app/index.html",
-		"/Users/michael/Source/BrowserVJ/app/js/Compositions/VideoComposition.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/lib/postprocessing/TexturePass.js",
-		"/Users/michael/Source/BrowserVJ/app/js/lib/threejs.extend.js",
-		"/Users/michael/Source/BrowserVJ/app/js/lib/postprocessing/SavePass.js",
-		"/Users/michael/Source/BrowserVJ/app/css/layout.scss",
-		"/Users/michael/Source/BrowserVJ/app/js/Compositions/BlobbyComposition.coffee",
-		"/Users/michael/Source/BrowserVJ/dist/js/app.src.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/Compositions/FlameComposition.coffee",
-		"/Users/michael/Library/Application Support/Sublime Text 2/Packages/User/Preferences.sublime-settings",
-		"/Users/michael/Library/Application Support/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
-		"/Users/michael/Source/BrowserVJ/app/js/Compositions/_glslComposition.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/ui/CompositionPicker.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/Audio.coffee",
-		"/Users/michael/Source/BrowserVJ/app/js/ui/AudioVisualiser.coffee",
-		"/Users/michael/Source/BrowserVJ/app/css/main.css",
-		"/Users/michael/Source/BrowserVJ/.editorconfig",
-		"/Users/michael/Source/BrowserVJ/app/js/Node.coffee"
+		"/Users/michael/Source/BrowserVJ/app/js/Compositions/VideoComposition.coffee"
 	],
 	"find":
 	{
@@ -187,7 +237,7 @@
 	},
 	"find_in_files":
 	{
-		"height": 0.0,
+		"height": 93.0,
 		"where_history":
 		[
 			""
@@ -198,6 +248,34 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"target",
+			"render",
+			"Unknown type",
+			"Unknown type ",
+			"insertInput",
+			"input",
+			"render",
+			"_setValue",
+			"position",
+			"ISFfragmentShader",
+			"ISFvertexShader",
+			"CHromatic",
+			"effe",
+			"time",
+			"_V.",
+			"_V",
+			"generateTHu",
+			"addEffectToStack",
+			"EffectsManager",
+			"addEffectToStack",
+			".position",
+			"geometry",
+			"sprite",
+			"bower",
+			"SphereReplication",
+			"Cube Replication",
+			"planegeometry",
+			"particlesys",
 			".popup",
 			"add-effect",
 			"select",
@@ -297,29 +375,7 @@
 			"@ren",
 			"setclear",
 			"CompositionInspector",
-			"console.log",
-			"clear",
-			"layer1",
-			"inspector",
-			"destroy",
-			"particlesystemmaterial",
-			"245",
-			"addEffect",
-			"artwork",
-			"$selector",
-			"color: red;  ",
-			"box-sizing",
-			"Graphik",
-			"webkit",
-			"text-sha",
-			"filter",
-			"box-sizing",
-			"ENV[",
-			"play-small",
-			"ended",
-			"trackEnded",
-			"ENV[",
-			"useMediaKeys"
+			"console.log"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -337,8 +393,173 @@
 	"groups":
 	[
 		{
+			"selected": 0,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "app/js/Effects/BadTV.coffee",
+					"settings":
+					{
+						"buffer_size": 8891,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								904,
+								758
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CoffeeScript/CoffeeScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 187.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"settings":
+					{
+						"buffer_size": 802,
+						"regions":
+						{
+							"match":
+							{
+								"flags": 112,
+								"regions":
+								[
+									[
+										169,
+										180
+									],
+									[
+										318,
+										329
+									],
+									[
+										711,
+										723
+									]
+								],
+								"scope": ""
+							}
+						},
+						"selection":
+						[
+							[
+								720,
+								720
+							]
+						],
+						"settings":
+						{
+							"detect_indentation": false,
+							"output_tag": 3,
+							"result_base_dir": "",
+							"result_file_regex": "^([A-Za-z\\\\/<].*):$",
+							"result_line_regex": "^ +([0-9]+):",
+							"scroll_past_end": true,
+							"syntax": "Packages/Default/Find Results.hidden-tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 396.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "app/js/lib/ISFRenderer.js",
+					"settings":
+					{
+						"buffer_size": 8318,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4452,
+								4452
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 902.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "app/js/ui/SignalUIBase.coffee",
+					"settings":
+					{
+						"buffer_size": 2041,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								798,
+								798
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CoffeeScript/CoffeeScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 98.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "app/js/Effects/_EffectPassBase.coffee",
+					"settings":
+					{
+						"buffer_size": 5517,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4730,
+								4735
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CoffeeScript/CoffeeScript.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2457.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
 			]
 		}
 	],
@@ -384,16 +605,68 @@
 		"selected_items":
 		[
 			[
+				"badt",
+				"app/js/Effects/BadTV.coffee"
+			],
+			[
+				"isfp",
+				"app/js/lib/ISFParser.js"
+			],
+			[
+				"vjsla",
+				"app/js/VJSLayer.coffee"
+			],
+			[
+				"app",
+				"app/js/app.coffee"
+			],
+			[
+				"vjsli",
+				"app/js/VJSLayerMixer.coffee"
+			],
+			[
+				"effec",
+				"app/js/ui/EffectsManager.coffee"
+			],
+			[
+				"app.",
+				"app/js/app.coffee"
+			],
+			[
+				"shaderp",
+				"app/js/lib/postprocessing/ShaderPass.js"
+			],
+			[
+				"eff",
+				"app/js/ui/EffectsManager.coffee"
+			],
+			[
+				"gru",
+				"Gruntfile.js"
+			],
+			[
+				"bowe",
+				"bower.json"
+			],
+			[
+				"midi",
+				"app/js/Signals/MIDI.coffee"
+			],
+			[
+				"grun",
+				"Gruntfile.js"
+			],
+			[
+				"compo",
+				"app/js/ui/CompositionPicker.coffee"
+			],
+			[
 				"vjscon",
 				"app/js/ui/_VJSControl.coffee"
 			],
 			[
 				"vjssel",
 				"app/js/ui/VJSSelect.coffee"
-			],
-			[
-				"grun",
-				"Gruntfile.js"
 			],
 			[
 				"vjsbu",
@@ -696,20 +969,12 @@
 				"app/js/ui/VJSColorPicker.coffee"
 			],
 			[
-				"app.",
-				"app/js/app.coffee"
-			],
-			[
 				"vjssi",
 				"app/js/Signals/_VJSSignal.coffee"
 			],
 			[
 				"keyb",
 				"app/js/Signals/Keyboard.coffee"
-			],
-			[
-				"midi",
-				"app/js/Signals/MIDI.coffee"
 			],
 			[
 				"sign",
@@ -730,10 +995,6 @@
 			[
 				"sphere",
 				"app/js/Compositions/SphereReplication.coffee"
-			],
-			[
-				"effec",
-				"app/js/lib/postprocessing/EffectComposer.js"
 			],
 			[
 				"_eff",
@@ -764,10 +1025,6 @@
 				"app/js/lib/postprocessing/RenderPass.js"
 			],
 			[
-				"vjsla",
-				"app/js/VJSLayer.coffee"
-			],
-			[
 				"pass",
 				"app/js/Effects/passthrough.coffee"
 			],
@@ -794,10 +1051,6 @@
 			[
 				"effect",
 				"app/js/lib/postprocessing/EffectComposer.js"
-			],
-			[
-				"eff",
-				"app/js/ui/EffectsManager.coffee"
 			],
 			[
 				"vjsl",
@@ -862,38 +1115,6 @@
 			[
 				"lfo",
 				"app/js/Signals/LFO.coffee"
-			],
-			[
-				"compos",
-				"app/js/ui/CompositionInspector.coffee"
-			],
-			[
-				"_c",
-				"app/js/Compositions/_CompositionBase.coffee"
-			],
-			[
-				"insp",
-				"app/js/ui/CompositionInspector.coffee"
-			],
-			[
-				"vjssli",
-				"app/js/ui/VJSSlider.coffee"
-			],
-			[
-				"compositioninsp",
-				"app/js/ui/CompositionInspector.coffee"
-			],
-			[
-				"vjslayerview",
-				"app/js/ui/VJSLayerView.coffee"
-			],
-			[
-				"vjslayer",
-				"app/js/VJSLayer.coffee"
-			],
-			[
-				"inspec",
-				"app/js/ui/CompositionInspector.coffee"
 			]
 		],
 		"width": 0.0

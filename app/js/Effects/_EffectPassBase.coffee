@@ -5,6 +5,9 @@ class @EffectPassBase extends VJSBindable
     @uniformValues = @uniformValues || []
     @options = @options || []
 
+  render: (renderer, writeBuffer, readBuffer, delta) ->
+    null
+
 class @ShaderPassBase extends EffectPassBase
   constructor: (initialValues) ->
     super()
