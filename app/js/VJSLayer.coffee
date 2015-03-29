@@ -32,6 +32,7 @@ class VJSLayer extends VJSBindable
     @compositionPicker = new CompositionPicker(@)
     for clazz in CompositionClasses
       @compositionPicker.addComposition new clazz
+    @compositionPicker.addComposition new ISFComposition
 
   initEffects: () ->
     parameters = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, stencilBuffer: false };

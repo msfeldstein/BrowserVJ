@@ -8,8 +8,8 @@
 
 */
 
-var ISFParser = function () {
-  this.positionAttributeName = "position"
+function ISFParser() {
+  
 };
 
 ISFParser.prototype.parse = function ( rawFragmentShader, rawVertexShader ) {
@@ -166,7 +166,7 @@ ISFParser.prototype.buildVertexShader = function () {
       functionLines += this.texCoordFunctions( input ) + "\n";
     }
   }
-  return ISFParser.vertexShaderSkeleton.split("[[position]]").join(this.positionAttributeName).replace("[[functions]]", functionLines).replace("[[uniforms]]", this.uniformDefs).replace("[[main]]", this.rawVertexShader)
+  return ISFParser.vertexShaderSkeleton.replace("[[functions]]", functionLines).replace("[[uniforms]]", this.uniformDefs).replace("[[main]]", this.rawVertexShader)
 }
 
 ISFParser.prototype.texCoordFunctions = function ( input ) {
@@ -237,7 +237,7 @@ ISFParser.vertexShaderSkeleton = [
     "precision highp int;",
     "void vv_vertShaderInit();",
     "",
-    "attribute vec2 [[position]]; // -1..1",
+    "attribute vec2 position; // -1..1",
     "",
     "uniform int     PASSINDEX;",
     "uniform vec2    RENDERSIZE;",
@@ -248,7 +248,7 @@ ISFParser.vertexShaderSkeleton = [
     "",
     "[[main]]",
     "void vv_vertShaderInit(void)  {",
-    "gl_Position = vec4( [[position]], 0.0, 1.0 );",
+    "gl_Position = vec4( position, 0.0, 1.0 );",
     "  vv_FragNormCoord = vec2((gl_Position.x+1.0)/2.0, (gl_Position.y+1.0)/2.0);",
     "  vv_fragCoord = floor(vv_FragNormCoord * RENDERSIZE);",
     "  [[functions]]",

@@ -191,11 +191,6 @@ class @ISFComposition extends Composition
       @inputs.push {name: uniformDesc.name, type: uniformDesc.type, min: uniformDesc.min, max: uniformDesc.max, default: uniformDesc.default}
       @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
       @set uniformDesc.name, uniformDesc.default
-    @quad.material = new THREE.ShaderMaterial {
-      uniforms: @uniforms
-      vertexShader: @vertexShader
-      fragmentShader: @fragmentShader
-    }
 
   isfTypeToUniformType: (inType) ->
     {
@@ -212,16 +207,20 @@ class @ISFComposition extends Composition
       when "long" then input.DEFAULT || 0
 
   update: () ->
-    super()
-    if !@uniforms then return
-    if @uniforms.RENDERSIZE
-      @uniforms.RENDERSIZE.value.set(@renderer.domElement.width, @renderer.domElement.height)
-    if @uniforms.TIME
-      @uniforms.TIME.value = (new Date().getTime()) / 1000 - @startTime
+    @isfRenderer.setValue("c", [1.0, 1.0, 0.0, 1.0])
+    @isfRenderer.animate(@interimCanvas)
+    @texture.needsUpdate = true
 
-  setup: (renderer) ->
-    @renderer = renderer
+  setup: (@threeJSRenderer) ->
+    @renderer = @threeJSRenderer
+    @gl = @threeJSRenderer.context
+    @interimCanvas = document.createElement('canvas')
+    document.body.appendChild @interimCanvas
+    @interimCanvas.width = @threeJSRenderer.context.canvas.width
+    @interimCanvas.height = @threeJSRenderer.context.canvas.height
 
+    @isfRenderer = new ISFRenderer(@interimCanvas.getContext("webgl"))
+    @isfRenderer.sourceChanged(@isf.fragmentShader, @isf.vertexShader, @isf)
 
     @enabled = true
     @renderToScreen = false
@@ -230,14 +229,13 @@ class @ISFComposition extends Composition
     @camera = new THREE.OrthographicCamera( -1, 1, 1, -1, 0, 1 );
     @scene = new THREE.Scene
 
-    @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
-    # This is set when we read and parse the file
-    @material = new THREE.ShaderMaterial {
-      uniforms: @uniforms
-      vertexShader: @vertexShader
-      fragmentShader: @fragmentShader
-    }
-    @quad.material = @material
+    @texture = new THREE.Texture(@interimCanvas)
+    @texture.needsUpdate = true
+    @texture.minFilter = THREE.LinearFilter;
+    @texture.magFilter = THREE.LinearFilter;
+    @material = new THREE.MeshBasicMaterial(map: @texture)
+
+    @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), @material)
     @scene.add @quad
 
   bindToKey: (property, target, targetProperty) ->
