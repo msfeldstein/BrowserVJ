@@ -192,6 +192,8 @@ class @ISFComposition extends Composition
       @listenTo @, "change:#{uniformDesc.name}", @_uniformsChanged
       @set uniformDesc.name, uniformDesc.default
 
+
+
   isfTypeToUniformType: (inType) ->
     {
       "color": "color",
@@ -207,7 +209,6 @@ class @ISFComposition extends Composition
       when "long" then input.DEFAULT || 0
 
   update: () ->
-    @isfRenderer.setValue("c", [1.0, 1.0, 0.0, 1.0])
     @isfRenderer.animate(@interimCanvas)
     @texture.needsUpdate = true
 
@@ -248,7 +249,11 @@ class @ISFComposition extends Composition
   _uniformsChanged: (obj) =>
     for name, value of obj.changed
       uniformDesc = _.find(@uniformValues, ((u) -> u.name == name))
-      @uniforms[uniformDesc.uniform].value = value
+      uniform = @uniforms[uniformDesc.uniform]
+      if uniformDesc.type == "color"
+        value = hexToRgba(value);
+        console.log "Color", name, value
+      @isfRenderer?.setValue name, value
 
   vertexShader: """
     varying vec2 vUv;
