@@ -216,7 +216,6 @@ class @ISFComposition extends Composition
     @renderer = @threeJSRenderer
     @gl = @threeJSRenderer.context
     @interimCanvas = document.createElement('canvas')
-    document.body.appendChild @interimCanvas
     @interimCanvas.width = @threeJSRenderer.context.canvas.width
     @interimCanvas.height = @threeJSRenderer.context.canvas.height
 
