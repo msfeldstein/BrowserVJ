@@ -3,6 +3,7 @@ class @BadTVPass extends EffectPassBase
 
   constructor: () ->
     super()
+    extend @, GLMethods
     window.eff = @
     @parser = new ISFParser()
     @parser.parse(@ISFFragmentShader, @ISFVertexShader)
@@ -25,20 +26,6 @@ class @BadTVPass extends EffectPassBase
     @quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), null)
     @scene.add @quad
     @startTime = Date.now()
-
-
-  _createTexture: (w, h) ->
-    texture = @gl.createTexture()
-    @gl.bindTexture(@gl.TEXTURE_2D, texture)
-    @gl.texParameteri(@gl.TEXTURE_2D, @gl.TEXTURE_WRAP_S, @gl.CLAMP_TO_EDGE)
-    @gl.texParameteri(@gl.TEXTURE_2D, @gl.TEXTURE_WRAP_T, @gl.CLAMP_TO_EDGE)
-    @gl.texParameteri(@gl.TEXTURE_2D, @gl.TEXTURE_MIN_FILTER, @gl.NEAREST)
-    @gl.texParameteri(@gl.TEXTURE_2D, @gl.TEXTURE_MAG_FILTER, @gl.NEAREST)
-    @gl.pixelStorei(@gl.UNPACK_FLIP_Y_WEBGL, true)
-    @gl.texImage2D(@gl.TEXTURE_2D, 0, @gl.RGBA, w, h, 0, @gl.RGBA, @gl.UNSIGNED_BYTE, null);
-    @gl.bindTexture(@gl.TEXTURE_2D, null)
-    texture
-
 
   _uniformsChanged: (obj) ->
     for name, value of obj.changed
@@ -73,24 +60,11 @@ class @BadTVPass extends EffectPassBase
 
   render: (renderer, writeBuffer, readBuffer, delta) =>
     @gl = renderer.context
-    @outputTexture ||= @_createTexture()
-    @ISFRenderer ||= new ISFRenderer renderer.context, @parser
-    @ISFRenderer.setUniform("inputImage", readBuffer.__webglTexture)
+    @ISFRenderer ||= new ISFRenderer renderer.context, @parser, writeBuffer
     # @ISFRenderer.setUniform("inputImage", readBuffer.__webglTexture)
-    @ISFRenderer.render renderer.context.canvas.width, renderer.context.canvas.height, writeBuffer
-
-
-  vertexShader: """
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    }
-  """
-
-  fragmentShader: """
-
-  """
+    # @ISFRenderer.setUniform("inputImage", readBuffer.__webglTexture)
+    # @ISFRenderer.render renderer.context.canvas.width, renderer.context.canvas.height, null
+ 
 
   ISFVertexShader: """
     varying vec2 left_coord;
