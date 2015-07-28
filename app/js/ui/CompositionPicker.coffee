@@ -6,11 +6,11 @@ class CompositionPicker extends Backbone.View
     "dragleave": "dragleave"
     "drop": "drop"
     "click .slot": "launch"
-  
+
   constructor: (@layer) ->
     super()
     @compositions = []
-    
+
   dragover: (e) =>
     e.preventDefault()
     @el.classList.add 'dragover'
@@ -18,7 +18,7 @@ class CompositionPicker extends Backbone.View
   dragleave: (e) =>
     e.preventDefault()
     @el.classList.remove 'dragover'
-  
+
   drop:  (e) =>
     e.preventDefault()
     @el.classList.remove 'dragover'
@@ -26,7 +26,7 @@ class CompositionPicker extends Backbone.View
     @addCompositionFromFile(file)
 
   addCompositionFromFile: (file) ->
-    composition = null  
+    composition = null
     if file.type.indexOf("video") == 0
       composition = new VideoComposition(file)
     else if file.type.indexOf("image") == 0
@@ -45,6 +45,7 @@ class CompositionPicker extends Backbone.View
     @el.appendChild slot.render()
 
   launch: (e) =>
+    console.log("Launch")
     cid = e.currentTarget.getAttribute("data-composition-id")
     composition = _.find(@compositions, ((comp) -> comp.cid == cid))
     @layer.setComposition(composition)
@@ -69,5 +70,3 @@ class CompositionSlot extends Backbone.View
   render: () =>
     @$el.html(@model.thumbnail)
     @el
-
-

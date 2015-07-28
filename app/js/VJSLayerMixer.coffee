@@ -23,9 +23,11 @@ class VJSLayerMixer extends Backbone.Model
     @composer.addPass @compositePass
 
   render: () =>
+    composite = true
     for layer in @get("layers")
-      layer.render()
-    # @compositePass.render(@renderer)
+      composite &= layer.render()
+    if composite
+      @compositePass.render(@renderer)
 
 
 class VJSMixerRenderPass

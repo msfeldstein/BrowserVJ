@@ -21,6 +21,9 @@ class VJSLayer extends VJSBindable
     if @get("composition")
       @get("composition")?.update()
       @composer.render()
+      true
+    else
+      false
 
   output: () =>
     @renderer.domElement
