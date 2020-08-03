@@ -14,7 +14,7 @@ class @AudioInput extends VJSSignal
   initialize: () ->
     navigator.getUserMedia_ = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
     navigator.getUserMedia_({audio: true}, @startAudio, (()->))
-    @context = new webkitAudioContext()
+    @context = new AudioContext()
     @analyzer = @context.createAnalyser()
     @set "selectedFreq", 500
 

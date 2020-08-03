@@ -2,7 +2,7 @@
   "name": "temp",
   "version": "0.0.0",
   "dependencies": {
-    "threejs": "",
+    "threejs": "r73",
     "jquery": ""
   }
 }
