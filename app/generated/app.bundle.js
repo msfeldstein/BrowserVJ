@@ -108,7 +108,7 @@ VJSBindable = (function(superClass) {
   VJSBindable.prototype.serialize = function() {
     var data, key, ref, value;
     data = {
-      className: this.constructor.name,
+      className: this.className || this.constructor.name,
       name: this.name,
       cid: this.cid,
       bindings: {}
@@ -125,12 +125,24 @@ VJSBindable = (function(superClass) {
   };
 
   VJSBindable.inflate = function(data) {
-    var obj;
-    obj = new window[data.className];
+    var Clazz, obj;
+    Clazz = VJSBindable.classRegistry[data.className] || window[data.className];
+    if (!Clazz) {
+      throw new Error("Unknown bindable class: " + data.className);
+    }
+    obj = new Clazz;
     obj.oldCid = data.cid;
     data.inflated = obj;
     return obj;
   };
+
+  VJSBindable.registerClass = function(name, Clazz) {
+    if (name && Clazz) {
+      return VJSBindable.classRegistry[name] = Clazz;
+    }
+  };
+
+  VJSBindable.classRegistry = {};
 
   return VJSBindable;
 
@@ -5012,6 +5024,7 @@ App = (function(superClass) {
     this.loadInitialState = bind(this.loadInitialState, this);
     this.rebind = bind(this.rebind, this);
     this.load = bind(this.load, this);
+    this.registerSerializableClasses = bind(this.registerSerializableClasses, this);
     this.setOutputCanvas = bind(this.setOutputCanvas, this);
     this.popout = bind(this.popout, this);
     this.animate = bind(this.animate, this);
@@ -5021,6 +5034,7 @@ App = (function(superClass) {
     this.initStats();
     this.initSignals();
     this.initLayers();
+    this.registerSerializableClasses();
     this.load();
     requestAnimationFrame(this.animate);
     $(".pop-out").click(this.popout);
@@ -5143,6 +5157,21 @@ App = (function(superClass) {
     return this.valueBinder = new ValueBinder({
       model: this.signalManager
     });
+  };
+
+  App.prototype.registerSerializableClasses = function() {
+    var i, klass, len, ref, results;
+    ref = [FallingSignal, LFO, Clock, Palette, ColorGenerator, Sequencer, MIDI, Gamepad, AudioInput, Keyboard, InvertSignal, ZoomBlurPass, InkPass, NoisePass, MirrorPass, InvertPass, ChromaticAberration, DotRollPass, KaleidoscopePass, ShroomPass, FeedbackPass];
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      klass = ref[i];
+      if (klass) {
+        results.push(VJSBindable.registerClass(klass.name, klass));
+      } else {
+        results.push(void 0);
+      }
+    }
+    return results;
   };
 
   App.prototype.load = function() {

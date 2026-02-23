@@ -107,7 +107,7 @@ VJSBindable = (function(superClass) {
   VJSBindable.prototype.serialize = function() {
     var data, key, ref, value;
     data = {
-      className: this.constructor.name,
+      className: this.className || this.constructor.name,
       name: this.name,
       cid: this.cid,
       bindings: {}
@@ -124,12 +124,24 @@ VJSBindable = (function(superClass) {
   };
 
   VJSBindable.inflate = function(data) {
-    var obj;
-    obj = new window[data.className];
+    var Clazz, obj;
+    Clazz = VJSBindable.classRegistry[data.className] || window[data.className];
+    if (!Clazz) {
+      throw new Error("Unknown bindable class: " + data.className);
+    }
+    obj = new Clazz;
     obj.oldCid = data.cid;
     data.inflated = obj;
     return obj;
   };
+
+  VJSBindable.registerClass = function(name, Clazz) {
+    if (name && Clazz) {
+      return VJSBindable.classRegistry[name] = Clazz;
+    }
+  };
+
+  VJSBindable.classRegistry = {};
 
   return VJSBindable;
 

@@ -23,6 +23,7 @@ App = (function(superClass) {
     this.loadInitialState = bind(this.loadInitialState, this);
     this.rebind = bind(this.rebind, this);
     this.load = bind(this.load, this);
+    this.registerSerializableClasses = bind(this.registerSerializableClasses, this);
     this.setOutputCanvas = bind(this.setOutputCanvas, this);
     this.popout = bind(this.popout, this);
     this.animate = bind(this.animate, this);
@@ -32,6 +33,7 @@ App = (function(superClass) {
     this.initStats();
     this.initSignals();
     this.initLayers();
+    this.registerSerializableClasses();
     this.load();
     requestAnimationFrame(this.animate);
     $(".pop-out").click(this.popout);
@@ -154,6 +156,21 @@ App = (function(superClass) {
     return this.valueBinder = new ValueBinder({
       model: this.signalManager
     });
+  };
+
+  App.prototype.registerSerializableClasses = function() {
+    var i, klass, len, ref, results;
+    ref = [FallingSignal, LFO, Clock, Palette, ColorGenerator, Sequencer, MIDI, Gamepad, AudioInput, Keyboard, InvertSignal, ZoomBlurPass, InkPass, NoisePass, MirrorPass, InvertPass, ChromaticAberration, DotRollPass, KaleidoscopePass, ShroomPass, FeedbackPass];
+    results = [];
+    for (i = 0, len = ref.length; i < len; i++) {
+      klass = ref[i];
+      if (klass) {
+        results.push(VJSBindable.registerClass(klass.name, klass));
+      } else {
+        results.push(void 0);
+      }
+    }
+    return results;
   };
 
   App.prototype.load = function() {

@@ -26,6 +26,12 @@ test('main app boots and allows adding effect/signal', async ({ page }) => {
   await page.locator('.popup .row', { hasText: 'LFO' }).click();
   await expect(page.locator('.signal-set .label', { hasText: 'LFO' })).toBeVisible();
 
+  await page.evaluate(() => window.application.save());
+  await page.reload();
+  await page.waitForFunction(() => window.application && window.application.layer1);
+  await expect(page.locator('.effects .signal-set')).toHaveCount(1);
+  await expect(page.locator('.signal-set .label', { hasText: 'LFO' })).toBeVisible();
+
   expect(pageErrors).toEqual([]);
 });
 
