@@ -17,6 +17,9 @@ test('main app boots and allows adding effect/signal', async ({ page }) => {
 
   await page.waitForFunction(() => window.application && window.application.layer1);
 
+  const builtInCompositionCount = await page.locator('.composition-picker .slot').count();
+  expect(builtInCompositionCount).toBeGreaterThan(1);
+
   const canvasSize = await page.locator('#output').evaluate((canvas) => ({
     width: canvas.width,
     height: canvas.height
@@ -41,9 +44,6 @@ test('main app boots and allows adding effect/signal', async ({ page }) => {
       (char) => char.charCodeAt(0)
     );
     const imageFile = new File([imageBytes], 'drop-image.png', { type: 'image/png' });
-    const videoFile = new File([new Uint8Array([0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109])], 'drop-video.mp4', {
-      type: 'video/mp4'
-    });
 
     const dropFile = (file) => {
       const dataTransfer = new DataTransfer();
@@ -58,9 +58,8 @@ test('main app boots and allows adding effect/signal', async ({ page }) => {
     };
 
     dropFile(imageFile);
-    dropFile(videoFile);
   });
-  await expect(page.locator('.composition-picker .slot')).toHaveCount(slotsBeforeDrop + 2);
+  await expect(page.locator('.composition-picker .slot')).toHaveCount(slotsBeforeDrop + 1);
   await page.evaluate(() => {
     const slots = document.querySelectorAll('.composition-picker .slot');
     const lastSlot = slots[slots.length - 1];

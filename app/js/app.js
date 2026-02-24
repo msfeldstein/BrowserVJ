@@ -11,7 +11,7 @@ AUTO_LAUNCH_COMP = CubeReplication;
 noise.seed(Math.random());
 
 $(function() {
-  window.CompositionClasses = [CubeReplication];
+  window.CompositionClasses = [CubeReplication, BlobbyComposition, CircleGrower, FlameComposition, ISFComposition, RandomShapeComposition, ShapeSlideComposition, SphereSphereComposition];
   return window.application = new App;
 });
 

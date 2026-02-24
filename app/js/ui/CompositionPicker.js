@@ -69,9 +69,24 @@ CompositionPicker = (function(superClass) {
     });
     this.compositions.push(comp);
     if (!comp.thumbnail) {
-      comp.generateThumbnail();
+      comp.thumbnail = document.createElement('div');
+      comp.thumbnail.className = 'composition-thumbnail-label';
+      comp.thumbnail.textContent = comp.name || "Composition";
     }
-    return this.el.appendChild(slot.render());
+    this.el.appendChild(slot.render());
+    if (!comp._thumbnailGenerated && typeof comp.generateThumbnail === "function") {
+      comp._thumbnailGenerated = true;
+      setTimeout((function(_this) {
+        return function() {
+          try {
+            return comp.generateThumbnail();
+          } catch (error) {
+            return console.error("Failed to generate composition thumbnail", error);
+          }
+        };
+      })(this), 0);
+    }
+    return slot;
   };
 
   CompositionPicker.prototype.launch = function(e) {
@@ -119,7 +134,14 @@ CompositionSlot = (function(superClass) {
   };
 
   CompositionSlot.prototype.render = function() {
-    this.$el.html(this.model.thumbnail);
+    this.el.replaceChildren();
+    if (this.model.thumbnail && this.model.thumbnail.nodeType) {
+      this.el.appendChild(this.model.thumbnail);
+    } else if (this.model.thumbnail) {
+      this.el.textContent = this.model.thumbnail;
+    } else {
+      this.el.textContent = this.model.name || "Composition";
+    }
     return this.el;
   };
 
