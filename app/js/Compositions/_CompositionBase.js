@@ -13,16 +13,14 @@ Composition = (function(superClass) {
 
   Composition.prototype.generateThumbnail = function() {
     var renderer;
-    renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      clearAlpha: 1,
-      transparent: true
-    });
+    renderer = Composition.getThumbnailRenderer();
     renderer.setSize(640, 480);
     this.setup(renderer);
-    this.update();
+    if (typeof this.update === "function") {
+      this.update();
+    }
     renderer.setClearColor(0xffffff, 0);
+    renderer.clear();
     renderer.render(this.scene, this.camera);
     this.thumbnail = document.createElement('img');
     this.thumbnail.src = renderer.domElement.toDataURL();
@@ -32,6 +30,19 @@ Composition = (function(superClass) {
   Composition.prototype.setup = function(renderer) {};
 
   Composition.prototype.update = function() {};
+
+  Composition.getThumbnailRenderer = function() {
+    if (!Composition.thumbnailRenderer) {
+      Composition.thumbnailRenderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        clearAlpha: 1,
+        transparent: true,
+        preserveDrawingBuffer: true
+      });
+    }
+    return Composition.thumbnailRenderer;
+  };
 
   return Composition;
 
