@@ -1091,6 +1091,8 @@ this.ISFComposition = (function(superClass) {
         uniform: input.NAME
       });
     }
+    this.baseInputs = this.baseInputs || this.inputs.slice();
+    this.inputs = this.baseInputs.slice();
     this.startTime = (new Date()).getTime() / 1000;
     this.uniforms = THREE.UniformsUtils.clone(this.findUniforms(this.fragmentShader));
     ref1 = this.uniformValues;
@@ -1103,14 +1105,18 @@ this.ISFComposition = (function(superClass) {
         max: uniformDesc.max,
         "default": uniformDesc["default"]
       });
+      this.stopListening(this, "change:" + uniformDesc.name, this._uniformsChanged);
       this.listenTo(this, "change:" + uniformDesc.name, this._uniformsChanged);
       this.set(uniformDesc.name, uniformDesc["default"]);
     }
-    return this.quad.material = new THREE.ShaderMaterial({
+    this.material = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader: this.vertexShader,
       fragmentShader: this.fragmentShader
     });
+    if (this.quad) {
+      return this.quad.material = this.material;
+    }
   };
 
   ISFComposition.prototype.isfTypeToUniformType = function(inType) {
@@ -1156,11 +1162,13 @@ this.ISFComposition = (function(superClass) {
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.scene = new THREE.Scene;
     this.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
-    this.material = new THREE.ShaderMaterial({
-      uniforms: this.uniforms,
-      vertexShader: this.vertexShader,
-      fragmentShader: this.fragmentShader
-    });
+    if (!this.material) {
+      this.material = new THREE.ShaderMaterial({
+        uniforms: this.uniforms,
+        vertexShader: this.vertexShader,
+        fragmentShader: this.fragmentShader
+      });
+    }
     this.quad.material = this.material;
     return this.scene.add(this.quad);
   };
