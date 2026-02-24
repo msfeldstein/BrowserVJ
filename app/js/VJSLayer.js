@@ -31,16 +31,14 @@ VJSLayer = (function(superClass) {
     this.texture = bind(this.texture, this);
     this.output = bind(this.output, this);
     this.render = bind(this.render, this);
-    var canvas, outputWindow;
+    var outputWindow;
     VJSLayer.__super__.constructor.call(this);
     this.name = properties.name || ("Layer " + this.cid);
-    canvas = properties.canvas;
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
       clearAlpha: 0,
-      transparent: true,
-      canvas: canvas
+      transparent: true
     });
     outputWindow = properties.frame;
     this.renderer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight);
@@ -71,7 +69,8 @@ VJSLayer = (function(superClass) {
   };
 
   VJSLayer.prototype.texture = function() {
-    return this.composer.writeBuffer.texture;
+    var ref;
+    return ((ref = this.composer.readBuffer) != null ? ref.texture : void 0) || this.renderTarget.texture;
   };
 
   VJSLayer.prototype.initCompositions = function() {
@@ -103,7 +102,8 @@ VJSLayer = (function(superClass) {
     this.composer.addPass(this.renderModel);
     passthrough = new Passthrough;
     passthrough.enabled = true;
-    passthrough.renderToScreen = true;
+    passthrough.renderToScreen = false;
+    passthrough.needsSwap = true;
     this.composer.addPass(passthrough);
     this.effectsManager = new EffectsManager(this.composer);
     return this.effectsPanel = new EffectsPanel({

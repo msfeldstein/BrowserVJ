@@ -20,6 +20,44 @@ test('main app boots and allows adding effect/signal', async ({ page }) => {
   const builtInCompositionCount = await page.locator('.composition-picker .slot').count();
   expect(builtInCompositionCount).toBeGreaterThan(1);
 
+  const blendOpacityCheck = await page.evaluate(() => {
+    const app = window.application;
+
+    app.layer1.setComposition(null);
+    app.layer2.setComposition(new CubeReplication());
+    app.layer2.set('Blend Mode', 'Multiply');
+    app.layer2.set('opacity', 0);
+    for (let i = 0; i < 3; i += 1) {
+      app.layer2.render();
+      app.mixer.render();
+    }
+    const visibilityWhenZeroOpacity = app.mixer.compositePass.layerSets[1].material.visible;
+
+    app.layer2.set('Blend Mode', 'Additive');
+    app.layer2.set('opacity', 1);
+    for (let i = 0; i < 3; i += 1) {
+      app.layer2.render();
+      app.mixer.render();
+    }
+    const visibilityWhenFullOpacity = app.mixer.compositePass.layerSets[1].material.visible;
+    const blendConst = app.mixer.compositePass.layerSets[1].material.blending;
+
+    app.layer1.setComposition(new CubeReplication());
+    app.layer2.setComposition(null);
+    app.layer2.set('Blend Mode', 'Normal');
+    app.layer2.set('opacity', 1);
+
+    return {
+      visibilityWhenZeroOpacity,
+      visibilityWhenFullOpacity,
+      blendConst,
+      additiveConst: THREE.AdditiveBlending
+    };
+  });
+  expect(blendOpacityCheck.visibilityWhenZeroOpacity).toBe(false);
+  expect(blendOpacityCheck.visibilityWhenFullOpacity).toBe(true);
+  expect(blendOpacityCheck.blendConst).toBe(blendOpacityCheck.additiveConst);
+
   const canvasSize = await page.locator('#output').evaluate((canvas) => ({
     width: canvas.width,
     height: canvas.height

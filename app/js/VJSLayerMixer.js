@@ -45,20 +45,20 @@ VJSLayerMixer = (function(superClass) {
       };
     })(this));
     this.composer = new THREE.EffectComposer(this.renderer);
+    this.composer.setSize(outputWindow.offsetWidth, outputWindow.offsetHeight);
     this.compositePass = new VJSMixerRenderPass(this.get("layers"));
     this.compositePass.setup(this.renderer);
     return this.composer.addPass(this.compositePass);
   };
 
   VJSLayerMixer.prototype.render = function() {
-    var i, layer, len, ref, results;
+    var i, layer, len, ref;
     ref = this.get("layers");
-    results = [];
     for (i = 0, len = ref.length; i < len; i++) {
       layer = ref[i];
-      results.push(layer.render());
+      layer.render();
     }
-    return results;
+    return this.composer.render();
   };
 
   return VJSLayerMixer;
@@ -77,7 +77,7 @@ VJSMixerRenderPass = (function() {
     this.renderer = renderer1;
     this.enabled = true;
     this.renderToScreen = true;
-    this.needsSwap = true;
+    this.needsSwap = false;
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.scene = new THREE.Scene;
     ref = this.layers;
@@ -106,14 +106,23 @@ VJSMixerRenderPass = (function() {
       layerSet = ref[i];
       mat = layerSet.material;
       layer = layerSet.layer;
-      mat.map = layer.texture();
-      mat.blending = THREE[(layer.get('Blend Mode')) + "Blending"];
+      mat.map = layer.texture() || null;
+      mat.blending = VJSMixerRenderPass.BLENDING_MODES[layer.get('Blend Mode')] || THREE.NormalBlending;
       mat.opacity = layer.get("opacity");
+      mat.visible = !!mat.map && mat.opacity > 0;
     }
     return renderer.render(this.scene, this.camera);
   };
 
   VJSMixerRenderPass.prototype.setSize = function() {};
+
+  VJSMixerRenderPass.BLENDING_MODES = {
+    Normal: THREE.NormalBlending,
+    Additive: THREE.AdditiveBlending,
+    Subtractive: THREE.SubtractiveBlending,
+    Multiply: THREE.MultiplyBlending,
+    AdditiveAlpha: THREE.AdditiveBlending
+  };
 
   return VJSMixerRenderPass;
 
