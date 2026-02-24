@@ -39,6 +39,10 @@ hr {
     height: 100%;
     border-left: 1px solid gray;
     overflow-y: scroll;
-    overflow-x: hidden;
+    overflow-x: auto;
     color: white;
+}
+
+.sidebar > * {
+    min-width: 700px;
 }
